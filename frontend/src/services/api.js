@@ -6,7 +6,7 @@
 
     // url base del backend
     // en desarrollo apunta a localhost, en produccion a la url real
-const BASE_URL = "http://localhost:5000/api";
+    const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 
     // creamos una instancia de axios con la url base
     const api = axios.create({
