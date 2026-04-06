@@ -22,6 +22,16 @@ const empresaSchema = new mongoose.Schema(
         trim: true,
     },
 
+        // nif o cif de la empresa - obligatorio y unico
+    // nif para autonomos (12345678Z) o cif para sociedades (B12345678)
+    nifCif: {
+    type: String,
+    required: [true, "El NIF/CIF es obligatorio"],
+    unique: true,
+    trim: true,
+    uppercase: true,
+    },
+
     // contraseña hasheada - nunca guardamos la contraseña en texto plano
     contrasena: {
         type: String,

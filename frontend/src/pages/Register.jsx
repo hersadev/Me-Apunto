@@ -21,6 +21,7 @@ function Register() {
   const [formData, setFormData] = useState({
     nombreEmpresa: "",
     correoEmpresa: "",
+    nifCif: "",
     contrasena: "",
     repiteContrasena: "",
     aceptaTerminos: false,
@@ -66,15 +67,14 @@ function Register() {
         nombre: formData.nombreEmpresa,
         correo: formData.correoEmpresa,
         contrasena: formData.contrasena,
+        nifCif: formData.nifCif,
       });
 
       // registro exitoso - redirigimos al login
-      // mostramos mensaje de exito antes de redirigir
       alert("¡Empresa registrada correctamente! Ahora puedes iniciar sesión.");
       navegar("/login");
 
     } catch (err) {
-      // mostramos el mensaje de error del backend
       setError(
         err.response?.data?.mensaje || "Error al registrar la empresa"
       );
@@ -225,6 +225,52 @@ function Register() {
                   borderRadius: "6px"
                 }}
                 autoComplete="email"
+              />
+            </div>
+
+            {/* nif/cif */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <label
+                htmlFor="nifCif"
+                style={{
+                  fontFamily: "'Baloo Bhai 2', Helvetica",
+                  fontSize: "20px",
+                  fontWeight: "600",
+                  color: "#1a1a1a"
+                }}
+              >
+                NIF/CIF
+              </label>
+              <span style={{
+                fontFamily: "'Baloo Bhai 2', Helvetica",
+                fontSize: "14px",
+                color: "#818181",
+                marginTop: "-2px"
+              }}>
+                NIF para autónomos (12345678Z) o CIF para sociedades (B12345678)
+              </span>
+              <input
+                id="nifCif"
+                type="text"
+                name="nifCif"
+                value={formData.nifCif}
+                onChange={handleChange}
+                required
+                placeholder="B12345678"
+                style={{
+                  width: "100%",
+                  height: "50px",
+                  backgroundColor: "#f8f8f8",
+                  paddingLeft: "14px",
+                  paddingRight: "14px",
+                  fontFamily: "'Baloo Bhai 2', Helvetica",
+                  fontSize: "20px",
+                  color: "#1a1a1a",
+                  border: "none",
+                  outline: "none",
+                  borderRadius: "6px"
+                }}
+                autoComplete="off"
               />
             </div>
 
