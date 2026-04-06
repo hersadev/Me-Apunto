@@ -1,0 +1,60 @@
+@font-face {
+  font-family: 'Butterpop';
+  src: url('./assets/fonts/Butterpop.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* eliminar margenes y paddings por defecto del navegador */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* importar fuente baloo de google fonts */
+@import url('https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@400;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  button, input:not([type="checkbox"]), select, textarea {
+    @apply appearance-none bg-transparent border-0 outline-none;
+}
+
+  body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    background-color: #f0e8dc;
+    font-family: 'Baloo Bhai 2', Helvetica, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .all-\[unset\] {
+    all: unset;
+  }
+}
+
+@keyframes fade-in {
+  0%   { opacity: 0; transform: translateY(-10px); }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes fade-up {
+  0%   { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: none; }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease forwards;
+}
+
+.animate-fade-up {
+  animation: fade-up 0.5s ease forwards;
+}
