@@ -11,10 +11,12 @@ conectarDB();
 const app = express();
 
 app.use(cors({
-  origin: "*", // permitimos cualquier origen en desarrollo
+  origin: [
+    "http://localhost:3000",
+    "https://me-apunto-alpha.vercel.app"
+  ],
   credentials: true
 }));
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
