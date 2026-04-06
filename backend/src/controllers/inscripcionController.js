@@ -73,19 +73,22 @@
         importePagado: importeTotal,
         });
 
-// enviamos correo a la empresa con los datos de la inscripcion
-await enviarCorreoInscripcion({
-  correoEmpresa: evento.empresa.correo,
-  nombreEmpresa: evento.empresa.nombre,
-  nombreEvento: evento.titulo,
-  nombreUsuario: nombre,
-  correoUsuario: correo,
-  ciudad,
-  numPersonas,
-  importeTotal,
-  comisionMeApunto,
-  importeEmpresa,
-});
+    // enviamos correo a la empresa con los datos de la inscripcion
+    // solo si la empresa tiene correo (puede ser null si la empresa fue borrada)
+    if (evento.empresa && evento.empresa.correo) {
+    await enviarCorreoInscripcion({
+        correoEmpresa: evento.empresa.correo,
+        nombreEmpresa: evento.empresa.nombre,
+        nombreEvento: evento.titulo,
+        nombreUsuario: nombre,
+        correoUsuario: correo,
+        ciudad,
+        numPersonas,
+        importeTotal,
+        comisionMeApunto,
+        importeEmpresa,
+    });
+    }
 
         res.status(201).json({
         mensaje: "Inscripción realizada correctamente",
