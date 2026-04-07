@@ -15,28 +15,35 @@ const obtenerEventos = async (req, res) => {
     const limite = parseInt(req.query.limite) || 8;
     const saltar = (pagina - 1) * limite;
 
-    // filtros opcionales por categoria, fecha y tipo
-    const filtro = { activo: true };
+// filtros opcionales por categoria, fecha y tipo
+const filtro = { activo: true };
 
-    if (req.query.categoria) {
-      filtro.categoria = req.query.categoria;
-    }
+if (req.query.categoria) {
+  filtro.categoria = req.query.categoria;
+}
 
-    if (req.query.tipo) {
-      if (req.query.tipo === "gratuito") {
-        filtro.precio = 0;
-      } else if (req.query.tipo === "de-pago") {
-        filtro.precio = { $gt: 0 };
-      }
-    }
+if (req.query.tipo) {
+  if (req.query.tipo === "gratuito") {
+    filtro.precio = 0;
+  } else if (req.query.tipo === "de-pago") {
+    filtro.precio = { $gt: 0 };
+  }
+}
 
-    // buscador por titulo o venue
-    if (req.query.busqueda) {
-      filtro.$or = [
-        { titulo: { $regex: req.query.busqueda, $options: "i" } },
-        { venue: { $regex: req.query.busqueda, $options: "i" } },
-      ];
-    }
+// filtro por patrocinado - permite cargar solo patrocinados o solo normales
+if (req.query.patrocinado === "true") {
+  filtro.patrocinado = true;
+} else if (req.query.patrocinado === "false") {
+  filtro.patrocinado = false;
+}
+
+// buscador por titulo o venue
+if (req.query.busqueda) {
+  filtro.$or = [
+    { titulo: { $regex: req.query.busqueda, $options: "i" } },
+    { venue: { $regex: req.query.busqueda, $options: "i" } },
+  ];
+}
 
     // primero los patrocinados ordenados por fecha de patrocinio
     // luego el resto ordenados por fecha del evento

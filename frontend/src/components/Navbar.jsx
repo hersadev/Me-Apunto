@@ -66,10 +66,11 @@ function Navbar({ mostrarInicio = false, estaLogueado = false }) {
             </button>
 
             <button
-              onClick={() => {
-                console.log("cerrando sesion");
-                navegar("/");
-              }}
+            onClick={() => {
+              localStorage.removeItem("token");
+              localStorage.removeItem("empresa");
+              window.location.href = "/";
+}}
               style={{ ...estiloBoton, backgroundColor: "#91703d" }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#7a5c2e"}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
