@@ -74,18 +74,37 @@ function EventCard({ evento, destacado = false }) {
         {evento.titulo}
       </div>
 
-      {/* venue */}
-      <div style={{
-        fontSize: "13px",
-        fontWeight: "600",
-        textAlign: "center",
-        marginTop: "4px",
-        fontFamily: "'Baloo Bhai 2', Helvetica"
-      }}
-        className="text-black">
-        {evento.venue}
-      </div>
+{/* venue */}
+<div style={{
+  fontSize: "13px",
+  fontWeight: "600",
+  textAlign: "center",
+  marginTop: "4px",
+  fontFamily: "'Baloo Bhai 2', Helvetica"
+}}
+  className="text-black">
+  {evento.venue}
+</div>
 
+  {/* categoria */}
+  {evento.categoria && (
+    <div style={{
+      backgroundColor: "#f0e8dc",
+      color: "#91703d",
+      fontFamily: "'Baloo Bhai 2', Helvetica",
+      fontSize: "11px",
+      fontWeight: "700",
+      padding: "2px 10px",
+      borderRadius: "999px",
+      display: "inline-block",
+      alignSelf: "center",
+      textAlign: "center",
+      marginTop: "4px",
+      textTransform: "capitalize"
+    }}>
+      {evento.categoria}
+    </div>
+  )}
       {/* fecha */}
       <div style={{
         display: "flex",
