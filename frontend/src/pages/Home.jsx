@@ -39,7 +39,6 @@ function Home({ estaLogueado }) {
   const [tipo, setTipo] = useState("");
   const [paginaActual, setPaginaActual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
-  const [indiceCarousel, setIndiceCarousel] = useState(0);
 
   const [mesCalendario, setMesCalendario] = useState(new Date().getMonth());
   const [anioCalendario, setAnioCalendario] = useState(new Date().getFullYear());
@@ -58,15 +57,6 @@ function Home({ estaLogueado }) {
     cargarEventos();
   }, [paginaActual, tipo]);
 
-  // rotacion automatica del carousel cada 5 segundos
-  useEffect(() => {
-    if (eventosPatrocinados.length <= 4) return;
-    const intervalo = setInterval(() => {
-      setIndiceCarousel((prev) => (prev + 1) % eventosPatrocinados.length);
-    }, 5000);
-    return () => clearInterval(intervalo);
-  }, [eventosPatrocinados.length]);
-
   const cargarEventos = async () => {
     try {
       setCargando(true);
@@ -77,15 +67,13 @@ function Home({ estaLogueado }) {
       if (tipo) params.tipo = tipo;
       if (categoria) params.categoria = categoria;
 
-      // peticion de todos los eventos
-      const dataNormales = await eventoService.getEventos({ ...params });
+      // peticion de eventos normales (no patrocinados) - el backend filtra
+      const dataNormales = await eventoService.getEventos({ ...params, patrocinado: "false" });
 
       // peticion de eventos patrocinados - todos sin paginar
       const dataPatrocinados = await eventoService.getEventos({ limite: 100, patrocinado: "true" });
 
-      // filtramos los normales en el frontend
-      const normales = dataNormales.eventos.filter(e => !e.patrocinado);
-      setEventos(normales);
+      setEventos(dataNormales.eventos);
       setTotalPaginas(dataNormales.totalPaginas);
       setEventosPatrocinados(dataPatrocinados.eventos);
 
@@ -300,7 +288,7 @@ function Home({ estaLogueado }) {
         {/* eventos */}
         {!cargando && !error && (
           <>
-            {/* ── CAROUSEL DE PATROCINADOS ── */}
+            {/* ── FILA PATROCINADOS - solo aparece si hay patrocinados ── */}
             {eventosPatrocinados.length > 0 && (
               <div style={{ marginBottom: "48px" }}>
 
@@ -316,40 +304,24 @@ function Home({ estaLogueado }) {
                   </span>
                 </div>
 
+                {/* scroll horizontal con el raton */}
                 <div style={{
-                  display: "flex", flexWrap: "wrap", gap: "28px",
-                  justifyContent: "center"
+                  display: "flex",
+                  gap: "28px",
+                  overflowX: "auto",
+                  paddingBottom: "12px",
+                  paddingLeft: "8px",
+                  paddingRight: "8px",
+                  scrollbarWidth: "thin",
+                  scrollbarColor: "#b79868 #f0e8dc",
+                  justifyContent: eventosPatrocinados.length <= 4 ? "center" : "flex-start"
                 }}>
-                  {[...Array(Math.min(4, eventosPatrocinados.length))].map((_, i) => {
-                    const idx = (indiceCarousel + i) % eventosPatrocinados.length;
-                    return (
-                      <EventCard
-                        key={eventosPatrocinados[idx]._id}
-                        evento={eventosPatrocinados[idx]}
-                        destacado={true}
-                      />
-                    );
-                  })}
+                  {eventosPatrocinados.map((evento) => (
+                    <div key={evento._id} style={{ flexShrink: 0 }}>
+                      <EventCard evento={evento} destacado={true} />
+                    </div>
+                  ))}
                 </div>
-
-                {eventosPatrocinados.length > 4 && (
-                  <div style={{
-                    display: "flex", justifyContent: "center",
-                    gap: "8px", marginTop: "16px"
-                  }}>
-                    {eventosPatrocinados.map((_, i) => (
-                      <div
-                        key={i}
-                        onClick={() => setIndiceCarousel(i)}
-                        style={{
-                          width: "8px", height: "8px", borderRadius: "999px",
-                          backgroundColor: i === indiceCarousel ? "#b79868" : "#d4b896",
-                          cursor: "pointer", transition: "background-color 0.3s ease"
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
 
                 <div style={{
                   width: "100%", height: "1px",
