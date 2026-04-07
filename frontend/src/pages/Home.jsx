@@ -66,6 +66,7 @@ function Home({ estaLogueado }) {
       if (busqueda) params.busqueda = busqueda;
       if (tipo) params.tipo = tipo;
       if (categoria) params.categoria = categoria;
+      if (fecha) params.fecha = fecha;
 
       // peticion de eventos normales (no patrocinados) - el backend filtra
       const dataNormales = await eventoService.getEventos({ ...params, patrocinado: "false" });

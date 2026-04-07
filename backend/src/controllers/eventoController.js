@@ -41,6 +41,28 @@ const obtenerEventos = async (req, res) => {
       ];
     }
 
+    // filtro por fecha
+if (req.query.fecha) {
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
+  if (req.query.fecha === "hoy") {
+    const manana = new Date(hoy);
+    manana.setDate(hoy.getDate() + 1);
+    filtro.fecha = { $gte: hoy, $lt: manana };
+
+  } else if (req.query.fecha === "semana") {
+    const finSemana = new Date(hoy);
+    finSemana.setDate(hoy.getDate() + 7);
+    filtro.fecha = { $gte: hoy, $lt: finSemana };
+
+  } else if (req.query.fecha === "mes") {
+    const finMes = new Date(hoy);
+    finMes.setMonth(hoy.getMonth() + 1);
+    filtro.fecha = { $gte: hoy, $lt: finMes };
+  }
+}
+
     const eventos = await Evento.find(filtro)
       .populate("empresa", "nombre correo")
       .sort({ patrocinado: -1, fechaInicioPatrocinio: 1, fecha: 1 })
