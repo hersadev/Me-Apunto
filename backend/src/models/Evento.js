@@ -57,9 +57,17 @@ const eventoSchema = new mongoose.Schema(
 
     // precio en euros - 0 si es gratuito
     precio: {
-        type: Number,
-        default: 0,
-        min: [0, "El precio no puede ser negativo"],
+    type: Number,
+    default: 0,
+    min: [0, "El precio no puede ser negativo"],
+    },
+
+    // categoria del evento
+    categoria: {
+    type: String,
+    default: "",
+    trim: true,
+    enum: ["", "taller", "exposicion", "concurso", "concierto", "deporte", "gastronomia", "teatro", "otros"],
     },
 
     // empresa que publica el evento
