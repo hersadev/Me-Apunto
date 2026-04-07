@@ -59,6 +59,9 @@ function Home({ estaLogueado }) {
     return lunes;
   });
 
+  // carousel de patrocinados
+  const [indiceCarousel, setIndiceCarousel] = useState(0);
+
   useEffect(() => {
     cargarEventos();
   }, [paginaActual, tipo]);
@@ -170,8 +173,20 @@ function Home({ estaLogueado }) {
     }
   };
 
-  const filaUno = eventos.slice(0, 4);
-  const filaDos = eventos.slice(4, 8);
+  // eventos patrocinados y no patrocinados separados
+  const eventosPatrocinados = eventos.filter(e => e.patrocinado);
+  const eventosNormales = eventos.filter(e => !e.patrocinado);
+  const filaUno = eventosNormales.slice(0, 4);
+  const filaDos = eventosNormales.slice(4, 8);
+
+  // rotacion automatica del carousel cada 5 segundos
+  useEffect(() => {
+    if (eventosPatrocinados.length <= 4) return;
+    const intervalo = setInterval(() => {
+      setIndiceCarousel((prev) => (prev + 1) % eventosPatrocinados.length);
+    }, 5000);
+    return () => clearInterval(intervalo);
+  }, [eventosPatrocinados.length]);
 
   const estiloEvento = {
     fontSize: "11px",
@@ -328,6 +343,86 @@ function Home({ estaLogueado }) {
         {/* eventos */}
         {!cargando && !error && (
           <>
+            {/* ── CAROUSEL DE PATROCINADOS ── */}
+            {eventosPatrocinados.length > 0 && (
+              <div style={{ marginBottom: "48px" }}>
+
+                {/* titulo seccion */}
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  marginBottom: "24px"
+                }}>
+                  <span style={{
+                    fontFamily: "'Baloo Bhai 2', Helvetica",
+                    fontSize: "20px",
+                    fontWeight: "700",
+                    color: "#b79868"
+                  }}>
+                    ★ Eventos Destacados
+                  </span>
+                </div>
+
+                {/* tarjetas del carousel */}
+                <div style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "28px",
+                  justifyContent: "center",
+                  transition: "all 0.5s ease"
+                }}>
+                  {[...Array(Math.min(4, eventosPatrocinados.length))].map((_, i) => {
+                    const idx = (indiceCarousel + i) % eventosPatrocinados.length;
+                    return (
+                      <EventCard
+                        key={eventosPatrocinados[idx]._id}
+                        evento={eventosPatrocinados[idx]}
+                        destacado={true}
+                      />
+                    );
+                  })}
+                </div>
+
+                {/* indicadores de posicion - solo si hay mas de 4 */}
+                {eventosPatrocinados.length > 4 && (
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    gap: "8px",
+                    marginTop: "16px"
+                  }}>
+                    {eventosPatrocinados.map((_, i) => (
+                      <div
+                        key={i}
+                        onClick={() => setIndiceCarousel(i)}
+                        style={{
+                          width: "8px",
+                          height: "8px",
+                          borderRadius: "999px",
+                          backgroundColor: i === indiceCarousel ? "#b79868" : "#d4b896",
+                          cursor: "pointer",
+                          transition: "background-color 0.3s ease"
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* separador */}
+                <div style={{
+                  width: "100%",
+                  height: "1px",
+                  backgroundColor: "#d4b896",
+                  marginTop: "40px",
+                  opacity: 0.5
+                }} />
+              </div>
+            )}
+
+            {/* ── EVENTOS NORMALES ── */}
+
             {/* primera fila */}
             {filaUno.length > 0 && (
               <div style={{
@@ -352,7 +447,7 @@ function Home({ estaLogueado }) {
               </div>
             )}
 
-            {/* paginacion - debajo de todas las tarjetas */}
+            {/* paginacion */}
             {totalPaginas > 1 && (
               <div style={{
                 display: "flex", justifyContent: "center",
