@@ -100,6 +100,38 @@ const enviarCorreoAvisoRenovacion = async ({
   console.log(`Correo de aviso de renovacion enviado a ${correoEmpresa}`);
 };
 
+// correo de contacto - se envia a juanjosehersa@gmail.com
+const enviarCorreoContacto = async ({ nombre, email, asunto, contexto }) => {
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background-color: #b79868; padding: 24px; text-align: center; border-radius: 12px 12px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">Me Apunto</h1>
+        <p style="color: white; margin: 8px 0 0 0; font-size: 14px;">Nuevo mensaje de contacto</p>
+      </div>
+      <div style="background-color: #f0e8dc; padding: 32px; border-radius: 0 0 12px 12px;">
+        <div style="background-color: white; border-radius: 8px; padding: 20px;">
+          <p style="margin: 8px 0; color: #333;"><strong>Nombre:</strong> ${nombre}</p>
+          <p style="margin: 8px 0; color: #333;"><strong>Email:</strong> ${email}</p>
+          <p style="margin: 8px 0; color: #333;"><strong>Asunto:</strong> ${asunto}</p>
+          <p style="margin: 8px 0; color: #333;"><strong>Mensaje:</strong></p>
+          <p style="margin: 8px 0; color: #333; white-space: pre-wrap;">${contexto}</p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  await resend.emails.send({
+    from: "Me Apunto <onboarding@resend.dev>",
+    to: "juanjosehersa@gmail.com",
+    subject: `Contacto web: ${asunto}`,
+    reply_to: email,
+    html,
+  });
+
+  console.log(`Correo de contacto enviado de ${email}`);
+};
+
 // correo de bienvenida que se envia a la empresa cuando se registra
 const enviarCorreoBienvenida = async ({ correoEmpresa, nombreEmpresa }) => {
 
