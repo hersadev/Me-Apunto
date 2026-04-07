@@ -50,11 +50,9 @@ function Home({ estaLogueado }) {
   const [vistaCalendario, setVistaCalendario] = useState("Mes");
 
   // semana actual para la vista de semana
-  // guardamos el lunes de la semana actual
   const [lunesSemana, setLunesSemana] = useState(() => {
     const hoy = new Date();
     const dia = hoy.getDay();
-    // calculamos el lunes de esta semana
     const lunes = new Date(hoy);
     lunes.setDate(hoy.getDate() - (dia === 0 ? 6 : dia - 1));
     lunes.setHours(0, 0, 0, 0);
@@ -76,7 +74,6 @@ function Home({ estaLogueado }) {
       const data = await eventoService.getEventos(params);
       setEventos(data.eventos);
       setTotalPaginas(data.totalPaginas);
-      console.log("totalPaginas:", data.totalPaginas);
     } catch (err) {
       setError("Error al cargar los eventos");
       console.error(err);
@@ -121,7 +118,6 @@ function Home({ estaLogueado }) {
 
   // ── FUNCIONES VISTA SEMANA ───────────────────────────────
 
-  // obtener los 7 dias de la semana actual
   const diasDeLaSemana = () => {
     return [...Array(7)].map((_, i) => {
       const dia = new Date(lunesSemana);
@@ -130,21 +126,18 @@ function Home({ estaLogueado }) {
     });
   };
 
-  // ir a la semana anterior
   const semanaPrevia = () => {
     const nuevaFecha = new Date(lunesSemana);
     nuevaFecha.setDate(lunesSemana.getDate() - 7);
     setLunesSemana(nuevaFecha);
   };
 
-  // ir a la semana siguiente
   const semanaSiguiente = () => {
     const nuevaFecha = new Date(lunesSemana);
     nuevaFecha.setDate(lunesSemana.getDate() + 7);
     setLunesSemana(nuevaFecha);
   };
 
-  // obtener eventos de un dia concreto
   const eventosDelDia = (fecha) => {
     return eventos.filter((e) => {
       const fechaEvento = new Date(e.fecha);
@@ -156,7 +149,6 @@ function Home({ estaLogueado }) {
     });
   };
 
-  // titulo de la semana para la cabecera
   const tituloSemana = () => {
     const dias = diasDeLaSemana();
     const primero = dias[0];
@@ -168,12 +160,10 @@ function Home({ estaLogueado }) {
     }
   };
 
-  // al hacer click en un evento navega al detalle
   const handleClickEvento = (evento) => {
     navegar(`/evento/${evento._id}`);
   };
 
-  // al hacer click en un dia con eventos navega al primero
   const handleClickDia = (eventosDelDiaArr) => {
     if (eventosDelDiaArr.length > 0) {
       navegar(`/evento/${eventosDelDiaArr[0]._id}`);
@@ -183,7 +173,6 @@ function Home({ estaLogueado }) {
   const filaUno = eventos.slice(0, 4);
   const filaDos = eventos.slice(4, 8);
 
-  // estilo compartido para eventos en el calendario
   const estiloEvento = {
     fontSize: "11px",
     backgroundColor: "#b79868",
@@ -331,6 +320,7 @@ function Home({ estaLogueado }) {
         {/* eventos */}
         {!cargando && !error && (
           <>
+            {/* primera fila */}
             {filaUno.length > 0 && (
               <div style={{
                 display: "flex", flexWrap: "wrap", gap: "28px",
@@ -342,44 +332,7 @@ function Home({ estaLogueado }) {
               </div>
             )}
 
-            {true && (
-              <div style={{
-                display: "flex", justifyContent: "center",
-                alignItems: "center", gap: "8px", margin: "16px 0"
-              }}>
-                <button
-                  onClick={() => setPaginaActual((p) => Math.max(p - 1, 1))}
-                  disabled={paginaActual === 1}
-                  style={{
-                    fontSize: "18px", color: "#818181", fontWeight: "bold",
-                    cursor: "pointer", background: "none", border: "none",
-                    opacity: paginaActual === 1 ? 0.3 : 1,
-                    fontFamily: "'Baloo Bhai 2', Helvetica"
-                  }}
-                >
-                  &lt;
-                </button>
-                <span style={{
-                  fontSize: "18px", color: "#818181", fontWeight: "bold",
-                  fontFamily: "'Baloo Bhai 2', Helvetica"
-                }}>
-                  {paginaActual}...{totalPaginas}
-                </span>
-                <button
-                  onClick={() => setPaginaActual((p) => Math.min(p + 1, totalPaginas))}
-                  disabled={paginaActual === totalPaginas}
-                  style={{
-                    fontSize: "18px", color: "#818181", fontWeight: "bold",
-                    cursor: "pointer", background: "none", border: "none",
-                    opacity: paginaActual === totalPaginas ? 0.3 : 1,
-                    fontFamily: "'Baloo Bhai 2', Helvetica"
-                  }}
-                >
-                  &gt;
-                </button>
-              </div>
-            )}
-
+            {/* segunda fila */}
             {filaDos.length > 0 && (
               <div style={{
                 display: "flex", flexWrap: "wrap", gap: "28px",
@@ -391,6 +344,46 @@ function Home({ estaLogueado }) {
               </div>
             )}
 
+            {/* paginacion - debajo de todas las tarjetas */}
+            {totalPaginas > 1 && (
+              <div style={{
+                display: "flex", justifyContent: "center",
+                alignItems: "center", gap: "16px", margin: "32px 0"
+              }}>
+                <button
+                  onClick={() => setPaginaActual((p) => Math.max(p - 1, 1))}
+                  disabled={paginaActual === 1}
+                  style={{
+                    fontSize: "28px", color: "#b79868", fontWeight: "bold",
+                    cursor: "pointer", background: "none", border: "none",
+                    opacity: paginaActual === 1 ? 0.3 : 1,
+                    fontFamily: "'Baloo Bhai 2', Helvetica"
+                  }}
+                >
+                  &lt;
+                </button>
+                <span style={{
+                  fontSize: "22px", color: "#818181", fontWeight: "bold",
+                  fontFamily: "'Baloo Bhai 2', Helvetica"
+                }}>
+                  {paginaActual} / {totalPaginas}
+                </span>
+                <button
+                  onClick={() => setPaginaActual((p) => Math.min(p + 1, totalPaginas))}
+                  disabled={paginaActual === totalPaginas}
+                  style={{
+                    fontSize: "28px", color: "#b79868", fontWeight: "bold",
+                    cursor: "pointer", background: "none", border: "none",
+                    opacity: paginaActual === totalPaginas ? 0.3 : 1,
+                    fontFamily: "'Baloo Bhai 2', Helvetica"
+                  }}
+                >
+                  &gt;
+                </button>
+              </div>
+            )}
+
+            {/* mensaje si no hay eventos */}
             {eventos.length === 0 && (
               <div style={{
                 textAlign: "center", color: "#818181", fontSize: "20px",
@@ -423,7 +416,6 @@ function Home({ estaLogueado }) {
               borderBottom: "1px solid #e5e7eb"
             }}>
 
-              {/* navegacion */}
               <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
                 <button
                   onClick={vistaCalendario === "Mes" ? mesPrevio : semanaPrevia}
@@ -449,7 +441,6 @@ function Home({ estaLogueado }) {
                   onClick={() => {
                     setMesCalendario(new Date().getMonth());
                     setAnioCalendario(new Date().getFullYear());
-                    // volvemos al lunes de esta semana
                     const hoy = new Date();
                     const dia = hoy.getDay();
                     const lunes = new Date(hoy);
@@ -467,7 +458,6 @@ function Home({ estaLogueado }) {
                 </button>
               </div>
 
-              {/* titulo dinamico */}
               <span style={{
                 fontWeight: "bold", color: "#374151",
                 fontSize: esMobil ? "12px" : "15px",
@@ -482,7 +472,6 @@ function Home({ estaLogueado }) {
                 }
               </span>
 
-              {/* selector de vista - solo en escritorio */}
               {!esMobil && (
                 <select
                   value={vistaCalendario}
@@ -499,17 +488,13 @@ function Home({ estaLogueado }) {
                 </select>
               )}
 
-              {/* en movil botones de vista */}
               {esMobil && (
                 <div style={{ display: "flex", gap: "4px" }}>
                   <button
                     onClick={() => setVistaCalendario("Mes")}
                     style={{
-                      fontSize: "11px",
-                      padding: "4px 8px",
-                      borderRadius: "4px",
-                      border: "1px solid #d1d5db",
-                      cursor: "pointer",
+                      fontSize: "11px", padding: "4px 8px", borderRadius: "4px",
+                      border: "1px solid #d1d5db", cursor: "pointer",
                       fontFamily: "'Baloo Bhai 2', Helvetica",
                       backgroundColor: vistaCalendario === "Mes" ? "#b79868" : "white",
                       color: vistaCalendario === "Mes" ? "white" : "#6b7280"
@@ -520,11 +505,8 @@ function Home({ estaLogueado }) {
                   <button
                     onClick={() => setVistaCalendario("Semana")}
                     style={{
-                      fontSize: "11px",
-                      padding: "4px 8px",
-                      borderRadius: "4px",
-                      border: "1px solid #d1d5db",
-                      cursor: "pointer",
+                      fontSize: "11px", padding: "4px 8px", borderRadius: "4px",
+                      border: "1px solid #d1d5db", cursor: "pointer",
                       fontFamily: "'Baloo Bhai 2', Helvetica",
                       backgroundColor: vistaCalendario === "Semana" ? "#b79868" : "white",
                       color: vistaCalendario === "Semana" ? "white" : "#6b7280"
@@ -534,13 +516,11 @@ function Home({ estaLogueado }) {
                   </button>
                 </div>
               )}
-
             </div>
 
             {/* ── VISTA MES ───────────────────────────────── */}
             {vistaCalendario === "Mes" && (
               <>
-                {/* dias de la semana */}
                 <div style={{
                   display: "grid", gridTemplateColumns: "repeat(7, 1fr)",
                   textAlign: "center", borderBottom: "1px solid #e5e7eb"
@@ -555,10 +535,7 @@ function Home({ estaLogueado }) {
                   ))}
                 </div>
 
-                {/* grid dias */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
-
-                  {/* vacios antes del dia 1 */}
                   {[...Array(primerDiaMes())].map((_, i) => (
                     <div key={`vacio-${i}`} style={{
                       border: "1px solid #f3f4f6",
@@ -567,7 +544,6 @@ function Home({ estaLogueado }) {
                     }} />
                   ))}
 
-                  {/* dias del mes */}
                   {[...Array(diasEnMes())].map((_, i) => {
                     const dia = i + 1;
                     const evsDia = eventos.filter((e) => {
@@ -644,7 +620,6 @@ function Home({ estaLogueado }) {
             {/* ── VISTA SEMANA ─────────────────────────────── */}
             {vistaCalendario === "Semana" && (
               <>
-                {/* cabecera con dias de la semana y fechas */}
                 <div style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(7, 1fr)",
@@ -661,8 +636,7 @@ function Home({ estaLogueado }) {
                       <div
                         key={i}
                         style={{
-                          textAlign: "center",
-                          padding: "8px 4px",
+                          textAlign: "center", padding: "8px 4px",
                           borderRight: i < 6 ? "1px solid #f3f4f6" : "none",
                           backgroundColor: esHoy ? "#fdf6ec" : "transparent"
                         }}
@@ -688,7 +662,6 @@ function Home({ estaLogueado }) {
                   })}
                 </div>
 
-                {/* contenido de la semana - eventos por dia */}
                 <div style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(7, 1fr)",
@@ -714,10 +687,8 @@ function Home({ estaLogueado }) {
                         }}
                       >
                         {evsDia.length === 0 ? (
-                          // dia sin eventos
                           <div style={{ height: "100%" }} />
                         ) : (
-                          // eventos del dia
                           evsDia.map((ev) => (
                             <div
                               key={ev._id}
@@ -746,13 +717,10 @@ function Home({ estaLogueado }) {
                   })}
                 </div>
 
-                {/* mensaje si no hay eventos esta semana */}
                 {diasDeLaSemana().every((d) => eventosDelDia(d).length === 0) && (
                   <div style={{
-                    textAlign: "center",
-                    padding: "16px",
-                    color: "#818181",
-                    fontSize: "13px",
+                    textAlign: "center", padding: "16px",
+                    color: "#818181", fontSize: "13px",
                     fontFamily: "'Baloo Bhai 2', Helvetica",
                     borderTop: "1px solid #f3f4f6"
                   }}>
