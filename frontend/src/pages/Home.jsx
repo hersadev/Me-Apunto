@@ -227,6 +227,11 @@ function Home({ estaLogueado }) {
             <option value="taller">Taller</option>
             <option value="exposicion">Exposición</option>
             <option value="concurso">Concurso</option>
+            <option value="concierto">Concierto</option>
+            <option value="deporte">Deporte</option>
+            <option value="gastronomia">Gastronomía</option>
+            <option value="teatro">Teatro</option>
+            <option value="otros">Otros</option>
           </select>
 
           <select value={fecha} onChange={(e) => setFecha(e.target.value)} style={{
