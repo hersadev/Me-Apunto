@@ -77,13 +77,15 @@ function Home({ estaLogueado }) {
       if (tipo) params.tipo = tipo;
       if (categoria) params.categoria = categoria;
 
-      // peticion de eventos normales (no patrocinados)
-      const dataNormales = await eventoService.getEventos({ ...params, patrocinado: "false" });
+      // peticion de todos los eventos
+      const dataNormales = await eventoService.getEventos({ ...params });
 
       // peticion de eventos patrocinados - todos sin paginar
       const dataPatrocinados = await eventoService.getEventos({ limite: 100, patrocinado: "true" });
 
-      setEventos(dataNormales.eventos);
+      // filtramos los normales en el frontend
+      const normales = dataNormales.eventos.filter(e => !e.patrocinado);
+      setEventos(normales);
       setTotalPaginas(dataNormales.totalPaginas);
       setEventosPatrocinados(dataPatrocinados.eventos);
 
@@ -315,8 +317,8 @@ function Home({ estaLogueado }) {
                 </div>
 
                 <div style={{
-                  display: "flex", flexWrap: "nowrap", gap: "28px",
-                  justifyContent: "center", overflowX: "auto"
+                  display: "flex", flexWrap: "wrap", gap: "28px",
+                  justifyContent: "center"
                 }}>
                   {[...Array(Math.min(4, eventosPatrocinados.length))].map((_, i) => {
                     const idx = (indiceCarousel + i) % eventosPatrocinados.length;
