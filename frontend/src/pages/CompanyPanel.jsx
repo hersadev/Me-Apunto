@@ -16,19 +16,12 @@ function CompanyPanel({ setEstaLogueado }) {
 
   const navegar = useNavigate();
 
-  // datos de la empresa desde localStorage
   const empresa = authService.getEmpresa();
 
-  // lista de eventos de la empresa desde el backend
   const [eventos, setEventos] = useState([]);
-
-  // estado de carga
   const [cargando, setCargando] = useState(true);
-
-  // estado de error
   const [error, setError] = useState("");
 
-  // estado del formulario
   const [formularioAbierto, setFormularioAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
   const [formEvento, setFormEvento] = useState({
@@ -39,21 +32,17 @@ function CompanyPanel({ setEstaLogueado }) {
     fecha: "",
     hora: "",
     precio: 0,
+    categoria: "",
   });
 
-  // imagen seleccionada para subir
   const [imagenFile, setImagenFile] = useState(null);
-
-  // modales
   const [modalEliminar, setModalEliminar] = useState(null);
   const [modalPatrocinio, setModalPatrocinio] = useState(null);
 
-  // cargamos los eventos al montar el componente
   useEffect(() => {
     cargarEventos();
   }, []);
 
-  // funcion para cargar los eventos del backend
   const cargarEventos = async () => {
     try {
       setCargando(true);
@@ -67,7 +56,6 @@ function CompanyPanel({ setEstaLogueado }) {
     }
   };
 
-  // manejador de cambios del formulario
   const handleFormChange = (e) => {
     const { name, value, files } = e.target;
     if (name === "imagen") {
@@ -77,7 +65,6 @@ function CompanyPanel({ setEstaLogueado }) {
     }
   };
 
-  // abrir formulario para nuevo evento
   const abrirFormularioNuevo = () => {
     setEditandoId(null);
     setFormEvento({
@@ -88,6 +75,7 @@ function CompanyPanel({ setEstaLogueado }) {
       fecha: "",
       hora: "",
       precio: 0,
+      categoria: "",
     });
     setImagenFile(null);
     setFormularioAbierto(true);
@@ -96,7 +84,6 @@ function CompanyPanel({ setEstaLogueado }) {
     }, 100);
   };
 
-  // abrir formulario para editar evento
   const abrirFormularioEditar = (evento) => {
     setEditandoId(evento._id);
     setFormEvento({
@@ -107,6 +94,7 @@ function CompanyPanel({ setEstaLogueado }) {
       fecha: evento.fecha ? evento.fecha.split("T")[0] : "",
       hora: evento.hora,
       precio: evento.precio,
+      categoria: evento.categoria || "",
     });
     setImagenFile(null);
     setFormularioAbierto(true);
@@ -115,33 +103,26 @@ function CompanyPanel({ setEstaLogueado }) {
     }, 100);
   };
 
-  // enviar formulario - crear o editar
   const handleSubmitEvento = async (e) => {
     e.preventDefault();
     setError("");
 
     try {
       if (editandoId !== null) {
-        // editar evento existente
         await eventoService.editarEvento(editandoId, formEvento, imagenFile);
       } else {
-        // crear nuevo evento
         await eventoService.crearEvento(formEvento, imagenFile);
       }
 
-      // recargamos los eventos del backend
       await cargarEventos();
       setFormularioAbierto(false);
       setEditandoId(null);
 
     } catch (err) {
-      setError(
-        err.response?.data?.mensaje || "Error al guardar el evento"
-      );
+      setError(err.response?.data?.mensaje || "Error al guardar el evento");
     }
   };
 
-  // eliminar evento con confirmacion
   const eliminarEvento = async () => {
     try {
       await eventoService.eliminarEvento(modalEliminar);
@@ -152,21 +133,17 @@ function CompanyPanel({ setEstaLogueado }) {
     }
   };
 
-  // toggle patrocinio
   const confirmarPatrocinio = async () => {
-    // TODO: conectar con endpoint de patrocinio cuando este listo
     console.log("toggle patrocinio:", modalPatrocinio._id);
     setModalPatrocinio(null);
   };
 
-  // cerrar sesion
   const cerrarSesion = () => {
     authService.logout();
     setEstaLogueado(false);
     navegar("/");
   };
 
-  // estilos compartidos
   const estiloBotonPrimario = {
     backgroundColor: "#91703d",
     color: "white",
@@ -261,7 +238,6 @@ function CompanyPanel({ setEstaLogueado }) {
         padding: "40px 24px"
       }}>
 
-        {/* mensaje de error global */}
         {error && (
           <div style={{
             backgroundColor: "#fdecea",
@@ -280,7 +256,7 @@ function CompanyPanel({ setEstaLogueado }) {
           </div>
         )}
 
-        {/* seccion 1 - cabecera de empresa */}
+        {/* cabecera de empresa */}
         <div style={{
           backgroundColor: "#c9aa80",
           borderRadius: "20px",
@@ -293,7 +269,6 @@ function CompanyPanel({ setEstaLogueado }) {
           gap: "16px",
           boxShadow: "0 4px 16px rgba(0,0,0,0.1)"
         }}>
-
           <div>
             <h1 style={{
               fontFamily: "'Baloo Bhai 2', Helvetica",
@@ -315,7 +290,6 @@ function CompanyPanel({ setEstaLogueado }) {
           </div>
 
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-
             <button
               onClick={abrirFormularioNuevo}
               style={estiloBotonPrimario}
@@ -333,11 +307,10 @@ function CompanyPanel({ setEstaLogueado }) {
             >
               Cerrar sesión
             </button>
-
           </div>
         </div>
 
-        {/* seccion 2 - formulario de evento */}
+        {/* formulario de evento */}
         {formularioAbierto && (
           <div
             id="formulario-evento"
@@ -349,7 +322,6 @@ function CompanyPanel({ setEstaLogueado }) {
               boxShadow: "0 4px 16px rgba(0,0,0,0.1)"
             }}
           >
-
             <h2 style={{
               fontFamily: "'Baloo Bhai 2', Helvetica",
               fontSize: "22px",
@@ -458,6 +430,28 @@ function CompanyPanel({ setEstaLogueado }) {
                 />
               </div>
 
+              {/* categoria */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <label style={estiloLabel} htmlFor="categoria">Categoría</label>
+                <select
+                  id="categoria"
+                  name="categoria"
+                  value={formEvento.categoria}
+                  onChange={handleFormChange}
+                  style={estiloInput}
+                >
+                  <option value="">Sin categoría</option>
+                  <option value="taller">Taller</option>
+                  <option value="exposicion">Exposición</option>
+                  <option value="concurso">Concurso</option>
+                  <option value="concierto">Concierto</option>
+                  <option value="deporte">Deporte</option>
+                  <option value="gastronomia">Gastronomía</option>
+                  <option value="teatro">Teatro</option>
+                  <option value="otros">Otros</option>
+                </select>
+              </div>
+
               {/* imagen */}
               <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: "4px" }}>
                 <label style={estiloLabel} htmlFor="imagen">Imagen del evento</label>
@@ -514,7 +508,6 @@ function CompanyPanel({ setEstaLogueado }) {
                 justifyContent: "flex-end",
                 marginTop: "8px"
               }}>
-
                 <button
                   type="button"
                   onClick={() => setFormularioAbierto(false)}
@@ -533,16 +526,14 @@ function CompanyPanel({ setEstaLogueado }) {
                 >
                   {editandoId !== null ? "Guardar cambios" : "Publicar evento"}
                 </button>
-
               </div>
 
             </form>
           </div>
         )}
 
-        {/* seccion 3 - mis eventos */}
+        {/* mis eventos */}
         <div>
-
           <h2 style={{
             fontFamily: "'Baloo Bhai 2', Helvetica",
             fontSize: "22px",
@@ -553,7 +544,6 @@ function CompanyPanel({ setEstaLogueado }) {
             Mis eventos ({eventos.length})
           </h2>
 
-          {/* estado de carga */}
           {cargando && (
             <div style={{
               textAlign: "center",
@@ -566,7 +556,6 @@ function CompanyPanel({ setEstaLogueado }) {
             </div>
           )}
 
-          {/* mensaje si no hay eventos */}
           {!cargando && eventos.length === 0 && (
             <div style={{
               textAlign: "center",
@@ -580,14 +569,12 @@ function CompanyPanel({ setEstaLogueado }) {
             </div>
           )}
 
-          {/* grid de tarjetas */}
           {!cargando && (
             <div style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
               gap: "24px"
             }}>
-
               {eventos.map((evento) => (
                 <div
                   key={evento._id}
@@ -600,8 +587,6 @@ function CompanyPanel({ setEstaLogueado }) {
                     flexDirection: "column"
                   }}
                 >
-
-                  {/* imagen */}
                   <div style={{ width: "100%", height: "160px", overflow: "hidden" }}>
                     <img
                       src={evento.imagen
@@ -613,10 +598,8 @@ function CompanyPanel({ setEstaLogueado }) {
                     />
                   </div>
 
-                  {/* contenido */}
                   <div style={{ padding: "16px", flex: 1, display: "flex", flexDirection: "column", gap: "8px" }}>
 
-                    {/* titulo */}
                     <div style={{
                       fontFamily: "'Baloo Bhai 2', Helvetica",
                       fontSize: "15px",
@@ -627,7 +610,6 @@ function CompanyPanel({ setEstaLogueado }) {
                       {evento.titulo}
                     </div>
 
-                    {/* venue */}
                     <div style={{
                       fontFamily: "'Baloo Bhai 2', Helvetica",
                       fontSize: "13px",
@@ -636,7 +618,6 @@ function CompanyPanel({ setEstaLogueado }) {
                       {evento.venue}
                     </div>
 
-                    {/* fecha y hora */}
                     <div style={{
                       fontFamily: "'Baloo Bhai 2', Helvetica",
                       fontSize: "13px",
@@ -645,7 +626,24 @@ function CompanyPanel({ setEstaLogueado }) {
                       {new Date(evento.fecha).toLocaleDateString("es-ES")} — {evento.hora}
                     </div>
 
-                    {/* precio */}
+                    {/* categoria badge */}
+                    {evento.categoria && (
+                      <div style={{
+                        backgroundColor: "#f0e8dc",
+                        color: "#91703d",
+                        fontFamily: "'Baloo Bhai 2', Helvetica",
+                        fontSize: "11px",
+                        fontWeight: "700",
+                        padding: "3px 10px",
+                        borderRadius: "999px",
+                        display: "inline-block",
+                        alignSelf: "flex-start",
+                        textTransform: "capitalize"
+                      }}>
+                        {evento.categoria}
+                      </div>
+                    )}
+
                     <div style={{
                       fontFamily: "'Baloo Bhai 2', Helvetica",
                       fontSize: "13px",
@@ -655,7 +653,6 @@ function CompanyPanel({ setEstaLogueado }) {
                       {evento.precio === 0 ? "Gratuito" : `${evento.precio}€`}
                     </div>
 
-                    {/* badge patrocinado */}
                     {evento.patrocinado && (
                       <div style={{
                         backgroundColor: "#b79868",
@@ -672,12 +669,9 @@ function CompanyPanel({ setEstaLogueado }) {
                       </div>
                     )}
 
-                    {/* separador */}
                     <div style={{ height: "1px", backgroundColor: "#f0e8dc", margin: "4px 0" }} />
 
-                    {/* botones */}
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-
                       <div style={{ display: "flex", gap: "8px" }}>
                         <button
                           onClick={() => abrirFormularioEditar(evento)}
@@ -710,12 +704,10 @@ function CompanyPanel({ setEstaLogueado }) {
                       >
                         {evento.patrocinado ? "⭐ Desactivar patrocinio" : "⭐ Activar patrocinio (10€/mes)"}
                       </button>
-
                     </div>
                   </div>
                 </div>
               ))}
-
             </div>
           )}
         </div>
@@ -729,44 +721,32 @@ function CompanyPanel({ setEstaLogueado }) {
         <div
           onClick={() => setModalEliminar(null)}
           style={{
-            position: "fixed",
-            inset: 0,
+            position: "fixed", inset: 0,
             backgroundColor: "rgba(0,0,0,0.65)",
-            zIndex: 100,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "16px"
+            zIndex: 100, display: "flex",
+            alignItems: "center", justifyContent: "center", padding: "16px"
           }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              backgroundColor: "#f0e8dc",
-              borderRadius: "20px",
-              padding: "36px",
-              maxWidth: "420px",
-              width: "100%",
-              textAlign: "center",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
+              backgroundColor: "#f0e8dc", borderRadius: "20px",
+              padding: "36px", maxWidth: "420px", width: "100%",
+              textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
             }}
           >
             <div style={{ fontSize: "48px", marginBottom: "16px" }}>⚠️</div>
             <h3 style={{
               fontFamily: "'Baloo Bhai 2', Helvetica",
-              fontSize: "20px",
-              fontWeight: "700",
-              color: "#1a1a1a",
-              marginBottom: "12px"
+              fontSize: "20px", fontWeight: "700",
+              color: "#1a1a1a", marginBottom: "12px"
             }}>
               ¿Eliminar este evento?
             </h3>
             <p style={{
               fontFamily: "'Baloo Bhai 2', Helvetica",
-              fontSize: "15px",
-              color: "#4a4a4a",
-              marginBottom: "24px",
-              lineHeight: "1.5"
+              fontSize: "15px", color: "#4a4a4a",
+              marginBottom: "24px", lineHeight: "1.5"
             }}>
               Esta acción no se puede deshacer. El evento se eliminará permanentemente.
             </p>
@@ -797,35 +777,25 @@ function CompanyPanel({ setEstaLogueado }) {
         <div
           onClick={() => setModalPatrocinio(null)}
           style={{
-            position: "fixed",
-            inset: 0,
+            position: "fixed", inset: 0,
             backgroundColor: "rgba(0,0,0,0.65)",
-            zIndex: 100,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "16px"
+            zIndex: 100, display: "flex",
+            alignItems: "center", justifyContent: "center", padding: "16px"
           }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              backgroundColor: "#f0e8dc",
-              borderRadius: "20px",
-              padding: "36px",
-              maxWidth: "440px",
-              width: "100%",
-              textAlign: "center",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
+              backgroundColor: "#f0e8dc", borderRadius: "20px",
+              padding: "36px", maxWidth: "440px", width: "100%",
+              textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
             }}
           >
             <div style={{ fontSize: "48px", marginBottom: "16px" }}>⭐</div>
             <h3 style={{
               fontFamily: "'Baloo Bhai 2', Helvetica",
-              fontSize: "20px",
-              fontWeight: "700",
-              color: "#1a1a1a",
-              marginBottom: "12px"
+              fontSize: "20px", fontWeight: "700",
+              color: "#1a1a1a", marginBottom: "12px"
             }}>
               {modalPatrocinio.patrocinado
                 ? "¿Desactivar el patrocinio?"
@@ -833,10 +803,8 @@ function CompanyPanel({ setEstaLogueado }) {
             </h3>
             <p style={{
               fontFamily: "'Baloo Bhai 2', Helvetica",
-              fontSize: "15px",
-              color: "#4a4a4a",
-              marginBottom: "24px",
-              lineHeight: "1.5"
+              fontSize: "15px", color: "#4a4a4a",
+              marginBottom: "24px", lineHeight: "1.5"
             }}>
               {modalPatrocinio.patrocinado
                 ? "El evento dejará de aparecer en la sección destacada al finalizar el período mensual."
@@ -844,16 +812,12 @@ function CompanyPanel({ setEstaLogueado }) {
             </p>
             {!modalPatrocinio.patrocinado && (
               <div style={{
-                backgroundColor: "#e8f5e9",
-                borderRadius: "8px",
-                padding: "10px 16px",
-                marginBottom: "20px"
+                backgroundColor: "#e8f5e9", borderRadius: "8px",
+                padding: "10px 16px", marginBottom: "20px"
               }}>
                 <span style={{
                   fontFamily: "'Baloo Bhai 2', Helvetica",
-                  fontSize: "16px",
-                  fontWeight: "700",
-                  color: "#2e7d32"
+                  fontSize: "16px", fontWeight: "700", color: "#2e7d32"
                 }}>
                   10€ / mes por este evento
                 </span>

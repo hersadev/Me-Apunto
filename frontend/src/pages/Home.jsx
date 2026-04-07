@@ -403,9 +403,9 @@ function Home({ estaLogueado }) {
           </>
         )}
 
-        {/* calendario */}
+       {/* calendario */}
         <div style={{ marginTop: "40px", marginBottom: "16px" }}>
-          <div style={{
+          <div translate="no" style={{
             width: "100%", maxWidth: "700px", margin: "0 auto",
             backgroundColor: "white", borderRadius: "12px",
             boxShadow: "0 2px 8px rgba(0,0,0,0.1)", overflow: "hidden"
@@ -491,7 +491,7 @@ function Home({ estaLogueado }) {
                   display: "grid", gridTemplateColumns: "repeat(7, 1fr)",
                   textAlign: "center", borderBottom: "1px solid #e5e7eb"
                 }}>
-                  {["L", "M", "X", "J", "V", "S", "D"].map((dia) => (
+                  {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((dia) => (
                     <div key={dia} style={{
                       fontSize: "11px", fontWeight: "600", color: "#6b7280",
                       padding: "8px 0", fontFamily: "'Baloo Bhai 2', Helvetica"
