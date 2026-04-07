@@ -57,6 +57,13 @@ function Home({ estaLogueado }) {
     cargarEventos();
   }, [paginaActual, tipo]);
 
+  // recarga cuando se limpian todos los filtros
+  useEffect(() => {
+    if (!busqueda && !categoria && !fecha && !tipo) {
+      cargarEventos();
+    }
+  }, [busqueda, categoria, fecha, tipo]);
+
   const cargarEventos = async () => {
     try {
       setCargando(true);
@@ -68,10 +75,7 @@ function Home({ estaLogueado }) {
       if (categoria) params.categoria = categoria;
       if (fecha) params.fecha = fecha;
 
-      // peticion de eventos normales (no patrocinados) - el backend filtra
       const dataNormales = await eventoService.getEventos({ ...params, patrocinado: "false" });
-
-      // peticion de eventos patrocinados - todos sin paginar
       const dataPatrocinados = await eventoService.getEventos({ limite: 100, patrocinado: "true" });
 
       setEventos(dataNormales.eventos);
@@ -90,6 +94,16 @@ function Home({ estaLogueado }) {
     setPaginaActual(1);
     cargarEventos();
   };
+
+  const limpiarFiltros = () => {
+    setBusqueda("");
+    setCategoria("");
+    setFecha("");
+    setTipo("");
+    setPaginaActual(1);
+  };
+
+  const hayFiltros = busqueda || categoria || fecha || tipo;
 
   const mesPrevio = () => {
     if (mesCalendario === 0) {
@@ -269,6 +283,34 @@ function Home({ estaLogueado }) {
           >
             Aplicar filtros
           </button>
+
+          {hayFiltros && (
+            <button
+              onClick={limpiarFiltros}
+              style={{
+                backgroundColor: "transparent",
+                color: "#c0392b",
+                fontWeight: "bold",
+                fontSize: esMobil ? "14px" : "18px",
+                padding: esMobil ? "6px 12px" : "8px 20px",
+                borderRadius: "999px",
+                border: "2px solid #c0392b",
+                cursor: "pointer",
+                fontFamily: "'Baloo Bhai 2', Helvetica",
+                transition: "all 0.15s ease"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#c0392b";
+                e.currentTarget.style.color = "white";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+                e.currentTarget.style.color = "#c0392b";
+              }}
+            >
+              ✕ Limpiar filtros
+            </button>
+          )}
         </div>
 
         {/* estado de carga */}
@@ -294,10 +336,9 @@ function Home({ estaLogueado }) {
         {/* eventos */}
         {!cargando && !error && (
           <>
-            {/* ── FILA PATROCINADOS - solo aparece si hay patrocinados ── */}
+            {/* ── FILA PATROCINADOS ── */}
             {eventosPatrocinados.length > 0 && (
               <div style={{ marginBottom: "48px" }}>
-
                 <div style={{
                   display: "flex", alignItems: "center",
                   justifyContent: "center", gap: "8px", marginBottom: "24px"
@@ -310,16 +351,10 @@ function Home({ estaLogueado }) {
                   </span>
                 </div>
 
-                {/* scroll horizontal con el raton */}
                 <div style={{
-                  display: "flex",
-                  gap: "28px",
-                  overflowX: "auto",
-                  paddingBottom: "12px",
-                  paddingLeft: "8px",
-                  paddingRight: "8px",
-                  scrollbarWidth: "thin",
-                  scrollbarColor: "#b79868 #f0e8dc",
+                  display: "flex", gap: "28px", overflowX: "auto",
+                  paddingBottom: "12px", paddingLeft: "8px", paddingRight: "8px",
+                  scrollbarWidth: "thin", scrollbarColor: "#b79868 #f0e8dc",
                   justifyContent: eventosPatrocinados.length <= 4 ? "center" : "flex-start"
                 }}>
                   {eventosPatrocinados.map((evento) => (
@@ -409,7 +444,7 @@ function Home({ estaLogueado }) {
           </>
         )}
 
-       {/* calendario */}
+        {/* calendario */}
         <div style={{ marginTop: "40px", marginBottom: "16px" }}>
           <div translate="no" style={{
             width: "100%", maxWidth: "700px", margin: "0 auto",
