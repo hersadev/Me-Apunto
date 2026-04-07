@@ -76,6 +76,7 @@ function Home({ estaLogueado }) {
       const data = await eventoService.getEventos(params);
       setEventos(data.eventos);
       setTotalPaginas(data.totalPaginas);
+      console.log("totalPaginas:", data.totalPaginas);
     } catch (err) {
       setError("Error al cargar los eventos");
       console.error(err);
