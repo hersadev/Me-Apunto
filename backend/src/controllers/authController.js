@@ -4,6 +4,7 @@
 
 const Empresa = require("../models/Empresa");
 const jwt = require("jsonwebtoken");
+const { enviarCorreoBienvenida } = require("../services/emailService");
 
 // funcion para generar el token JWT
 // recibe el id de la empresa y devuelve el token firmado
@@ -60,6 +61,16 @@ const registrarEmpresa = async (req, res) => {
       contrasena,
       nifCif: nifCif.toUpperCase(),
     });
+
+    // enviamos correo de bienvenida - si falla no interrumpimos el registro
+    try {
+      await enviarCorreoBienvenida({
+        correoEmpresa: correo,
+        nombreEmpresa: nombre,
+      });
+    } catch (errorCorreo) {
+      console.error("Error al enviar correo de bienvenida:", errorCorreo.message);
+    }
 
     // devolvemos el token y los datos basicos de la empresa
     res.status(201).json({

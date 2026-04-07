@@ -100,40 +100,53 @@ const enviarCorreoAvisoRenovacion = async ({
   console.log(`Correo de aviso de renovacion enviado a ${correoEmpresa}`);
 };
 
-// correo de contacto - se envia a juanjosehersa@gmail.com
-const enviarCorreoContacto = async ({ nombre, email, asunto, contexto }) => {
+// correo de bienvenida que se envia a la empresa cuando se registra
+const enviarCorreoBienvenida = async ({ correoEmpresa, nombreEmpresa }) => {
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <div style="background-color: #b79868; padding: 24px; text-align: center; border-radius: 12px 12px 0 0;">
         <h1 style="color: white; margin: 0; font-size: 24px;">Me Apunto</h1>
-        <p style="color: white; margin: 8px 0 0 0; font-size: 14px;">Nuevo mensaje de contacto</p>
+        <p style="color: white; margin: 8px 0 0 0; font-size: 14px;">¡Bienvenida a la plataforma!</p>
       </div>
       <div style="background-color: #f0e8dc; padding: 32px; border-radius: 0 0 12px 12px;">
-        <div style="background-color: white; border-radius: 8px; padding: 20px;">
-          <p style="margin: 8px 0; color: #333;"><strong>Nombre:</strong> ${nombre}</p>
-          <p style="margin: 8px 0; color: #333;"><strong>Email:</strong> ${email}</p>
-          <p style="margin: 8px 0; color: #333;"><strong>Asunto:</strong> ${asunto}</p>
-          <p style="margin: 8px 0; color: #333;"><strong>Mensaje:</strong></p>
-          <p style="margin: 8px 0; color: #333; white-space: pre-wrap;">${contexto}</p>
+        <p style="font-size: 16px; color: #333;">Hola <strong>${nombreEmpresa}</strong>,</p>
+        <p style="font-size: 16px; color: #333;">
+          Tu cuenta ha sido creada correctamente en <strong>Me Apunto</strong>. 
+          Ya puedes empezar a publicar tus eventos y llegar a más personas.
+        </p>
+        <div style="background-color: white; border-radius: 8px; padding: 20px; margin: 20px 0;">
+          <h3 style="color: #91703d; margin: 0 0 12px 0;">¿Qué puedes hacer ahora?</h3>
+          <p style="margin: 8px 0; color: #333;">✓ Publicar eventos gratuitos o de pago</p>
+          <p style="margin: 8px 0; color: #333;">✓ Subir imágenes para tus eventos</p>
+          <p style="margin: 8px 0; color: #333;">✓ Recibir inscripciones de usuarios</p>
+          <p style="margin: 8px 0; color: #333;">✓ Promocionar tus eventos con patrocinio</p>
         </div>
+        <div style="text-align: center; margin: 24px 0;">
+          <a href="${process.env.FRONTEND_URL}/panel" style="background-color: #91703d; color: white; padding: 12px 32px; border-radius: 999px; text-decoration: none; font-weight: bold; font-size: 16px;">
+            Ir a mi panel
+          </a>
+        </div>
+        <p style="font-size: 14px; color: #818181; margin-top: 24px;">
+          Si tienes alguna pregunta puedes contactarnos desde la web.
+        </p>
       </div>
     </div>
   `;
 
   await resend.emails.send({
     from: "Me Apunto <onboarding@resend.dev>",
-    to: "juanjosehersa@gmail.com",
-    subject: `Contacto web: ${asunto}`,
-    reply_to: email,
+    to: correoEmpresa,
+    subject: "¡Bienvenida a Me Apunto!",
     html,
   });
 
-  console.log(`Correo de contacto enviado de ${email}`);
+  console.log(`Correo de bienvenida enviado a ${correoEmpresa}`);
 };
 
 module.exports = {
   enviarCorreoInscripcion,
   enviarCorreoAvisoRenovacion,
   enviarCorreoContacto,
+  enviarCorreoBienvenida,
 };
