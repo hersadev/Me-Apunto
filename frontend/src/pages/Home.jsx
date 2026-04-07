@@ -342,7 +342,7 @@ function Home({ estaLogueado }) {
               </div>
             )}
 
-            {totalPaginas > 1 && (
+            {true && (
               <div style={{
                 display: "flex", justifyContent: "center",
                 alignItems: "center", gap: "8px", margin: "16px 0"
