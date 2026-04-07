@@ -33,6 +33,7 @@ function CompanyPanel({ setEstaLogueado }) {
     hora: "",
     precio: 0,
     categoria: "",
+    maxPersonasPorInscripcion: "",
   });
 
   const [imagenFile, setImagenFile] = useState(null);
@@ -76,6 +77,7 @@ function CompanyPanel({ setEstaLogueado }) {
       hora: "",
       precio: 0,
       categoria: "",
+      maxPersonasPorInscripcion: "",
     });
     setImagenFile(null);
     setFormularioAbierto(true);
@@ -84,24 +86,25 @@ function CompanyPanel({ setEstaLogueado }) {
     }, 100);
   };
 
-  const abrirFormularioEditar = (evento) => {
-    setEditandoId(evento._id);
-    setFormEvento({
-      titulo: evento.titulo,
-      descripcion: evento.descripcion || "",
-      venue: evento.venue,
-      direccion: evento.direccion || "",
-      fecha: evento.fecha ? evento.fecha.split("T")[0] : "",
-      hora: evento.hora,
-      precio: evento.precio,
-      categoria: evento.categoria || "",
-    });
-    setImagenFile(null);
-    setFormularioAbierto(true);
-    setTimeout(() => {
-      document.getElementById("formulario-evento")?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
-  };
+const abrirFormularioEditar = (evento) => {
+  setEditandoId(evento._id);
+  setFormEvento({
+    titulo: evento.titulo,
+    descripcion: evento.descripcion || "",
+    venue: evento.venue,
+    direccion: evento.direccion || "",
+    fecha: evento.fecha ? evento.fecha.split("T")[0] : "",
+    hora: evento.hora,
+    precio: evento.precio,
+    categoria: evento.categoria || "",
+    maxPersonasPorInscripcion: evento.maxPersonasPorInscripcion || "",
+  });
+  setImagenFile(null);
+  setFormularioAbierto(true);
+  setTimeout(() => {
+    document.getElementById("formulario-evento")?.scrollIntoView({ behavior: "smooth" });
+  }, 100);
+};
 
   const handleSubmitEvento = async (e) => {
     e.preventDefault();
@@ -451,6 +454,28 @@ function CompanyPanel({ setEstaLogueado }) {
                   <option value="otros">Otros</option>
                 </select>
               </div>
+              {/* limite de personas por inscripcion */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <label style={estiloLabel} htmlFor="maxPersonasPorInscripcion">
+                    Límite de personas por inscripción
+                  </label>
+                  <span style={{
+                    fontFamily: "'Baloo Bhai 2', Helvetica",
+                    fontSize: "13px", color: "#4a4a4a", marginBottom: "4px"
+                  }}>
+                    Déjalo vacío para sin límite
+                  </span>
+                  <input
+                    id="maxPersonasPorInscripcion"
+                    type="number"
+                    name="maxPersonasPorInscripcion"
+                    value={formEvento.maxPersonasPorInscripcion}
+                    onChange={handleFormChange}
+                    min="1"
+                    placeholder="Sin límite"
+                    style={estiloInput}
+                  />
+                </div>
 
               {/* imagen */}
               <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: "4px" }}>
