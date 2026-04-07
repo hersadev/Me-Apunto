@@ -169,6 +169,14 @@ function EventDetail({ estaLogueado }) {
 
       <Helmet>
         <title>{evento.titulo} | Me Apunto</title>
+        <meta name="description" content={`${evento.descripcion?.substring(0, 155)}...`} />
+        <meta property="og:title" content={`${evento.titulo} | Me Apunto`} />
+        <meta property="og:description" content={evento.descripcion?.substring(0, 155)} />
+        <meta property="og:type" content="event" />
+        <meta property="og:url" content={`https://me-apunto-alpha.vercel.app/evento/${evento._id}`} />
+        {evento.imagen && <meta property="og:image" content={evento.imagen} />}
+        <meta name="robots" content="index, follow" />
+        <html lang="es" />
       </Helmet>
 
       {/* hero con navbar */}

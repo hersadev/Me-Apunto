@@ -63,7 +63,14 @@
         }}>
 
         <Helmet>
-            <title>Acceso Empresas | Me Apunto</title>
+        <title>Acceso Empresas | Me Apunto</title>
+        <meta name="description" content="Accede a tu panel de empresa en Me Apunto para gestionar tus eventos y ver las inscripciones recibidas." />
+        <meta property="og:title" content="Acceso Empresas | Me Apunto" />
+        <meta property="og:description" content="Accede a tu panel de empresa en Me Apunto." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://me-apunto-alpha.vercel.app/login" />
+        <meta name="robots" content="noindex, nofollow" />
+        <html lang="es" />
         </Helmet>
 
         <div style={{ position: "relative" }}>

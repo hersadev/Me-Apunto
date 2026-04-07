@@ -92,7 +92,14 @@
         }}>
 
         <Helmet>
-            <title>Contacto | Me Apunto</title>
+        <title>Contacto | Me Apunto</title>
+        <meta name="description" content="¿Tienes alguna pregunta o sugerencia sobre Me Apunto? Escríbenos y te responderemos lo antes posible." />
+        <meta property="og:title" content="Contacto | Me Apunto" />
+        <meta property="og:description" content="Contacta con el equipo de Me Apunto. Estamos aquí para ayudarte." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://me-apunto-alpha.vercel.app/contacto" />
+        <meta name="robots" content="index, follow" />
+        <html lang="es" />
         </Helmet>
 
         {/* hero con navbar */}

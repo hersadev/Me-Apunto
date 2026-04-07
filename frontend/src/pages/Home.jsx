@@ -192,7 +192,15 @@ function Home({ estaLogueado }) {
     <div style={{ minHeight: "100vh", backgroundColor: "#f0e8dc", display: "flex", flexDirection: "column" }}>
 
       <Helmet>
-        <title>Me Apunto | Eventos</title>
+        <title>Me Apunto | Descubre eventos cerca de ti</title>
+        <meta name="description" content="Descubre y apúntate a los mejores eventos de tu ciudad. Talleres, exposiciones, conciertos y mucho más. Gratis o de pago." />
+        <meta name="keywords" content="eventos, talleres, exposiciones, conciertos, actividades, ocio, cultura" />
+        <meta property="og:title" content="Me Apunto | Descubre eventos cerca de ti" />
+        <meta property="og:description" content="Descubre y apúntate a los mejores eventos de tu ciudad." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://me-apunto-alpha.vercel.app" />
+        <meta name="robots" content="index, follow" />
+        <html lang="es" />
       </Helmet>
 
       <div style={{ position: "relative" }}>

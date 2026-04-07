@@ -93,6 +93,13 @@ function Register() {
 
       <Helmet>
         <title>Registro de Empresa | Me Apunto</title>
+        <meta name="description" content="Registra tu empresa en Me Apunto y empieza a publicar eventos para llegar a más personas. Gratuito y sin complicaciones." />
+        <meta property="og:title" content="Registro de Empresa | Me Apunto" />
+        <meta property="og:description" content="Registra tu empresa y publica tus eventos en Me Apunto." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://me-apunto-alpha.vercel.app/register" />
+        <meta name="robots" content="index, follow" />
+        <html lang="es" />
       </Helmet>
 
       <div style={{ position: "relative" }}>

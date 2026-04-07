@@ -239,6 +239,13 @@ function CompanyPanel({ setEstaLogueado }) {
 
       <Helmet>
         <title>Mi Panel | Me Apunto</title>
+        <meta name="description" content="Gestiona tus eventos, consulta las inscripciones y activa el patrocinio de tus eventos en Me Apunto." />
+        <meta property="og:title" content="Panel de Empresa | Me Apunto" />
+        <meta property="og:description" content="Gestiona tus eventos en Me Apunto." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://me-apunto-alpha.vercel.app/panel" />
+        <meta name="robots" content="noindex, nofollow" />
+        <html lang="es" />
       </Helmet>
 
       <div style={{ position: "relative" }}>
