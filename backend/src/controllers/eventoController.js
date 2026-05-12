@@ -15,6 +15,36 @@ const obtenerEventos = async (req, res) => {
     const saltar = (pagina - 1) * limite;
 
     const filtro = { activo: true };
+    const condicionesFecha = [];
+
+    // filtrar eventos que no hayan pasado todavia
+    const ahora = new Date();
+    condicionesFecha.push({ fecha: { $gte: ahora } });
+
+    // filtro por fecha
+    if (req.query.fecha) {
+      const hoy = new Date();
+
+      if (req.query.fecha === "hoy") {
+        const manana = new Date(hoy);
+        manana.setDate(hoy.getDate() + 1);
+        condicionesFecha.push({ fecha: { $gte: ahora, $lt: manana } });
+
+      } else if (req.query.fecha === "semana") {
+        const finSemana = new Date(hoy);
+        finSemana.setDate(hoy.getDate() + 7);
+        condicionesFecha.push({ fecha: { $gte: ahora, $lt: finSemana } });
+
+      } else if (req.query.fecha === "mes") {
+        const finMes = new Date(hoy);
+        finMes.setMonth(hoy.getMonth() + 1);
+        condicionesFecha.push({ fecha: { $gte: ahora, $lt: finMes } });
+      }
+    }
+
+    if (condicionesFecha.length > 0) {
+      filtro.$and = condicionesFecha;
+    }
 
     if (req.query.categoria) {
       filtro.categoria = req.query.categoria;
@@ -40,28 +70,6 @@ const obtenerEventos = async (req, res) => {
         { venue: { $regex: req.query.busqueda, $options: "i" } },
       ];
     }
-
-    // filtro por fecha
-if (req.query.fecha) {
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-
-  if (req.query.fecha === "hoy") {
-    const manana = new Date(hoy);
-    manana.setDate(hoy.getDate() + 1);
-    filtro.fecha = { $gte: hoy, $lt: manana };
-
-  } else if (req.query.fecha === "semana") {
-    const finSemana = new Date(hoy);
-    finSemana.setDate(hoy.getDate() + 7);
-    filtro.fecha = { $gte: hoy, $lt: finSemana };
-
-  } else if (req.query.fecha === "mes") {
-    const finMes = new Date(hoy);
-    finMes.setMonth(hoy.getMonth() + 1);
-    filtro.fecha = { $gte: hoy, $lt: finMes };
-  }
-}
 
     const eventos = await Evento.find(filtro)
       .populate("empresa", "nombre correo")
@@ -105,16 +113,25 @@ const obtenerEventoPorId = async (req, res) => {
 };
 
 // GET /api/eventos/empresa/mis-eventos
-// devuelve todos los eventos de la empresa logueada
+// devuelve todos los eventos de la empresa logueada separados por activos y pasados
 // ruta protegida
 const obtenerEventosEmpresa = async (req, res) => {
   try {
-    const eventos = await Evento.find({
-      empresa: req.empresa._id,
-      activo: true
-    }).sort({ createdAt: -1 });
+    const ahora = new Date();
 
-    res.json({ eventos });
+    const eventosActivos = await Evento.find({
+      empresa: req.empresa._id,
+      activo: true,
+      fecha: { $gte: ahora }
+    }).sort({ fecha: 1 });
+
+    const eventosPasados = await Evento.find({
+      empresa: req.empresa._id,
+      activo: true,
+      fecha: { $lt: ahora }
+    }).sort({ fecha: -1 });
+
+    res.json({ eventosActivos, eventosPasados });
 
   } catch (error) {
     console.error("Error al obtener eventos de empresa:", error);

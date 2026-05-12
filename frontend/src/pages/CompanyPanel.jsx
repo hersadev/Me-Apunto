@@ -18,7 +18,8 @@ function CompanyPanel({ setEstaLogueado }) {
 
   const empresa = authService.getEmpresa();
 
-  const [eventos, setEventos] = useState([]);
+  const [eventosActivos, setEventosActivos] = useState([]);
+  const [eventosPasados, setEventosPasados] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
 
@@ -48,7 +49,8 @@ function CompanyPanel({ setEstaLogueado }) {
     try {
       setCargando(true);
       const data = await eventoService.getMisEventos();
-      setEventos(data.eventos);
+      setEventosActivos(data.eventosActivos);
+      setEventosPasados(data.eventosPasados);
     } catch (err) {
       setError("Error al cargar los eventos");
       console.error(err);
@@ -566,7 +568,7 @@ const abrirFormularioEditar = (evento) => {
             color: "#1a1a1a",
             marginBottom: "20px"
           }}>
-            Mis eventos ({eventos.length})
+            Mis eventos ({eventosActivos.length})
           </h2>
 
           {cargando && (
@@ -581,7 +583,7 @@ const abrirFormularioEditar = (evento) => {
             </div>
           )}
 
-          {!cargando && eventos.length === 0 && (
+          {!cargando && eventosActivos.length === 0 && (
             <div style={{
               textAlign: "center",
               padding: "48px 0",
@@ -594,13 +596,13 @@ const abrirFormularioEditar = (evento) => {
             </div>
           )}
 
-          {!cargando && (
+          {!cargando && eventosActivos.length > 0 && (
             <div style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
               gap: "24px"
             }}>
-              {eventos.map((evento) => (
+              {eventosActivos.map((evento) => (
                 <div
                   key={evento._id}
                   style={{
@@ -734,6 +736,102 @@ const abrirFormularioEditar = (evento) => {
                 </div>
               ))}
             </div>
+          )}
+
+          {/* Eventos pasados */}
+          {!cargando && eventosPasados.length > 0 && (
+            <>
+              <h2 style={{
+                fontFamily: "'Baloo Bhai 2', Helvetica",
+                fontSize: "22px",
+                fontWeight: "700",
+                color: "#1a1a1a",
+                marginTop: "40px",
+                marginBottom: "20px"
+              }}>
+                Eventos pasados ({eventosPasados.length})
+              </h2>
+
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+                gap: "24px",
+                opacity: 0.75
+              }}>
+                {eventosPasados.map((evento) => (
+                  <div
+                    key={evento._id}
+                    style={{
+                      backgroundColor: "#f5f5f5",
+                      borderRadius: "16px",
+                      overflow: "hidden",
+                      boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+                      display: "flex",
+                      flexDirection: "column"
+                    }}
+                  >
+                    <div style={{ width: "100%", height: "160px", overflow: "hidden" }}>
+                      <img
+                        src={evento.imagen
+                          ? evento.imagen
+                          : `https://picsum.photos/seed/${evento._id}/400/300`
+                        }
+                        alt={evento.titulo}
+                        style={{ width: "100%", height: "100%", objectFit: "cover", filter: "grayscale(30%)" }}
+                      />
+                    </div>
+
+                    <div style={{ padding: "16px", flex: 1, display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <div style={{
+                        fontFamily: "'Baloo Bhai 2', Helvetica",
+                        fontSize: "15px",
+                        fontWeight: "700",
+                        color: "#1a1a1a",
+                        lineHeight: "1.3"
+                      }}>
+                        {evento.titulo}
+                      </div>
+
+                      <div style={{
+                        fontFamily: "'Baloo Bhai 2', Helvetica",
+                        fontSize: "13px",
+                        color: "#818181"
+                      }}>
+                        📅 {new Date(evento.fecha).toLocaleDateString("es-ES")}
+                        {evento.hora && ` · ${evento.hora.slice(0, 5)}`}
+                      </div>
+
+                      <div style={{
+                        fontFamily: "'Baloo Bhai 2', Helvetica",
+                        fontSize: "13px",
+                        color: "#818181"
+                      }}>
+                        📍 {evento.venue}
+                      </div>
+
+                      {evento.inscripciones && (
+                        <div style={{
+                          fontFamily: "'Baloo Bhai 2', Helvetica",
+                          fontSize: "13px",
+                          color: "#818181"
+                        }}>
+                          👥 {evento.inscripciones.length} inscripciones
+                        </div>
+                      )}
+
+                      <div style={{
+                        fontFamily: "'Baloo Bhai 2', Helvetica",
+                        fontSize: "12px",
+                        color: "#a0a0a0",
+                        fontStyle: "italic"
+                      }}>
+                        Este evento ha finalizado
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
 
