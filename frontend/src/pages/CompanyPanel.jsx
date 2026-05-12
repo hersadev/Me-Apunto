@@ -143,8 +143,8 @@ const abrirFormularioEditar = (evento) => {
     setModalPatrocinio(null);
   };
 
-  const cerrarSesion = () => {
-    authService.logout();
+  const cerrarSesion = async () => {
+    await authService.logout();
     setEstaLogueado(false);
     navegar("/");
   };

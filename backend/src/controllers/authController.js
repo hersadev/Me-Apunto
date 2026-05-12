@@ -1,62 +1,43 @@
-// controlador de autenticacion
-// gestiona el registro y login de empresas
-// usa JWT para la autenticacion
-
 const Empresa = require("../models/Empresa");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const { enviarCorreoBienvenida, enviarCorreoRecuperacion } = require("../services/emailService");
 
-// funcion para generar el token JWT
-// recibe el id de la empresa y devuelve el token firmado
+const COOKIE_OPTS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días en ms
+};
+
 const generarToken = (id) => {
-  return jwt.sign(
-    { id },
-    process.env.JWT_SECRET,
-    // el token expira en 30 dias
-    { expiresIn: "30d" }
-  );
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
 
 // POST /api/auth/register
-// registra una nueva empresa en la plataforma
 const registrarEmpresa = async (req, res) => {
   try {
     const { nombre, correo, contrasena, nifCif } = req.body;
 
-    // comprobamos que todos los campos esten presentes
     if (!nombre || !correo || !contrasena || !nifCif) {
-      return res.status(400).json({
-        mensaje: "Todos los campos son obligatorios"
-      });
+      return res.status(400).json({ mensaje: "Todos los campos son obligatorios" });
     }
 
-    // comprobamos que no existe ya una empresa con ese correo
     const empresaExistente = await Empresa.findOne({ correo });
     if (empresaExistente) {
-      return res.status(400).json({
-        mensaje: "Ya existe una cuenta con ese correo"
-      });
+      return res.status(400).json({ mensaje: "Ya existe una cuenta con ese correo" });
     }
 
-    // comprobamos que no existe ya una empresa con ese nif/cif
     const nifCifExistente = await Empresa.findOne({ nifCif: nifCif.toUpperCase() });
     if (nifCifExistente) {
-      return res.status(400).json({
-        mensaje: "Ya existe una cuenta con ese NIF/CIF"
-      });
+      return res.status(400).json({ mensaje: "Ya existe una cuenta con ese NIF/CIF" });
     }
 
-    // comprobamos que la contraseña tenga al menos 6 caracteres
     if (contrasena.length < 6) {
-      return res.status(400).json({
-        mensaje: "La contraseña debe tener al menos 6 caracteres"
-      });
+      return res.status(400).json({ mensaje: "La contraseña debe tener al menos 6 caracteres" });
     }
 
-    // creamos la empresa - la contraseña se hashea automaticamente
-    // gracias al middleware pre-save del modelo
     const empresa = await Empresa.create({
       nombre,
       correo,
@@ -64,20 +45,16 @@ const registrarEmpresa = async (req, res) => {
       nifCif: nifCif.toUpperCase(),
     });
 
-    // enviamos correo de bienvenida - si falla no interrumpimos el registro
     try {
-      await enviarCorreoBienvenida({
-        correoEmpresa: correo,
-        nombreEmpresa: nombre,
-      });
+      await enviarCorreoBienvenida({ correoEmpresa: correo, nombreEmpresa: nombre });
     } catch (errorCorreo) {
       console.error("Error al enviar correo de bienvenida:", errorCorreo.message);
     }
 
-    // devolvemos el token y los datos basicos de la empresa
+    res.cookie("token", generarToken(empresa._id), COOKIE_OPTS);
+
     res.status(201).json({
       mensaje: "Empresa registrada correctamente",
-      token: generarToken(empresa._id),
       empresa: {
         id: empresa._id,
         nombre: empresa.nombre,
@@ -88,53 +65,37 @@ const registrarEmpresa = async (req, res) => {
 
   } catch (error) {
     console.error("Error en registro:", error);
-    res.status(500).json({
-      mensaje: "Error interno del servidor"
-    });
+    res.status(500).json({ mensaje: "Error interno del servidor" });
   }
 };
 
 // POST /api/auth/login
-// inicia sesion de una empresa con correo y contraseña
 const loginEmpresa = async (req, res) => {
   try {
     const { correo, contrasena } = req.body;
 
-    // comprobamos que los campos esten presentes
     if (!correo || !contrasena) {
-      return res.status(400).json({
-        mensaje: "El correo y la contraseña son obligatorios"
-      });
+      return res.status(400).json({ mensaje: "El correo y la contraseña son obligatorios" });
     }
 
-    // buscamos la empresa por correo
     const empresa = await Empresa.findOne({ correo });
     if (!empresa) {
-      return res.status(401).json({
-        mensaje: "Correo o contraseña incorrectos"
-      });
+      return res.status(401).json({ mensaje: "Correo o contraseña incorrectos" });
     }
 
-    // comprobamos que la empresa este activa
     if (!empresa.activa) {
-      return res.status(401).json({
-        mensaje: "Esta cuenta ha sido suspendida"
-      });
+      return res.status(401).json({ mensaje: "Esta cuenta ha sido suspendida" });
     }
 
-    // comparamos la contraseña introducida con la hasheada
-    // usamos el metodo que definimos en el modelo
     const contrasenaCorrecta = await empresa.compararContrasena(contrasena);
     if (!contrasenaCorrecta) {
-      return res.status(401).json({
-        mensaje: "Correo o contraseña incorrectos"
-      });
+      return res.status(401).json({ mensaje: "Correo o contraseña incorrectos" });
     }
 
-    // devolvemos el token y los datos de la empresa
+    res.cookie("token", generarToken(empresa._id), COOKIE_OPTS);
+
     res.json({
       mensaje: "Login correcto",
-      token: generarToken(empresa._id),
       empresa: {
         id: empresa._id,
         nombre: empresa.nombre,
@@ -146,24 +107,27 @@ const loginEmpresa = async (req, res) => {
 
   } catch (error) {
     console.error("Error en login:", error);
-    res.status(500).json({
-      mensaje: "Error interno del servidor"
-    });
+    res.status(500).json({ mensaje: "Error interno del servidor" });
   }
 };
 
+// POST /api/auth/logout
+const logoutEmpresa = (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  });
+  res.json({ mensaje: "Logout correcto" });
+};
+
 // GET /api/auth/perfil
-// devuelve los datos de la empresa logueada
-// ruta protegida - requiere token JWT valido
 const obtenerPerfil = async (req, res) => {
   try {
-    // req.empresa viene del middleware de autenticacion
     const empresa = await Empresa.findById(req.empresa.id).select("-contrasena");
 
     if (!empresa) {
-      return res.status(404).json({
-        mensaje: "Empresa no encontrada"
-      });
+      return res.status(404).json({ mensaje: "Empresa no encontrada" });
     }
 
     res.json({
@@ -179,46 +143,39 @@ const obtenerPerfil = async (req, res) => {
 
   } catch (error) {
     console.error("Error al obtener perfil:", error);
-    res.status(500).json({
-      mensaje: "Error interno del servidor"
-    });
+    res.status(500).json({ mensaje: "Error interno del servidor" });
   }
 };
 
 // POST /api/auth/recuperar
-// envia un correo con el enlace para recuperar contraseña
 const solicitarRecuperacion = async (req, res) => {
   try {
     const { correo } = req.body;
 
     if (!correo) {
-      return res.status(400).json({
-        mensaje: "El correo es obligatorio"
-      });
+      return res.status(400).json({ mensaje: "El correo es obligatorio" });
     }
 
     const empresa = await Empresa.findOne({ correo });
 
     if (!empresa) {
-      return res.status(404).json({
-        mensaje: "No existe ninguna cuenta con ese correo"
-      });
+      return res.status(404).json({ mensaje: "No existe ninguna cuenta con ese correo" });
     }
 
     if (!empresa.activa) {
-      return res.status(401).json({
-        mensaje: "Esta cuenta ha sido suspendida"
-      });
+      return res.status(401).json({ mensaje: "Esta cuenta ha sido suspendida" });
     }
 
+    // generamos el token en texto plano (se envía por email)
+    // y guardamos sólo su hash en la DB
     const resetToken = crypto.randomBytes(32).toString("hex");
-    const resetTokenExpiracion = Date.now() + 60 * 60 * 1000;
+    const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
 
     await Empresa.findOneAndUpdate(
       { correo },
       {
-        resetToken,
-        resetTokenExpiracion: new Date(resetTokenExpiracion)
+        resetToken: hashedToken,
+        resetTokenExpiracion: new Date(Date.now() + 60 * 60 * 1000),
       }
     );
 
@@ -232,46 +189,38 @@ const solicitarRecuperacion = async (req, res) => {
       console.error("Error al enviar correo de recuperación:", errorCorreo.message);
     }
 
-    res.json({
-      mensaje: "Se ha enviado un correo con las instrucciones para recuperar tu contraseña"
-    });
+    res.json({ mensaje: "Se ha enviado un correo con las instrucciones para recuperar tu contraseña" });
 
   } catch (error) {
     console.error("Error en recuperación:", error);
-    res.status(500).json({
-      mensaje: "Error interno del servidor"
-    });
+    res.status(500).json({ mensaje: "Error interno del servidor" });
   }
 };
 
 // POST /api/auth/reset/:token
-// cambia la contraseña usando el token de recuperación
 const cambiarContrasena = async (req, res) => {
   try {
     const { token } = req.params;
     const { contrasena } = req.body;
 
     if (!contrasena) {
-      return res.status(400).json({
-        mensaje: "La contraseña es obligatoria"
-      });
+      return res.status(400).json({ mensaje: "La contraseña es obligatoria" });
     }
 
     if (contrasena.length < 6) {
-      return res.status(400).json({
-        mensaje: "La contraseña debe tener al menos 6 caracteres"
-      });
+      return res.status(400).json({ mensaje: "La contraseña debe tener al menos 6 caracteres" });
     }
 
+    // hasheamos el token recibido y buscamos su hash en la DB
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
     const empresa = await Empresa.findOne({
-      resetToken: token,
-      resetTokenExpiracion: { $gt: Date.now() }
+      resetToken: hashedToken,
+      resetTokenExpiracion: { $gt: Date.now() },
     });
 
     if (!empresa) {
-      return res.status(400).json({
-        mensaje: "El enlace de recuperación ha expirado o es inválido"
-      });
+      return res.status(400).json({ mensaje: "El enlace de recuperación ha expirado o es inválido" });
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -282,25 +231,22 @@ const cambiarContrasena = async (req, res) => {
       {
         contrasena: hashedContrasena,
         resetToken: null,
-        resetTokenExpiracion: null
+        resetTokenExpiracion: null,
       }
     );
 
-    res.json({
-      mensaje: "Contraseña actualizada correctamente"
-    });
+    res.json({ mensaje: "Contraseña actualizada correctamente" });
 
   } catch (error) {
     console.error("Error al cambiar contraseña:", error);
-    res.status(500).json({
-      mensaje: "Error interno del servidor"
-    });
+    res.status(500).json({ mensaje: "Error interno del servidor" });
   }
 };
 
 module.exports = {
   registrarEmpresa,
   loginEmpresa,
+  logoutEmpresa,
   obtenerPerfil,
   solicitarRecuperacion,
   cambiarContrasena,

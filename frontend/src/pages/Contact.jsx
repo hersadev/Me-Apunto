@@ -179,7 +179,10 @@
                 backgroundColor: "#e8f5e9",
                 borderRadius: "8px",
                 padding: "16px",
-                textAlign: "center"
+                textAlign: "center",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px"
                 }}>
                 <span style={{
                     fontFamily: "'Baloo Bhai 2', Helvetica",
@@ -189,6 +192,21 @@
                 }}>
                     ✓ Mensaje enviado correctamente. ¡Gracias por escribirnos!
                 </span>
+                <button
+                    type="button"
+                    onClick={() => setEnviado(false)}
+                    style={{
+                    fontFamily: "'Baloo Bhai 2', Helvetica",
+                    fontSize: "15px",
+                    color: "#91703d",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    textDecoration: "underline"
+                    }}
+                >
+                    Enviar otro mensaje
+                </button>
                 </div>
             )}
 

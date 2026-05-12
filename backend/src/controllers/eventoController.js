@@ -222,7 +222,10 @@ const editarEvento = async (req, res) => {
     if (hora) evento.hora = hora;
     if (precio !== undefined) evento.precio = precio;
     if (maxPersonasPorInscripcion !== undefined) {
-      evento.maxPersonasPorInscripcion = maxPersonasPorInscripcion;
+      evento.maxPersonasPorInscripcion =
+        maxPersonasPorInscripcion === "" || maxPersonasPorInscripcion === null
+          ? null
+          : parseInt(maxPersonasPorInscripcion, 10);
     }
     if (categoria !== undefined) evento.categoria = categoria;
 

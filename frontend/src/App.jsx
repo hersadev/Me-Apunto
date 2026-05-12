@@ -17,7 +17,7 @@ function App() {
 
   // simulamos el estado de login hasta que el backend este listo
   // TODO: sustituir por el estado real del JWT
-    const [estaLogueado, setEstaLogueado] = useState(!!localStorage.getItem("token"));
+    const [estaLogueado, setEstaLogueado] = useState(!!localStorage.getItem("empresa"));
 
   return (
     <HelmetProvider>

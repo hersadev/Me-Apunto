@@ -2,6 +2,7 @@
 // responsive para movil y escritorio
 
 import { useNavigate } from "react-router-dom";
+import authService from "../services/authService";
 
 const colorBoton = "#b79868";
 
@@ -66,9 +67,8 @@ function Navbar({ mostrarInicio = false, estaLogueado = false }) {
             </button>
 
             <button
-            onClick={() => {
-              localStorage.removeItem("token");
-              localStorage.removeItem("empresa");
+            onClick={async () => {
+              await authService.logout();
               window.location.href = "/";
 }}
               style={{ ...estiloBoton, backgroundColor: "#91703d" }}

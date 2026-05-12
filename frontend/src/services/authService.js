@@ -1,58 +1,46 @@
-// servicio de autenticacion
-// gestiona el registro, login y logout de empresas
-
 import api from "./api";
 
-// registrar una nueva empresa
 const registrar = async (datos) => {
   const response = await api.post("/auth/register", datos);
+  // guardamos sólo los datos de la empresa (sin token - el token va en cookie httpOnly)
+  localStorage.setItem("empresa", JSON.stringify(response.data.empresa));
   return response.data;
 };
 
-// login de empresa
-// guarda el token y los datos de la empresa en localStorage
 const login = async (correo, contrasena) => {
   const response = await api.post("/auth/login", { correo, contrasena });
-  const { token, empresa } = response.data;
-
-  // guardamos el token y los datos de la empresa en localStorage
-  // el interceptor de api.js los usara automaticamente
-  localStorage.setItem("token", token);
-  localStorage.setItem("empresa", JSON.stringify(empresa));
-
+  // el token queda en la cookie httpOnly - sólo guardamos datos no sensibles
+  localStorage.setItem("empresa", JSON.stringify(response.data.empresa));
   return response.data;
 };
 
-// logout - limpiamos el localStorage
-const logout = () => {
-  localStorage.removeItem("token");
-  localStorage.removeItem("empresa");
+const logout = async () => {
+  try {
+    await api.post("/auth/logout");
+  } finally {
+    localStorage.removeItem("empresa");
+  }
 };
 
-// obtener los datos de la empresa logueada del localStorage
 const getEmpresa = () => {
   const empresa = localStorage.getItem("empresa");
   return empresa ? JSON.parse(empresa) : null;
 };
 
-// comprobar si hay una empresa logueada
 const estaLogueado = () => {
-  return !!localStorage.getItem("token");
+  return !!localStorage.getItem("empresa");
 };
 
-// obtener el perfil actualizado del backend
 const getPerfil = async () => {
   const response = await api.get("/auth/perfil");
   return response.data;
 };
 
-// solicitar recuperación de contraseña
 const solicitarRecuperacion = async (correo) => {
   const response = await api.post("/auth/recuperar", { correo });
   return response.data;
 };
 
-// cambiar contraseña con token
 const cambiarContrasena = async (token, contrasena) => {
   const response = await api.post(`/auth/reset/${token}`, { contrasena });
   return response.data;

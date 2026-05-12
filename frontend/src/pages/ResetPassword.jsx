@@ -152,42 +152,13 @@ function ResetPassword() {
               onChange={(e) => setContrasena(e.target.value)}
             />
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-              <label
-                htmlFor="confirmarContrasena"
-                style={{
-                  fontFamily: "'Baloo Bhai 2', Helvetica",
-                  fontSize: "20px",
-                  fontWeight: "600",
-                  color: "#1a1a1a"
-                }}
-              >
-                Confirmar contraseña
-              </label>
-              <input
-                id="confirmarContrasena"
-                type="password"
-                value={confirmarContrasena}
-                onChange={(e) => setConfirmarContrasena(e.target.value)}
-                required
-                placeholder="Repite tu contraseña"
-                disabled={cargando}
-                style={{
-                  width: "100%",
-                  height: "44px",
-                  backgroundColor: "#f8f8f8",
-                  paddingLeft: "12px",
-                  paddingRight: "12px",
-                  fontFamily: "'Baloo Bhai 2', Helvetica",
-                  fontSize: "20px",
-                  color: "#1a1a1a",
-                  border: "none",
-                  outline: "none",
-                  borderRadius: "6px"
-                }}
-                autoComplete="new-password"
-              />
-            </div>
+            <PasswordInput
+              nombre="confirmarContrasena"
+              label="Confirmar contraseña"
+              valor={confirmarContrasena}
+              onChange={(e) => setConfirmarContrasena(e.target.value)}
+              disabled={cargando}
+            />
 
             <button
               type="submit"

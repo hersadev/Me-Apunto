@@ -4,7 +4,7 @@
 import { useState } from "react";
 import ojoPng from "../assets/icons/iconoOjo.svg";
 
-function PasswordInput({ nombre, label, valor, onChange }) {
+function PasswordInput({ nombre, label, valor, onChange, disabled = false }) {
 
   const [verContrasena, setVerContrasena] = useState(false);
 
@@ -33,6 +33,7 @@ function PasswordInput({ nombre, label, valor, onChange }) {
           type={verContrasena ? "text" : "password"}
           value={valor}
           onChange={onChange}
+          disabled={disabled}
           placeholder="contraseña secreta"
           style={{
             width: "100%",
@@ -56,6 +57,7 @@ function PasswordInput({ nombre, label, valor, onChange }) {
         <button
           type="button"
           onClick={() => setVerContrasena(!verContrasena)}
+          disabled={disabled}
           style={{
             position: "absolute",
             right: "10px",
