@@ -19,8 +19,12 @@ const estiloBoton = {
   transition: "background-color 0.15s ease"
 };
 
-function Navbar({ mostrarInicio = false, estaLogueado = false }) {
+function Navbar({ mostrarInicio = false, estaLogueado }) {
   const navegar = useNavigate();
+
+  const logueado = estaLogueado !== undefined
+    ? estaLogueado
+    : !!localStorage.getItem("empresa");
 
   return(
     <div style={{
@@ -55,7 +59,7 @@ function Navbar({ mostrarInicio = false, estaLogueado = false }) {
       {/* botones derecha */}
       <div style={{ display: "flex", gap: window.innerWidth < 768 ? "6px" : "10px", marginRight: window.innerWidth < 768 ? "10px" : "50px" }}>
 
-        {estaLogueado ? (
+        {logueado ? (
           <>
             <button
               onClick={() => navegar("/panel")}

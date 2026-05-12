@@ -12,6 +12,9 @@ import EventDetail from "./pages/EventDetail";
 import TermsAndConditions from "./pages/TermsAndConditions";
 import Contact from "./pages/Contact";
 import CompanyPanel from "./pages/CompanyPanel";
+import CookiesPolicy from "./pages/CookiesPolicy";
+import CookieBanner from "./components/CookieBanner";
+import ScrollToTop from "./components/ScrollToTop";
 
 function App() {
 
@@ -22,6 +25,7 @@ function App() {
   return (
     <HelmetProvider>
       <BrowserRouter>
+        <ScrollToTop />
         <Routes>
 
           {/* pagina principal */}
@@ -51,7 +55,11 @@ function App() {
           {/* panel de empresa */}
           <Route path="/panel" element={<CompanyPanel setEstaLogueado={setEstaLogueado} />} />
 
+          {/* politica de cookies */}
+          <Route path="/cookies" element={<CookiesPolicy />} />
+
         </Routes>
+        <CookieBanner />
       </BrowserRouter>
     </HelmetProvider>
   );
