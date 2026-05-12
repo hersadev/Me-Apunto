@@ -4,7 +4,8 @@
 
 const Empresa = require("../models/Empresa");
 const jwt = require("jsonwebtoken");
-const { enviarCorreoBienvenida } = require("../services/emailService");
+const crypto = require("crypto");
+const { enviarCorreoBienvenida, enviarCorreoRecuperacion } = require("../services/emailService");
 
 // funcion para generar el token JWT
 // recibe el id de la empresa y devuelve el token firmado
@@ -183,8 +184,120 @@ const obtenerPerfil = async (req, res) => {
   }
 };
 
+// POST /api/auth/recuperar
+// envia un correo con el enlace para recuperar contraseña
+const solicitarRecuperacion = async (req, res) => {
+  try {
+    const { correo } = req.body;
+
+    if (!correo) {
+      return res.status(400).json({
+        mensaje: "El correo es obligatorio"
+      });
+    }
+
+    const empresa = await Empresa.findOne({ correo });
+
+    if (!empresa) {
+      return res.status(404).json({
+        mensaje: "No existe ninguna cuenta con ese correo"
+      });
+    }
+
+    if (!empresa.activa) {
+      return res.status(401).json({
+        mensaje: "Esta cuenta ha sido suspendida"
+      });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const resetTokenExpiracion = Date.now() + 60 * 60 * 1000;
+
+    await Empresa.findOneAndUpdate(
+      { correo },
+      {
+        resetToken,
+        resetTokenExpiracion: new Date(resetTokenExpiracion)
+      }
+    );
+
+    try {
+      await enviarCorreoRecuperacion({
+        correoEmpresa: empresa.correo,
+        nombreEmpresa: empresa.nombre,
+        token: resetToken,
+      });
+    } catch (errorCorreo) {
+      console.error("Error al enviar correo de recuperación:", errorCorreo.message);
+    }
+
+    res.json({
+      mensaje: "Se ha enviado un correo con las instrucciones para recuperar tu contraseña"
+    });
+
+  } catch (error) {
+    console.error("Error en recuperación:", error);
+    res.status(500).json({
+      mensaje: "Error interno del servidor"
+    });
+  }
+};
+
+// POST /api/auth/reset/:token
+// cambia la contraseña usando el token de recuperación
+const cambiarContrasena = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { contrasena } = req.body;
+
+    if (!contrasena) {
+      return res.status(400).json({
+        mensaje: "La contraseña es obligatoria"
+      });
+    }
+
+    if (contrasena.length < 6) {
+      return res.status(400).json({
+        mensaje: "La contraseña debe tener al menos 6 caracteres"
+      });
+    }
+
+    const empresa = await Empresa.findOne({
+      resetToken: token,
+      resetTokenExpiracion: { $gt: Date.now() }
+    });
+
+    if (!empresa) {
+      return res.status(400).json({
+        mensaje: "El enlace de recuperación ha expirado o es inválido"
+      });
+    }
+
+    await Empresa.findOneAndUpdate(
+      { _id: empresa._id },
+      {
+        contrasena,
+        resetToken: null,
+        resetTokenExpiracion: null
+      }
+    );
+
+    res.json({
+      mensaje: "Contraseña actualizada correctamente"
+    });
+
+  } catch (error) {
+    console.error("Error al cambiar contraseña:", error);
+    res.status(500).json({
+      mensaje: "Error interno del servidor"
+    });
+  }
+};
+
 module.exports = {
   registrarEmpresa,
   loginEmpresa,
   obtenerPerfil,
+  solicitarRecuperacion,
+  cambiarContrasena,
 };

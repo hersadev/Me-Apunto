@@ -1,11 +1,12 @@
 // servidor principal de la aplicacion
+const dotenv = require("dotenv");
+dotenv.config();
+
 const express = require("express");
 const cors = require("cors");
-const dotenv = require("dotenv");
 const conectarDB = require("./src/config/db");
 const { iniciarCron } = require("./src/services/cronService");
 
-dotenv.config();
 conectarDB();
 
 const app = express();

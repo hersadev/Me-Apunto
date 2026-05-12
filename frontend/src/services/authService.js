@@ -46,6 +46,18 @@ const getPerfil = async () => {
   return response.data;
 };
 
+// solicitar recuperación de contraseña
+const solicitarRecuperacion = async (correo) => {
+  const response = await api.post("/auth/recuperar", { correo });
+  return response.data;
+};
+
+// cambiar contraseña con token
+const cambiarContrasena = async (token, contrasena) => {
+  const response = await api.post(`/auth/reset/${token}`, { contrasena });
+  return response.data;
+};
+
 const authService = {
   registrar,
   login,
@@ -53,6 +65,8 @@ const authService = {
   getEmpresa,
   estaLogueado,
   getPerfil,
+  solicitarRecuperacion,
+  cambiarContrasena,
 };
 
 export default authService;

@@ -216,7 +216,7 @@
             }}>
                 <button
                 type="button"
-                onClick={() => console.log("recuperar")}
+                onClick={() => navegar("/forgot-password")}
                 style={{
                     fontFamily: "'Baloo Bhai 2', Helvetica",
                     fontSize: "16px",

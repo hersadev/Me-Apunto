@@ -58,6 +58,18 @@ const empresaSchema = new mongoose.Schema(
         type: Boolean,
         default: true,
     },
+
+    // token para recuperar contraseña
+    resetToken: {
+        type: String,
+        default: null,
+    },
+
+    // fecha de expiracion del token de recuperacion
+    resetTokenExpiracion: {
+        type: Date,
+        default: null,
+    },
     },
     {
     // añade automaticamente createdAt y updatedAt

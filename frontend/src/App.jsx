@@ -6,6 +6,8 @@ import { HelmetProvider } from "react-helmet-async";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import EventDetail from "./pages/EventDetail";
 import TermsAndConditions from "./pages/TermsAndConditions";
 import Contact from "./pages/Contact";
@@ -30,6 +32,12 @@ function App() {
 
           {/* registro empresas */}
           <Route path="/register" element={<Register />} />
+
+          {/* recuperar contraseña */}
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+
+          {/* reset contraseña con token */}
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
 
           {/* detalle de evento */}
           <Route path="/evento/:id" element={<EventDetail estaLogueado={estaLogueado} />} />

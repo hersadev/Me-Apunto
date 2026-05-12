@@ -176,9 +176,50 @@ const enviarCorreoBienvenida = async ({ correoEmpresa, nombreEmpresa }) => {
   console.log(`Correo de bienvenida enviado a ${correoEmpresa}`);
 };
 
+// correo que se envia para recuperar contraseña
+const enviarCorreoRecuperacion = async ({ correoEmpresa, nombreEmpresa, token }) => {
+  const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background-color: #b79868; padding: 24px; text-align: center; border-radius: 12px 12px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">Me Apunto</h1>
+        <p style="color: white; margin: 8px 0 0 0; font-size: 14px;">Recupera tu contraseña</p>
+      </div>
+      <div style="background-color: #f0e8dc; padding: 32px; border-radius: 0 0 12px 12px;">
+        <p style="font-size: 16px; color: #333;">Hola <strong>${nombreEmpresa}</strong>,</p>
+        <p style="font-size: 16px; color: #333;">
+          Has solicitado recuperar tu contraseña. Haz clic en el siguiente botón para establecer una nueva contraseña:
+        </p>
+        <div style="text-align: center; margin: 24px 0;">
+          <a href="${resetUrl}" style="background-color: #91703d; color: white; padding: 12px 32px; border-radius: 999px; text-decoration: none; font-weight: bold; font-size: 16px;">
+            Restablecer contraseña
+          </a>
+        </div>
+        <p style="font-size: 14px; color: #818181;">
+          Este enlace caduca en 1 hora. Si no solicitaste este cambio, puedes ignorar este correo.
+        </p>
+        <p style="font-size: 14px; color: #818181; margin-top: 24px;">
+          Este correo ha sido enviado automáticamente por Me Apunto.
+        </p>
+      </div>
+    </div>
+  `;
+
+  await resend.emails.send({
+    from: "Me Apunto <onboarding@resend.dev>",
+    to: correoEmpresa,
+    subject: "Recupera tu contraseña - Me Apunto",
+    html,
+  });
+
+  console.log(`Correo de recuperacion enviado a ${correoEmpresa}`);
+};
+
 module.exports = {
   enviarCorreoInscripcion,
   enviarCorreoAvisoRenovacion,
   enviarCorreoContacto,
   enviarCorreoBienvenida,
+  enviarCorreoRecuperacion,
 };
