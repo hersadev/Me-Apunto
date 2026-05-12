@@ -34,7 +34,8 @@
     api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
+        const url = error.config?.url || "";
+        if (error.response?.status === 401 && !url.includes("/auth/")) {
         // token expirado o invalido - limpiamos y redirigimos
         localStorage.removeItem("token");
         localStorage.removeItem("empresa");

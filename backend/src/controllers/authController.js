@@ -4,6 +4,7 @@
 
 const Empresa = require("../models/Empresa");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const { enviarCorreoBienvenida, enviarCorreoRecuperacion } = require("../services/emailService");
 
@@ -273,10 +274,13 @@ const cambiarContrasena = async (req, res) => {
       });
     }
 
+    const salt = await bcrypt.genSalt(10);
+    const hashedContrasena = await bcrypt.hash(contrasena, salt);
+
     await Empresa.findOneAndUpdate(
       { _id: empresa._id },
       {
-        contrasena,
+        contrasena: hashedContrasena,
         resetToken: null,
         resetTokenExpiracion: null
       }
