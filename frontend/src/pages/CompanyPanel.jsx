@@ -139,8 +139,14 @@ const abrirFormularioEditar = (evento) => {
   };
 
   const confirmarPatrocinio = async () => {
-    console.log("toggle patrocinio:", modalPatrocinio._id);
-    setModalPatrocinio(null);
+    try {
+      await eventoService.togglePatrocinio(modalPatrocinio._id);
+      await cargarEventos();
+      setModalPatrocinio(null);
+    } catch (err) {
+      setError("Error al cambiar el patrocinio");
+      setModalPatrocinio(null);
+    }
   };
 
   const cerrarSesion = async () => {

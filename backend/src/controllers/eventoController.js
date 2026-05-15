@@ -280,6 +280,50 @@ const eliminarEvento = async (req, res) => {
   }
 };
 
+// PATCH /api/eventos/:id/patrocinio
+// activa o desactiva el patrocinio de un evento
+// ruta protegida - solo la empresa propietaria puede cambiarlo
+const togglePatrocinio = async (req, res) => {
+  try {
+    const evento = await Evento.findById(req.params.id);
+
+    if (!evento || !evento.activo) {
+      return res.status(404).json({ mensaje: "Evento no encontrado" });
+    }
+
+    if (evento.empresa.toString() !== req.empresa._id.toString()) {
+      return res.status(403).json({ mensaje: "No tienes permiso para modificar este evento" });
+    }
+
+    if (evento.patrocinado) {
+      evento.patrocinado = false;
+      evento.fechaInicioPatrocinio = null;
+      evento.fechaFinPatrocinio = null;
+      evento.avisoPrevioEnviado = false;
+    } else {
+      const ahora = new Date();
+      const finPatrocinio = new Date(ahora);
+      finPatrocinio.setMonth(finPatrocinio.getMonth() + 1);
+
+      evento.patrocinado = true;
+      evento.fechaInicioPatrocinio = ahora;
+      evento.fechaFinPatrocinio = finPatrocinio;
+      evento.avisoPrevioEnviado = false;
+    }
+
+    await evento.save();
+
+    res.json({
+      mensaje: evento.patrocinado ? "Patrocinio activado" : "Patrocinio desactivado",
+      evento,
+    });
+
+  } catch (error) {
+    console.error("Error al cambiar patrocinio:", error);
+    res.status(500).json({ mensaje: "Error interno del servidor" });
+  }
+};
+
 module.exports = {
   obtenerEventos,
   obtenerEventoPorId,
@@ -287,4 +331,5 @@ module.exports = {
   crearEvento,
   editarEvento,
   eliminarEvento,
+  togglePatrocinio,
 };

@@ -8,6 +8,7 @@ const {
   crearEvento,
   editarEvento,
   eliminarEvento,
+  togglePatrocinio,
 } = require("../controllers/eventoController");
 const { protegerRuta } = require("../middleware/authMiddleware");
 const { upload } = require("../services/cloudinaryService");
@@ -27,6 +28,9 @@ router.put("/:id", protegerRuta, upload.single("imagen"), editarEvento);
 
 // DELETE /api/eventos/:id - eliminar evento
 router.delete("/:id", protegerRuta, eliminarEvento);
+
+// PATCH /api/eventos/:id/patrocinio - activar o desactivar patrocinio
+router.patch("/:id/patrocinio", protegerRuta, togglePatrocinio);
 
 // GET /api/eventos/:id - al final porque captura cualquier string
 router.get("/:id", obtenerEventoPorId);

@@ -76,6 +76,13 @@ const eliminarEvento = async (id) => {
   return response.data;
 };
 
+// activar o desactivar patrocinio de un evento
+// ruta protegida
+const togglePatrocinio = async (id) => {
+  const response = await api.patch(`/eventos/${id}/patrocinio`);
+  return response.data;
+};
+
 const eventoService = {
   getEventos,
   getEventoPorId,
@@ -83,6 +90,7 @@ const eventoService = {
   crearEvento,
   editarEvento,
   eliminarEvento,
+  togglePatrocinio,
 };
 
 export default eventoService;

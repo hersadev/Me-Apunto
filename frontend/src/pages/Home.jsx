@@ -3,7 +3,7 @@
 // calendario con vista de mes y semana funcionales
 // al hacer click en un dia con evento navega al detalle
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
 
@@ -39,6 +39,30 @@ function Home({ estaLogueado }) {
   const [tipo, setTipo] = useState("");
   const [paginaActual, setPaginaActual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
+
+  const [indiceCarrusel, setIndiceCarrusel] = useState(0);
+  const carruselTimer = useRef(null);
+
+  const tarjetasPorVista = esMobil ? 1 : 3;
+
+  const avanzarCarrusel = useCallback(() => {
+    setIndiceCarrusel((prev) => {
+      const maxIndice = Math.max(0, eventosPatrocinados.length - tarjetasPorVista);
+      return prev >= maxIndice ? 0 : prev + 1;
+    });
+  }, [eventosPatrocinados.length, tarjetasPorVista]);
+
+  useEffect(() => {
+    if (eventosPatrocinados.length <= tarjetasPorVista) return;
+    carruselTimer.current = setInterval(avanzarCarrusel, 4000);
+    return () => clearInterval(carruselTimer.current);
+  }, [eventosPatrocinados.length, avanzarCarrusel, tarjetasPorVista]);
+
+  const irASlide = (indice) => {
+    setIndiceCarrusel(indice);
+    clearInterval(carruselTimer.current);
+    carruselTimer.current = setInterval(avanzarCarrusel, 4000);
+  };
 
   const [mesCalendario, setMesCalendario] = useState(new Date().getMonth());
   const [anioCalendario, setAnioCalendario] = useState(new Date().getFullYear());
@@ -336,7 +360,7 @@ function Home({ estaLogueado }) {
         {/* eventos */}
         {!cargando && !error && (
           <>
-            {/* ── FILA PATROCINADOS ── */}
+            {/* ── CARRUSEL PATROCINADOS ── */}
             {eventosPatrocinados.length > 0 && (
               <div style={{ marginBottom: "48px" }}>
                 <div style={{
@@ -351,18 +375,76 @@ function Home({ estaLogueado }) {
                   </span>
                 </div>
 
-                <div style={{
-                  display: "flex", gap: "28px", overflowX: "auto",
-                  paddingBottom: "12px", paddingLeft: "8px", paddingRight: "8px",
-                  scrollbarWidth: "thin", scrollbarColor: "#b79868 #f0e8dc",
-                  justifyContent: eventosPatrocinados.length <= 4 ? "center" : "flex-start"
-                }}>
-                  {eventosPatrocinados.map((evento) => (
-                    <div key={evento._id} style={{ flexShrink: 0 }}>
-                      <EventCard evento={evento} destacado={true} />
+                <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                  {/* flecha izquierda */}
+                  {eventosPatrocinados.length > tarjetasPorVista && (
+                    <button
+                      onClick={() => irASlide(indiceCarrusel === 0 ? Math.max(0, eventosPatrocinados.length - tarjetasPorVista) : indiceCarrusel - 1)}
+                      style={{
+                        position: "absolute", left: esMobil ? "-12px" : "-20px", zIndex: 2,
+                        width: "36px", height: "36px", borderRadius: "50%",
+                        backgroundColor: "#b79868", border: "none", cursor: "pointer",
+                        color: "white", fontSize: "18px", display: "flex",
+                        alignItems: "center", justifyContent: "center",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.2)", flexShrink: 0
+                      }}
+                    >‹</button>
+                  )}
+
+                  {/* ventana del carrusel */}
+                  <div style={{ overflow: "hidden", width: "100%" }}>
+                    <div style={{
+                      display: "flex",
+                      gap: "28px",
+                      transform: `translateX(calc(-${indiceCarrusel} * (100% / ${tarjetasPorVista} + 28px / ${tarjetasPorVista})))`,
+                      transition: "transform 0.4s ease",
+                    }}>
+                      {eventosPatrocinados.map((evento) => (
+                        <div key={evento._id} style={{
+                          flexShrink: 0,
+                          width: `calc((100% - ${(tarjetasPorVista - 1) * 28}px) / ${tarjetasPorVista})`
+                        }}>
+                          <EventCard evento={evento} destacado={true} />
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+
+                  {/* flecha derecha */}
+                  {eventosPatrocinados.length > tarjetasPorVista && (
+                    <button
+                      onClick={() => irASlide(indiceCarrusel >= eventosPatrocinados.length - tarjetasPorVista ? 0 : indiceCarrusel + 1)}
+                      style={{
+                        position: "absolute", right: esMobil ? "-12px" : "-20px", zIndex: 2,
+                        width: "36px", height: "36px", borderRadius: "50%",
+                        backgroundColor: "#b79868", border: "none", cursor: "pointer",
+                        color: "white", fontSize: "18px", display: "flex",
+                        alignItems: "center", justifyContent: "center",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.2)", flexShrink: 0
+                      }}
+                    >›</button>
+                  )}
                 </div>
+
+                {/* puntos indicadores */}
+                {eventosPatrocinados.length > tarjetasPorVista && (
+                  <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginTop: "16px" }}>
+                    {[...Array(Math.ceil(eventosPatrocinados.length - tarjetasPorVista + 1))].map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => irASlide(i)}
+                        style={{
+                          width: i === indiceCarrusel ? "20px" : "8px",
+                          height: "8px",
+                          borderRadius: "999px",
+                          backgroundColor: i === indiceCarrusel ? "#b79868" : "#d4b896",
+                          border: "none", cursor: "pointer", padding: 0,
+                          transition: "all 0.3s ease"
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
 
                 <div style={{
                   width: "100%", height: "1px",
