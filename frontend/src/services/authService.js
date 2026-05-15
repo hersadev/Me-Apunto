@@ -2,15 +2,15 @@ import api from "./api";
 
 const registrar = async (datos) => {
   const response = await api.post("/auth/register", datos);
-  // guardamos sólo los datos de la empresa (sin token - el token va en cookie httpOnly)
   localStorage.setItem("empresa", JSON.stringify(response.data.empresa));
+  if (response.data.token) localStorage.setItem("token", response.data.token);
   return response.data;
 };
 
 const login = async (correo, contrasena) => {
   const response = await api.post("/auth/login", { correo, contrasena });
-  // el token queda en la cookie httpOnly - sólo guardamos datos no sensibles
   localStorage.setItem("empresa", JSON.stringify(response.data.empresa));
+  if (response.data.token) localStorage.setItem("token", response.data.token);
   return response.data;
 };
 
@@ -19,6 +19,7 @@ const logout = async () => {
     await api.post("/auth/logout");
   } finally {
     localStorage.removeItem("empresa");
+    localStorage.removeItem("token");
   }
 };
 

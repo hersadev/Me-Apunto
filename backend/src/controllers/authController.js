@@ -51,10 +51,12 @@ const registrarEmpresa = async (req, res) => {
       console.error("Error al enviar correo de bienvenida:", errorCorreo.message);
     }
 
-    res.cookie("token", generarToken(empresa._id), COOKIE_OPTS);
+    const token = generarToken(empresa._id);
+    res.cookie("token", token, COOKIE_OPTS);
 
     res.status(201).json({
       mensaje: "Empresa registrada correctamente",
+      token,
       empresa: {
         id: empresa._id,
         nombre: empresa.nombre,
@@ -92,10 +94,12 @@ const loginEmpresa = async (req, res) => {
       return res.status(401).json({ mensaje: "Correo o contraseña incorrectos" });
     }
 
-    res.cookie("token", generarToken(empresa._id), COOKIE_OPTS);
+    const token = generarToken(empresa._id);
+    res.cookie("token", token, COOKIE_OPTS);
 
     res.json({
       mensaje: "Login correcto",
+      token,
       empresa: {
         id: empresa._id,
         nombre: empresa.nombre,

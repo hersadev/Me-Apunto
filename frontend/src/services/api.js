@@ -8,6 +8,15 @@ const api = axios.create({
   withCredentials: true,
 });
 
+// adjunta el token como Bearer si existe en localStorage (fallback para Safari)
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 // si el servidor devuelve 401 limpiamos los datos locales y redirigimos al login
 api.interceptors.response.use(
   (response) => response,
