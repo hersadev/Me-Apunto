@@ -288,7 +288,7 @@ function Home({ estaLogueado }) {
             minWidth: esMobil ? "100px" : "150px", cursor: "pointer",
             fontFamily: "'Baloo Bhai 2', Helvetica"
           }}>
-            <option value="">Todos</option>
+            <option value="">Todo evento</option>
             <option value="taller">Taller</option>
             <option value="exposicion">Exposición</option>
             <option value="concurso">Concurso</option>
