@@ -42,8 +42,22 @@ function Home({ estaLogueado }) {
 
   const [indiceCarrusel, setIndiceCarrusel] = useState(0);
   const carruselTimer = useRef(null);
+  const carruselRef = useRef(null);
+  const [anchoSlide, setAnchoSlide] = useState(0);
 
+  const GAP = 24;
   const tarjetasPorVista = esMobil ? 1 : 3;
+  const anchoTarjeta = anchoSlide > 0 ? Math.floor((anchoSlide - GAP * (tarjetasPorVista - 1)) / tarjetasPorVista) : 0;
+  const anchoStep = anchoTarjeta + GAP;
+
+  useEffect(() => {
+    const actualizar = () => {
+      if (carruselRef.current) setAnchoSlide(carruselRef.current.offsetWidth);
+    };
+    actualizar();
+    window.addEventListener("resize", actualizar);
+    return () => window.removeEventListener("resize", actualizar);
+  }, []);
 
   const avanzarCarrusel = useCallback(() => {
     setIndiceCarrusel((prev) => {
@@ -62,6 +76,18 @@ function Home({ estaLogueado }) {
     setIndiceCarrusel(indice);
     clearInterval(carruselTimer.current);
     carruselTimer.current = setInterval(avanzarCarrusel, 4000);
+  };
+
+  const hayFlechas = eventosPatrocinados.length > tarjetasPorVista;
+  const paddingFlechas = hayFlechas ? (esMobil ? "20px" : "28px") : "0";
+
+  const irAAnterior = () => {
+    const max = Math.max(0, eventosPatrocinados.length - tarjetasPorVista);
+    irASlide(indiceCarrusel === 0 ? max : indiceCarrusel - 1);
+  };
+  const irASiguiente = () => {
+    const max = Math.max(0, eventosPatrocinados.length - tarjetasPorVista);
+    irASlide(indiceCarrusel >= max ? 0 : indiceCarrusel + 1);
   };
 
   const [mesCalendario, setMesCalendario] = useState(new Date().getMonth());
@@ -375,34 +401,31 @@ function Home({ estaLogueado }) {
                   </span>
                 </div>
 
-                <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                <div style={{ position: "relative", padding: `0 ${paddingFlechas}` }}>
                   {/* flecha izquierda */}
-                  {eventosPatrocinados.length > tarjetasPorVista && (
-                    <button
-                      onClick={() => irASlide(indiceCarrusel === 0 ? Math.max(0, eventosPatrocinados.length - tarjetasPorVista) : indiceCarrusel - 1)}
-                      style={{
-                        position: "absolute", left: esMobil ? "-12px" : "-20px", zIndex: 2,
-                        width: "36px", height: "36px", borderRadius: "50%",
-                        backgroundColor: "#b79868", border: "none", cursor: "pointer",
-                        color: "white", fontSize: "18px", display: "flex",
-                        alignItems: "center", justifyContent: "center",
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.2)", flexShrink: 0
-                      }}
-                    >‹</button>
+                  {hayFlechas && (
+                    <button onClick={irAAnterior} style={{
+                      position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)",
+                      width: paddingFlechas, height: "48px", zIndex: 2,
+                      backgroundColor: "#b79868", border: "none", cursor: "pointer",
+                      color: "white", fontSize: "20px", display: "flex",
+                      alignItems: "center", justifyContent: "center",
+                      borderRadius: "6px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
+                    }}>‹</button>
                   )}
 
                   {/* ventana del carrusel */}
-                  <div style={{ overflow: "hidden", width: "100%" }}>
+                  <div ref={carruselRef} style={{ overflow: "hidden" }}>
                     <div style={{
                       display: "flex",
-                      gap: "28px",
-                      transform: `translateX(calc(-${indiceCarrusel} * (100% / ${tarjetasPorVista} + 28px / ${tarjetasPorVista})))`,
+                      gap: `${GAP}px`,
+                      transform: anchoTarjeta > 0 ? `translateX(-${indiceCarrusel * anchoStep}px)` : "none",
                       transition: "transform 0.4s ease",
                     }}>
                       {eventosPatrocinados.map((evento) => (
                         <div key={evento._id} style={{
                           flexShrink: 0,
-                          width: `calc((100% - ${(tarjetasPorVista - 1) * 28}px) / ${tarjetasPorVista})`
+                          width: anchoTarjeta > 0 ? `${anchoTarjeta}px` : "100%"
                         }}>
                           <EventCard evento={evento} destacado={true} />
                         </div>
@@ -411,37 +434,29 @@ function Home({ estaLogueado }) {
                   </div>
 
                   {/* flecha derecha */}
-                  {eventosPatrocinados.length > tarjetasPorVista && (
-                    <button
-                      onClick={() => irASlide(indiceCarrusel >= eventosPatrocinados.length - tarjetasPorVista ? 0 : indiceCarrusel + 1)}
-                      style={{
-                        position: "absolute", right: esMobil ? "-12px" : "-20px", zIndex: 2,
-                        width: "36px", height: "36px", borderRadius: "50%",
-                        backgroundColor: "#b79868", border: "none", cursor: "pointer",
-                        color: "white", fontSize: "18px", display: "flex",
-                        alignItems: "center", justifyContent: "center",
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.2)", flexShrink: 0
-                      }}
-                    >›</button>
+                  {hayFlechas && (
+                    <button onClick={irASiguiente} style={{
+                      position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)",
+                      width: paddingFlechas, height: "48px", zIndex: 2,
+                      backgroundColor: "#b79868", border: "none", cursor: "pointer",
+                      color: "white", fontSize: "20px", display: "flex",
+                      alignItems: "center", justifyContent: "center",
+                      borderRadius: "6px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
+                    }}>›</button>
                   )}
                 </div>
 
                 {/* puntos indicadores */}
-                {eventosPatrocinados.length > tarjetasPorVista && (
+                {hayFlechas && (
                   <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginTop: "16px" }}>
-                    {[...Array(Math.ceil(eventosPatrocinados.length - tarjetasPorVista + 1))].map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => irASlide(i)}
-                        style={{
-                          width: i === indiceCarrusel ? "20px" : "8px",
-                          height: "8px",
-                          borderRadius: "999px",
-                          backgroundColor: i === indiceCarrusel ? "#b79868" : "#d4b896",
-                          border: "none", cursor: "pointer", padding: 0,
-                          transition: "all 0.3s ease"
-                        }}
-                      />
+                    {[...Array(Math.max(0, eventosPatrocinados.length - tarjetasPorVista + 1))].map((_, i) => (
+                      <button key={i} onClick={() => irASlide(i)} style={{
+                        width: i === indiceCarrusel ? "20px" : "8px",
+                        height: "8px", borderRadius: "999px",
+                        backgroundColor: i === indiceCarrusel ? "#b79868" : "#d4b896",
+                        border: "none", cursor: "pointer", padding: 0,
+                        transition: "all 0.3s ease"
+                      }} />
                     ))}
                   </div>
                 )}

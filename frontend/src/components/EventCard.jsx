@@ -14,7 +14,7 @@ function EventCard({ evento, destacado = false }) {
     <div
       onClick={irADetalle}
       style={{
-        width: destacado ? "300px" : "260px",
+        width: destacado ? "100%" : "260px",
         cursor: "pointer",
         transition: "transform 0.15s ease",
         position: "relative",
@@ -26,7 +26,7 @@ function EventCard({ evento, destacado = false }) {
 
       {/* imagen con altura fija */}
       <div style={{
-        width: destacado ? "300px" : "260px",
+        width: "100%",
         height: destacado ? "260px" : "220px",
         overflow: "hidden",
         borderRadius: "14px",
