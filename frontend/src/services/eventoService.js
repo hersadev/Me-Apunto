@@ -44,13 +44,7 @@ const crearEvento = async (datos, imagen) => {
     formData.append("imagen", imagen);
   }
 
-  const response = await api.post("/eventos", formData, {
-    headers: {
-      // con FormData no ponemos Content-Type manualmente
-      // axios lo detecta automaticamente
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  const response = await api.post("/eventos", formData);
 
   return response.data;
 };
@@ -70,11 +64,7 @@ const editarEvento = async (id, datos, imagen) => {
     formData.append("imagen", imagen);
   }
 
-  const response = await api.put(`/eventos/${id}`, formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  const response = await api.put(`/eventos/${id}`, formData);
 
   return response.data;
 };

@@ -1,5 +1,5 @@
 const dotenv = require("dotenv");
-dotenv.config();
+dotenv.config({ override: true });
 
 const express = require("express");
 const cors = require("cors");
@@ -61,6 +61,28 @@ app.get("/", (req, res) => {
 
 app.use((req, res) => {
     res.status(404).json({ mensaje: "Ruta no encontrada" });
+});
+
+// manejo de errores global - captura errores de multer y cloudinary
+app.use((err, req, res, next) => {
+    console.error("Error capturado:", err.message || err);
+
+    if (err.name === "MulterError") {
+        if (err.code === "LIMIT_FILE_SIZE") {
+            return res.status(400).json({ mensaje: "La imagen no puede superar los 5MB" });
+        }
+        return res.status(400).json({ mensaje: "Error al procesar la imagen" });
+    }
+
+    if (err.message === "Solo se permiten imágenes") {
+        return res.status(400).json({ mensaje: "Solo se permiten archivos de imagen (jpg, png, webp)" });
+    }
+
+    if (err.http_code) {
+        return res.status(400).json({ mensaje: "Error al subir la imagen a Cloudinary: " + err.message });
+    }
+
+    res.status(500).json({ mensaje: err.message || "Error interno del servidor" });
 });
 
 iniciarCron();
