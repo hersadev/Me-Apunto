@@ -57,7 +57,7 @@ function Home({ estaLogueado }) {
     actualizar();
     window.addEventListener("resize", actualizar);
     return () => window.removeEventListener("resize", actualizar);
-  }, []);
+  }, [eventosPatrocinados]);
 
   const avanzarCarrusel = useCallback(() => {
     setIndiceCarrusel((prev) => {
@@ -269,7 +269,7 @@ function Home({ estaLogueado }) {
 
       <div style={{ position: "relative" }}>
         <Navbar mostrarInicio={false} estaLogueado={estaLogueado} />
-        <Hero mostrarBuscador={true} onBuscar={(valor) => setBusqueda(valor)} />
+        <Hero mostrarBuscador={true} onBuscar={(valor) => setBusqueda(valor)} onSubmit={handleBuscar} />
       </div>
 
       <main style={{
@@ -305,7 +305,7 @@ function Home({ estaLogueado }) {
             minWidth: esMobil ? "100px" : "150px", cursor: "pointer",
             fontFamily: "'Baloo Bhai 2', Helvetica"
           }}>
-            <option value="">Fecha</option>
+            <option value="">Toda Fecha</option>
             <option value="hoy">Hoy</option>
             <option value="semana">Esta semana</option>
             <option value="mes">Este mes</option>
@@ -317,7 +317,7 @@ function Home({ estaLogueado }) {
             minWidth: esMobil ? "100px" : "150px", cursor: "pointer",
             fontFamily: "'Baloo Bhai 2', Helvetica"
           }}>
-            <option value="">Tipo</option>
+            <option value="">Todo Tipo</option>
             <option value="gratuito">Gratuito</option>
             <option value="de-pago">De pago</option>
           </select>
@@ -425,7 +425,7 @@ function Home({ estaLogueado }) {
                       {eventosPatrocinados.map((evento) => (
                         <div key={evento._id} style={{
                           flexShrink: 0,
-                          width: anchoTarjeta > 0 ? `${anchoTarjeta}px` : "100%"
+                          width: anchoTarjeta > 0 ? `${anchoTarjeta}px` : "300px"
                         }}>
                           <EventCard evento={evento} destacado={true} />
                         </div>
