@@ -27,7 +27,9 @@ function Navbar({ mostrarInicio = false, estaLogueado }) {
     : !!localStorage.getItem("empresa");
 
   return(
-    <div style={{
+    <nav
+      aria-label="Navegación principal"
+      style={{
       position: "absolute",
       top: 0,
       left: 0,
@@ -105,7 +107,7 @@ function Navbar({ mostrarInicio = false, estaLogueado }) {
         )}
 
       </div>
-    </div>
+    </nav>
   );
 }
 

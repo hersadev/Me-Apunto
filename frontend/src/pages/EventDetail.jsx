@@ -2,7 +2,7 @@
 // ahora conectada con el backend usando eventoService e inscripcionService
 // carga el evento real de la base de datos por su id
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 
@@ -25,6 +25,31 @@ function EventDetail({ estaLogueado }) {
 
   // estado del modal de inscripcion
   const [modalAbierto, setModalAbierto] = useState(false);
+  const modalRef = useRef(null);
+
+  useEffect(() => {
+    if (!modalAbierto) return;
+    const focusable = modalRef.current?.querySelectorAll(
+      'button, input, textarea, select, [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusable?.length) focusable[0].focus();
+  }, [modalAbierto]);
+
+  const handleModalKeyDown = (e) => {
+    if (e.key === "Escape") { setModalAbierto(false); return; }
+    if (e.key !== "Tab") return;
+    const focusable = Array.from(modalRef.current?.querySelectorAll(
+      'button, input, textarea, select, [tabindex]:not([tabindex="-1"])'
+    ) || []);
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault(); last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault(); first.focus();
+    }
+  };
 
   // estado del formulario de inscripcion
   const [formInscripcion, setFormInscripcion] = useState({
@@ -186,7 +211,7 @@ function EventDetail({ estaLogueado }) {
       </div>
 
       {/* contenido principal */}
-      <main style={{
+      <main id="main-content" style={{
         flex: 1,
         width: "100%",
         maxWidth: "1100px",
@@ -467,6 +492,11 @@ function EventDetail({ estaLogueado }) {
           }}
         >
           <div
+            ref={modalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-inscripcion-titulo"
+            onKeyDown={handleModalKeyDown}
             onClick={(e) => e.stopPropagation()}
             style={{
               backgroundColor: "#f0e8dc",
@@ -483,7 +513,7 @@ function EventDetail({ estaLogueado }) {
 
             {/* cabecera modal */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h2 style={{
+              <h2 id="modal-inscripcion-titulo" style={{
                 fontFamily: "'Baloo Bhai 2', Helvetica",
                 fontSize: "20px",
                 fontWeight: "700",
@@ -492,13 +522,14 @@ function EventDetail({ estaLogueado }) {
                 ¡Me apunto a {evento.titulo}!
               </h2>
               <button
+                aria-label="Cerrar modal de inscripción"
                 onClick={() => setModalAbierto(false)}
                 style={{
                   background: "none", border: "none", fontSize: "28px",
                   cursor: "pointer", color: "#818181", lineHeight: 1
                 }}
               >
-                ×
+                <span aria-hidden="true">×</span>
               </button>
             </div>
 
@@ -549,7 +580,7 @@ function EventDetail({ estaLogueado }) {
 
                 {/* error inscripcion */}
                 {errorInscripcion && (
-                  <div style={{
+                  <div role="alert" style={{
                     backgroundColor: "#fdecea",
                     borderRadius: "8px",
                     padding: "10px 14px",
@@ -567,7 +598,7 @@ function EventDetail({ estaLogueado }) {
 
                 {/* nombre */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <label style={{
+                  <label htmlFor="insc-nombre" style={{
                     fontFamily: "'Baloo Bhai 2', Helvetica",
                     fontSize: "16px",
                     fontWeight: "600",
@@ -576,6 +607,7 @@ function EventDetail({ estaLogueado }) {
                     Nombre completo
                   </label>
                   <input
+                    id="insc-nombre"
                     type="text"
                     name="nombre"
                     value={formInscripcion.nombre}
@@ -600,7 +632,7 @@ function EventDetail({ estaLogueado }) {
 
                 {/* correo */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <label style={{
+                  <label htmlFor="insc-correo" style={{
                     fontFamily: "'Baloo Bhai 2', Helvetica",
                     fontSize: "16px",
                     fontWeight: "600",
@@ -609,6 +641,7 @@ function EventDetail({ estaLogueado }) {
                     Correo electrónico
                   </label>
                   <input
+                    id="insc-correo"
                     type="email"
                     name="correo"
                     value={formInscripcion.correo}
@@ -633,7 +666,7 @@ function EventDetail({ estaLogueado }) {
 
                 {/* ciudad */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <label style={{
+                  <label htmlFor="insc-ciudad" style={{
                     fontFamily: "'Baloo Bhai 2', Helvetica",
                     fontSize: "16px",
                     fontWeight: "600",
@@ -642,6 +675,7 @@ function EventDetail({ estaLogueado }) {
                     Ciudad
                   </label>
                   <input
+                    id="insc-ciudad"
                     type="text"
                     name="ciudad"
                     value={formInscripcion.ciudad}
@@ -666,7 +700,7 @@ function EventDetail({ estaLogueado }) {
 
                 {/* numero de personas */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <label style={{
+                  <label htmlFor="insc-numPersonas" style={{
                     fontFamily: "'Baloo Bhai 2', Helvetica",
                     fontSize: "16px",
                     fontWeight: "600",
@@ -685,6 +719,7 @@ function EventDetail({ estaLogueado }) {
                     }
                   </span>
                   <input
+                    id="insc-numPersonas"
                     type="number"
                     name="numPersonas"
                     value={formInscripcion.numPersonas}

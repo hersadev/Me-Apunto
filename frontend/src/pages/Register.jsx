@@ -140,7 +140,7 @@ function Register() {
         <Hero mostrarBuscador={false} />
       </div>
 
-      <main style={{
+      <main id="main-content" style={{
         flex: 1,
         display: "flex",
         flexDirection: "column",
@@ -150,19 +150,20 @@ function Register() {
         <AuthCard>
 
           <div style={{ textAlign: "center", marginBottom: "8px" }}>
-            <span style={{
+            <h1 style={{
               fontFamily: "'Baloo Bhai 2', Helvetica",
               fontSize: "24px",
               fontWeight: "700",
-              color: "#2c2c2c"
+              color: "#2c2c2c",
+              margin: 0
             }}>
               Registro de Empresa
-            </span>
+            </h1>
           </div>
 
           {/* mensaje de error */}
           {error && (
-            <div style={{
+            <div role="alert" style={{
               width: "100%",
               backgroundColor: "#fdecea",
               borderRadius: "8px",

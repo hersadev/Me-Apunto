@@ -1,7 +1,7 @@
 // panel de empresa - pagina privada para gestionar eventos
 // conectado con el backend usando eventoService y authService
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 
@@ -41,6 +41,50 @@ function CompanyPanel({ setEstaLogueado }) {
   const [modalEliminar, setModalEliminar] = useState(null);
   const [modalPatrocinio, setModalPatrocinio] = useState(null);
   const [pasoEliminarCuenta, setPasoEliminarCuenta] = useState(0);
+
+  const modalEliminarRef = useRef(null);
+  const modalCuentaRef = useRef(null);
+  const modalPatrocinioRef = useRef(null);
+
+  useEffect(() => {
+    if (modalEliminar === null || !modalEliminarRef.current) return;
+    const focusable = modalEliminarRef.current.querySelectorAll(
+      'button, input, textarea, select, [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusable.length) focusable[0].focus();
+  }, [modalEliminar]);
+
+  useEffect(() => {
+    if (pasoEliminarCuenta === 0 || !modalCuentaRef.current) return;
+    const focusable = modalCuentaRef.current.querySelectorAll(
+      'button, input, textarea, select, [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusable.length) focusable[0].focus();
+  }, [pasoEliminarCuenta]);
+
+  useEffect(() => {
+    if (modalPatrocinio === null || !modalPatrocinioRef.current) return;
+    const focusable = modalPatrocinioRef.current.querySelectorAll(
+      'button, input, textarea, select, [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusable.length) focusable[0].focus();
+  }, [modalPatrocinio]);
+
+  const makeTrapHandler = (ref, onClose) => (e) => {
+    if (e.key === "Escape") { onClose(); return; }
+    if (e.key !== "Tab" || !ref.current) return;
+    const focusable = Array.from(ref.current.querySelectorAll(
+      'button, input, textarea, select, [tabindex]:not([tabindex="-1"])'
+    ));
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault(); last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault(); first.focus();
+    }
+  };
 
   useEffect(() => {
     cargarEventos();
@@ -253,7 +297,7 @@ const abrirFormularioEditar = (evento) => {
         <Hero mostrarBuscador={false} />
       </div>
 
-      <main style={{
+      <main id="main-content" style={{
         flex: 1,
         width: "100%",
         maxWidth: "1100px",
@@ -262,7 +306,7 @@ const abrirFormularioEditar = (evento) => {
       }}>
 
         {error && (
-          <div style={{
+          <div role="alert" style={{
             backgroundColor: "#fdecea",
             borderRadius: "8px",
             padding: "12px 16px",
@@ -728,25 +772,28 @@ const abrirFormularioEditar = (evento) => {
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                       <div style={{ display: "flex", gap: "8px" }}>
                         <button
+                          aria-label={`Editar evento: ${evento.titulo}`}
                           onClick={() => abrirFormularioEditar(evento)}
                           style={estiloBotonSecundario}
                           onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
                           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#b79868"}
                         >
-                          ✏️ Editar
+                          <span aria-hidden="true">✏️</span> Editar
                         </button>
 
                         <button
+                          aria-label={`Eliminar evento: ${evento.titulo}`}
                           onClick={() => setModalEliminar(evento._id)}
                           style={estiloBotonPeligro}
                           onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#922b21"}
                           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#c0392b"}
                         >
-                          🗑️ Eliminar
+                          <span aria-hidden="true">🗑️</span> Eliminar
                         </button>
                       </div>
 
                       <button
+                        aria-label={evento.patrocinado ? `Desactivar patrocinio de: ${evento.titulo}` : `Activar patrocinio de: ${evento.titulo} (10€/mes)`}
                         onClick={() => setModalPatrocinio(evento)}
                         style={{
                           ...estiloBotonSecundario,
@@ -756,7 +803,7 @@ const abrirFormularioEditar = (evento) => {
                         onMouseEnter={(e) => e.currentTarget.style.opacity = "0.85"}
                         onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
                       >
-                        {evento.patrocinado ? "⭐ Desactivar patrocinio" : "⭐ Activar patrocinio (10€/mes)"}
+                        <span aria-hidden="true">⭐</span> {evento.patrocinado ? "Desactivar patrocinio" : "Activar patrocinio (10€/mes)"}
                       </button>
                     </div>
                   </div>
@@ -878,6 +925,11 @@ const abrirFormularioEditar = (evento) => {
           }}
         >
           <div
+            ref={modalEliminarRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-eliminar-titulo"
+            onKeyDown={makeTrapHandler(modalEliminarRef, () => setModalEliminar(null))}
             onClick={(e) => e.stopPropagation()}
             style={{
               backgroundColor: "#f0e8dc", borderRadius: "20px",
@@ -885,8 +937,8 @@ const abrirFormularioEditar = (evento) => {
               textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
             }}
           >
-            <div style={{ fontSize: "48px", marginBottom: "16px" }}>⚠️</div>
-            <h3 style={{
+            <div aria-hidden="true" style={{ fontSize: "48px", marginBottom: "16px" }}>⚠️</div>
+            <h3 id="modal-eliminar-titulo" style={{
               fontFamily: "'Baloo Bhai 2', Helvetica",
               fontSize: "20px", fontWeight: "700",
               color: "#1a1a1a", marginBottom: "12px"
@@ -934,6 +986,11 @@ const abrirFormularioEditar = (evento) => {
           }}
         >
           <div
+            ref={modalCuentaRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-cuenta-titulo"
+            onKeyDown={makeTrapHandler(modalCuentaRef, () => setPasoEliminarCuenta(0))}
             onClick={(e) => e.stopPropagation()}
             style={{
               backgroundColor: "#f0e8dc", borderRadius: "20px",
@@ -941,8 +998,8 @@ const abrirFormularioEditar = (evento) => {
               textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
             }}
           >
-            <div style={{ fontSize: "48px", marginBottom: "16px" }}>⚠️</div>
-            <h3 style={{
+            <div aria-hidden="true" style={{ fontSize: "48px", marginBottom: "16px" }}>⚠️</div>
+            <h3 id="modal-cuenta-titulo" style={{
               fontFamily: "'Baloo Bhai 2', Helvetica",
               fontSize: "20px", fontWeight: "700",
               color: "#1a1a1a", marginBottom: "12px"
@@ -990,6 +1047,10 @@ const abrirFormularioEditar = (evento) => {
           }}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-cuenta2-titulo"
+            onKeyDown={makeTrapHandler(modalCuentaRef, () => setPasoEliminarCuenta(0))}
             onClick={(e) => e.stopPropagation()}
             style={{
               backgroundColor: "#f0e8dc", borderRadius: "20px",
@@ -997,8 +1058,8 @@ const abrirFormularioEditar = (evento) => {
               textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
             }}
           >
-            <div style={{ fontSize: "48px", marginBottom: "16px" }}>🗑️</div>
-            <h3 style={{
+            <div aria-hidden="true" style={{ fontSize: "48px", marginBottom: "16px" }}>🗑️</div>
+            <h3 id="modal-cuenta2-titulo" style={{
               fontFamily: "'Baloo Bhai 2', Helvetica",
               fontSize: "20px", fontWeight: "700",
               color: "#c0392b", marginBottom: "12px"
@@ -1046,6 +1107,11 @@ const abrirFormularioEditar = (evento) => {
           }}
         >
           <div
+            ref={modalPatrocinioRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-patrocinio-titulo"
+            onKeyDown={makeTrapHandler(modalPatrocinioRef, () => setModalPatrocinio(null))}
             onClick={(e) => e.stopPropagation()}
             style={{
               backgroundColor: "#f0e8dc", borderRadius: "20px",
@@ -1053,8 +1119,8 @@ const abrirFormularioEditar = (evento) => {
               textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
             }}
           >
-            <div style={{ fontSize: "48px", marginBottom: "16px" }}>⭐</div>
-            <h3 style={{
+            <div aria-hidden="true" style={{ fontSize: "48px", marginBottom: "16px" }}>⭐</div>
+            <h3 id="modal-patrocinio-titulo" style={{
               fontFamily: "'Baloo Bhai 2', Helvetica",
               fontSize: "20px", fontWeight: "700",
               color: "#1a1a1a", marginBottom: "12px"

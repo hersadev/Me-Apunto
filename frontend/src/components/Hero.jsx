@@ -10,8 +10,10 @@ function Hero({ mostrarBuscador = false, onBuscar, onSubmit }) {
   const [valor, setValor] = useState("");
   const [sugerencias, setSugerencias] = useState([]);
   const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
+  const [indiceActivo, setIndiceActivo] = useState(-1);
   const debounceRef = useRef(null);
   const contenedorRef = useRef(null);
+  const listboxId = "hero-sugerencias-listbox";
 
   // cierra el dropdown al hacer clic fuera
   useEffect(() => {
@@ -42,6 +44,7 @@ function Hero({ mostrarBuscador = false, onBuscar, onSubmit }) {
         const data = await eventoService.getEventos({ busqueda: v, limite: 6 });
         setSugerencias(data.eventos || []);
         setMostrarSugerencias((data.eventos || []).length > 0);
+        setIndiceActivo(-1);
       } catch {
         setSugerencias([]);
         setMostrarSugerencias(false);
@@ -51,15 +54,34 @@ function Hero({ mostrarBuscador = false, onBuscar, onSubmit }) {
 
   const handleSubmit = () => {
     setMostrarSugerencias(false);
+    setIndiceActivo(-1);
     onSubmit && onSubmit();
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter") handleSubmit();
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (!mostrarSugerencias || sugerencias.length === 0) return;
+      setIndiceActivo((prev) => (prev < sugerencias.length - 1 ? prev + 1 : 0));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (!mostrarSugerencias || sugerencias.length === 0) return;
+      setIndiceActivo((prev) => (prev > 0 ? prev - 1 : sugerencias.length - 1));
+    } else if (e.key === "Escape") {
+      setMostrarSugerencias(false);
+      setIndiceActivo(-1);
+    } else if (e.key === "Enter") {
+      if (indiceActivo >= 0 && sugerencias[indiceActivo]) {
+        handleSeleccionar(sugerencias[indiceActivo]);
+      } else {
+        handleSubmit();
+      }
+    }
   };
 
   const handleSeleccionar = (evento) => {
     setMostrarSugerencias(false);
+    setIndiceActivo(-1);
     navegar(`/evento/${evento._id}`);
   };
 
@@ -89,6 +111,10 @@ function Hero({ mostrarBuscador = false, onBuscar, onSubmit }) {
       }}>
         <h1
           onClick={() => window.location.href = "/"}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); window.location.href = "/"; } }}
+          tabIndex={0}
+          role="link"
+          aria-label="Me Apunto — ir a la página de inicio"
           style={{
             fontSize: esMobil ? "32px" : "56px",
             color: "white",
@@ -114,6 +140,13 @@ function Hero({ mostrarBuscador = false, onBuscar, onSubmit }) {
             <div style={{ display: "flex" }}>
               <input
                 type="text"
+                role="combobox"
+                aria-label="Buscar evento o categoría"
+                aria-expanded={mostrarSugerencias}
+                aria-haspopup="listbox"
+                aria-controls={listboxId}
+                aria-autocomplete="list"
+                aria-activedescendant={indiceActivo >= 0 ? `sugerencia-${indiceActivo}` : undefined}
                 value={valor}
                 placeholder="Buscar evento o categoría"
                 onChange={handleChange}
@@ -146,7 +179,11 @@ function Hero({ mostrarBuscador = false, onBuscar, onSubmit }) {
 
             {/* dropdown de sugerencias */}
             {mostrarSugerencias && sugerencias.length > 0 && (
-              <div style={{
+              <div
+                id={listboxId}
+                role="listbox"
+                aria-label="Sugerencias de eventos"
+                style={{
                 position: "absolute",
                 top: "100%",
                 left: "16px",
@@ -160,15 +197,21 @@ function Hero({ mostrarBuscador = false, onBuscar, onSubmit }) {
                 {sugerencias.map((evento, i) => (
                   <div
                     key={evento._id}
+                    id={`sugerencia-${i}`}
+                    role="option"
+                    aria-selected={i === indiceActivo}
+                    tabIndex={-1}
                     onClick={() => handleSeleccionar(evento)}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleSeleccionar(evento); }}
                     style={{
                       display: "flex", alignItems: "center", gap: "10px",
                       padding: "10px 14px", cursor: "pointer",
                       borderTop: i > 0 ? "1px solid #f0e8dc" : "none",
                       transition: "background-color 0.1s ease",
+                      backgroundColor: i === indiceActivo ? "#fdf6ec" : "white",
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#fdf6ec"}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = i === indiceActivo ? "#fdf6ec" : "white"}
                   >
                     {/* miniatura */}
                     <img

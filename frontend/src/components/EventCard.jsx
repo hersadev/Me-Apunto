@@ -7,9 +7,20 @@ function EventCard({ evento, destacado = false }) {
   const navegar = useNavigate();
   const [hovered, setHovered] = useState(false);
 
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      navegar(`/evento/${evento._id}`);
+    }
+  };
+
   return (
     <div
+      role="link"
+      tabIndex={0}
+      aria-label={`Ver evento: ${evento.titulo}`}
       onClick={() => navegar(`/evento/${evento._id}`)}
+      onKeyDown={handleKeyDown}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{

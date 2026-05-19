@@ -20,7 +20,12 @@
 @layer base {
   button, input:not([type="checkbox"]), select, textarea {
     @apply appearance-none bg-transparent border-0 outline-none;
-}
+  }
+
+  *:focus-visible {
+    outline: 3px solid #b79868 !important;
+    outline-offset: 2px;
+  }
 
   body {
     margin: 0;
@@ -37,6 +42,26 @@
   .all-\[unset\] {
     all: unset;
   }
+}
+
+.skip-link {
+  position: absolute;
+  transform: translateY(-100%);
+  left: 8px;
+  top: 8px;
+  padding: 12px 20px;
+  background: #b79868;
+  color: white;
+  font-weight: 700;
+  font-size: 16px;
+  font-family: 'Baloo Bhai 2', Helvetica, sans-serif;
+  border-radius: 0 0 8px 8px;
+  z-index: 10000;
+  transition: transform 0.2s;
+  text-decoration: none;
+}
+.skip-link:focus {
+  transform: translateY(0);
 }
 
 @keyframes fade-in {

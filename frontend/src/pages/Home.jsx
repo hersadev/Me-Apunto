@@ -272,7 +272,7 @@ function Home({ estaLogueado }) {
         <Hero mostrarBuscador={true} onBuscar={(valor) => setBusqueda(valor)} onSubmit={handleBuscar} />
       </div>
 
-      <main style={{
+      <main id="main-content" style={{
         flex: 1, width: "100%", maxWidth: "1200px",
         margin: "0 auto", padding: "24px 16px"
       }}>
@@ -282,7 +282,7 @@ function Home({ estaLogueado }) {
           display: "flex", gap: "12px", justifyContent: "center",
           marginBottom: "40px", flexWrap: "wrap", alignItems: "center"
         }}>
-          <select value={categoria} onChange={(e) => setCategoria(e.target.value)} style={{
+          <select aria-label="Filtrar por categoría" value={categoria} onChange={(e) => setCategoria(e.target.value)} style={{
             backgroundColor: "#f9f6f1", border: "1px solid #afacac",
             fontSize: esMobil ? "14px" : "20px", padding: esMobil ? "6px 10px" : "8px 16px",
             minWidth: esMobil ? "100px" : "150px", cursor: "pointer",
@@ -299,7 +299,7 @@ function Home({ estaLogueado }) {
             <option value="otros">Otros</option>
           </select>
 
-          <select value={fecha} onChange={(e) => setFecha(e.target.value)} style={{
+          <select aria-label="Filtrar por fecha" value={fecha} onChange={(e) => setFecha(e.target.value)} style={{
             backgroundColor: "#f9f6f1", border: "1px solid #afacac",
             fontSize: esMobil ? "14px" : "20px", padding: esMobil ? "6px 10px" : "8px 16px",
             minWidth: esMobil ? "100px" : "150px", cursor: "pointer",
@@ -311,7 +311,7 @@ function Home({ estaLogueado }) {
             <option value="mes">Este mes</option>
           </select>
 
-          <select value={tipo} onChange={(e) => setTipo(e.target.value)} style={{
+          <select aria-label="Filtrar por tipo" value={tipo} onChange={(e) => setTipo(e.target.value)} style={{
             backgroundColor: "#f9f6f1", border: "1px solid #afacac",
             fontSize: esMobil ? "14px" : "20px", padding: esMobil ? "6px 10px" : "8px 16px",
             minWidth: esMobil ? "100px" : "150px", cursor: "pointer",
@@ -404,14 +404,14 @@ function Home({ estaLogueado }) {
                 <div style={{ position: "relative", padding: `0 ${paddingFlechas}` }}>
                   {/* flecha izquierda */}
                   {hayFlechas && (
-                    <button onClick={irAAnterior} style={{
+                    <button aria-label="Evento destacado anterior" onClick={irAAnterior} style={{
                       position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)",
                       width: paddingFlechas, height: "48px", zIndex: 2,
                       backgroundColor: "#b79868", border: "none", cursor: "pointer",
                       color: "white", fontSize: "20px", display: "flex",
                       alignItems: "center", justifyContent: "center",
                       borderRadius: "6px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
-                    }}>‹</button>
+                    }} aria-hidden={false}><span aria-hidden="true">‹</span></button>
                   )}
 
                   {/* ventana del carrusel */}
@@ -435,14 +435,14 @@ function Home({ estaLogueado }) {
 
                   {/* flecha derecha */}
                   {hayFlechas && (
-                    <button onClick={irASiguiente} style={{
+                    <button aria-label="Evento destacado siguiente" onClick={irASiguiente} style={{
                       position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)",
                       width: paddingFlechas, height: "48px", zIndex: 2,
                       backgroundColor: "#b79868", border: "none", cursor: "pointer",
                       color: "white", fontSize: "20px", display: "flex",
                       alignItems: "center", justifyContent: "center",
                       borderRadius: "6px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
-                    }}>›</button>
+                    }}><span aria-hidden="true">›</span></button>
                   )}
                 </div>
 
@@ -450,7 +450,7 @@ function Home({ estaLogueado }) {
                 {hayFlechas && (
                   <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginTop: "16px" }}>
                     {[...Array(Math.max(0, eventosPatrocinados.length - tarjetasPorVista + 1))].map((_, i) => (
-                      <button key={i} onClick={() => irASlide(i)} style={{
+                      <button key={i} aria-label={`Ir al evento destacado ${i + 1}`} aria-current={i === indiceCarrusel ? "true" : undefined} onClick={() => irASlide(i)} style={{
                         width: i === indiceCarrusel ? "20px" : "8px",
                         height: "8px", borderRadius: "999px",
                         backgroundColor: i === indiceCarrusel ? "#b79868" : "#d4b896",
@@ -554,16 +554,24 @@ function Home({ estaLogueado }) {
               justifyContent: "space-between", borderBottom: "1px solid #e5e7eb"
             }}>
               <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
-                <button onClick={vistaCalendario === "Mes" ? mesPrevio : semanaPrevia} style={{
-                  background: "none", border: "none", cursor: "pointer",
-                  color: "#6b7280", fontSize: "16px", padding: "4px 8px",
-                  fontFamily: "'Baloo Bhai 2', Helvetica"
-                }}>&lt;</button>
-                <button onClick={vistaCalendario === "Mes" ? mesSiguiente : semanaSiguiente} style={{
-                  background: "none", border: "none", cursor: "pointer",
-                  color: "#6b7280", fontSize: "16px", padding: "4px 8px",
-                  fontFamily: "'Baloo Bhai 2', Helvetica"
-                }}>&gt;</button>
+                <button
+                  aria-label={vistaCalendario === "Mes" ? "Mes anterior" : "Semana anterior"}
+                  onClick={vistaCalendario === "Mes" ? mesPrevio : semanaPrevia}
+                  style={{
+                    background: "none", border: "none", cursor: "pointer",
+                    color: "#6b7280", fontSize: "16px", padding: "4px 8px",
+                    fontFamily: "'Baloo Bhai 2', Helvetica"
+                  }}
+                ><span aria-hidden="true">&lt;</span></button>
+                <button
+                  aria-label={vistaCalendario === "Mes" ? "Mes siguiente" : "Semana siguiente"}
+                  onClick={vistaCalendario === "Mes" ? mesSiguiente : semanaSiguiente}
+                  style={{
+                    background: "none", border: "none", cursor: "pointer",
+                    color: "#6b7280", fontSize: "16px", padding: "4px 8px",
+                    fontFamily: "'Baloo Bhai 2', Helvetica"
+                  }}
+                ><span aria-hidden="true">&gt;</span></button>
                 <button onClick={() => {
                   setMesCalendario(new Date().getMonth());
                   setAnioCalendario(new Date().getFullYear());
@@ -592,7 +600,7 @@ function Home({ estaLogueado }) {
               </span>
 
               {!esMobil && (
-                <select value={vistaCalendario} onChange={(e) => setVistaCalendario(e.target.value)} style={{
+                <select aria-label="Vista del calendario" value={vistaCalendario} onChange={(e) => setVistaCalendario(e.target.value)} style={{
                   fontSize: "13px", border: "1px solid #d1d5db",
                   padding: "4px 8px", borderRadius: "4px",
                   fontFamily: "'Baloo Bhai 2', Helvetica", cursor: "pointer"
@@ -657,7 +665,11 @@ function Home({ estaLogueado }) {
 
                     return (
                       <div key={dia}
+                        role={tieneEventos ? "button" : undefined}
+                        tabIndex={tieneEventos ? 0 : undefined}
+                        aria-label={tieneEventos ? `${dia} de ${nombresMeses[mesCalendario]}, ${evsDia.length} evento${evsDia.length > 1 ? "s" : ""}` : undefined}
                         onClick={() => tieneEventos && handleClickDia(evsDia)}
+                        onKeyDown={(e) => { if (tieneEventos && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); handleClickDia(evsDia); } }}
                         style={{
                           border: "1px solid #f3f4f6",
                           minHeight: esMobil ? "36px" : "50px", padding: "2px",
@@ -751,7 +763,12 @@ function Home({ estaLogueado }) {
                           <div style={{ height: "100%" }} />
                         ) : (
                           evsDia.map((ev) => (
-                            <div key={ev._id} onClick={() => handleClickEvento(ev)}
+                            <div key={ev._id}
+                              role="button"
+                              tabIndex={0}
+                              aria-label={`Ver evento: ${ev.titulo}, ${ev.hora}`}
+                              onClick={() => handleClickEvento(ev)}
+                              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClickEvento(ev); } }}
                               style={{ ...estiloEvento, whiteSpace: "normal", lineHeight: "1.3" }}
                               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
                               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#b79868"}

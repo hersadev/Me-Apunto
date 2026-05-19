@@ -109,7 +109,7 @@
         </div>
 
         {/* contenido principal */}
-        <main style={{
+        <main id="main-content" style={{
             flex: 1,
             display: "flex",
             flexDirection: "column",
@@ -157,7 +157,7 @@
 
             {/* mensaje de error */}
             {error && (
-                <div style={{
+                <div role="alert" style={{
                 backgroundColor: "#fdecea",
                 borderRadius: "8px",
                 padding: "12px 16px",

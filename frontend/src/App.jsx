@@ -24,6 +24,7 @@ function App() {
 
   return (
     <HelmetProvider>
+      <a href="#main-content" className="skip-link">Saltar al contenido principal</a>
       <BrowserRouter>
         <ScrollToTop />
         <Suspense fallback={<div style={{ minHeight: "100vh", backgroundColor: "#f0e8dc" }} />}>

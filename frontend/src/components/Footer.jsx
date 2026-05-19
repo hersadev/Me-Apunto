@@ -39,7 +39,7 @@ function Footer() {
     >
       {enlaces.map((enlace, i) => (
         <span key={enlace.ruta} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          {i > 0 && <span style={{ color: "#f0e0c8", fontSize: "14px" }}>|</span>}
+          {i > 0 && <span aria-hidden="true" style={{ color: "#f0e0c8", fontSize: "14px" }}>|</span>}
           <button
             onClick={() => navegar(enlace.ruta)}
             style={estiloEnlace}

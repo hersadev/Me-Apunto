@@ -78,7 +78,7 @@
             <Hero mostrarBuscador={false} />
         </div>
 
-        <main style={{
+        <main id="main-content" style={{
             flex: 1,
             display: "flex",
             flexDirection: "column",
@@ -86,19 +86,20 @@
         }}>
             <AuthCard>
 
-            <span style={{
+            <h1 style={{
                 fontFamily: "'Baloo Bhai 2', Helvetica",
                 fontSize: "30px",
                 fontWeight: "700",
                 color: "#2c2c2c",
-                marginBottom: "4px"
+                marginBottom: "4px",
+                margin: 0
             }}>
                 Acceso Empresas
-            </span>
+            </h1>
 
             {/* mensaje de error - solo aparece si hay error */}
             {error && (
-                <div style={{
+                <div role="alert" style={{
                 width: "100%",
                 backgroundColor: "#fdecea",
                 borderRadius: "8px",
