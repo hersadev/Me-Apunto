@@ -7,6 +7,7 @@ const {
     obtenerPerfil,
     solicitarRecuperacion,
     cambiarContrasena,
+    eliminarCuenta,
 } = require("../controllers/authController");
 const { protegerRuta } = require("../middleware/authMiddleware");
 
@@ -16,5 +17,6 @@ router.post("/logout", logoutEmpresa);
 router.post("/recuperar", solicitarRecuperacion);
 router.post("/reset/:token", cambiarContrasena);
 router.get("/perfil", protegerRuta, obtenerPerfil);
+router.delete("/cuenta", protegerRuta, eliminarCuenta);
 
 module.exports = router;

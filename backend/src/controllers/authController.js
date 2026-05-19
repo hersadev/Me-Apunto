@@ -1,4 +1,5 @@
 const Empresa = require("../models/Empresa");
+const Evento = require("../models/Evento");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
@@ -29,9 +30,14 @@ const registrarEmpresa = async (req, res) => {
       return res.status(400).json({ mensaje: "Ya existe una cuenta con ese correo" });
     }
 
+    const cifRegex = /^[A-Z]\d{7}[A-Z0-9]$/i;
+    if (!cifRegex.test(nifCif.trim())) {
+      return res.status(400).json({ mensaje: "El CIF no es válido. Formato esperado: B12345678" });
+    }
+
     const nifCifExistente = await Empresa.findOne({ nifCif: nifCif.toUpperCase() });
     if (nifCifExistente) {
-      return res.status(400).json({ mensaje: "Ya existe una cuenta con ese NIF/CIF" });
+      return res.status(400).json({ mensaje: "Ya existe una cuenta con ese CIF" });
     }
 
     if (contrasena.length < 6) {
@@ -247,6 +253,28 @@ const cambiarContrasena = async (req, res) => {
   }
 };
 
+// DELETE /api/auth/cuenta
+const eliminarCuenta = async (req, res) => {
+  try {
+    const empresaId = req.empresa.id;
+
+    await Evento.deleteMany({ empresa: empresaId });
+    await Empresa.findByIdAndDelete(empresaId);
+
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    });
+
+    res.json({ mensaje: "Cuenta eliminada correctamente" });
+
+  } catch (error) {
+    console.error("Error al eliminar cuenta:", error);
+    res.status(500).json({ mensaje: "Error interno del servidor" });
+  }
+};
+
 module.exports = {
   registrarEmpresa,
   loginEmpresa,
@@ -254,4 +282,5 @@ module.exports = {
   obtenerPerfil,
   solicitarRecuperacion,
   cambiarContrasena,
+  eliminarCuenta,
 };

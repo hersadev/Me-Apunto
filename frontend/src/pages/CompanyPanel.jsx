@@ -40,6 +40,7 @@ function CompanyPanel({ setEstaLogueado }) {
   const [imagenFile, setImagenFile] = useState(null);
   const [modalEliminar, setModalEliminar] = useState(null);
   const [modalPatrocinio, setModalPatrocinio] = useState(null);
+  const [pasoEliminarCuenta, setPasoEliminarCuenta] = useState(0);
 
   useEffect(() => {
     cargarEventos();
@@ -153,6 +154,17 @@ const abrirFormularioEditar = (evento) => {
     await authService.logout();
     setEstaLogueado(false);
     navegar("/");
+  };
+
+  const eliminarCuenta = async () => {
+    try {
+      await authService.eliminarCuenta();
+      setEstaLogueado(false);
+      navegar("/");
+    } catch (err) {
+      setError("Error al eliminar la cuenta");
+      setPasoEliminarCuenta(0);
+    }
   };
 
   const estiloBotonPrimario = {
@@ -317,6 +329,15 @@ const abrirFormularioEditar = (evento) => {
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#7a5c2e"}
             >
               Cerrar sesión
+            </button>
+
+            <button
+              onClick={() => setPasoEliminarCuenta(1)}
+              style={{ ...estiloBotonPrimario, backgroundColor: "#c0392b" }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#922b21"}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#c0392b"}
+            >
+              Eliminar perfil
             </button>
           </div>
         </div>
@@ -895,6 +916,118 @@ const abrirFormularioEditar = (evento) => {
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#c0392b"}
               >
                 Sí, eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* modal eliminar cuenta - paso 1 */}
+      {pasoEliminarCuenta === 1 && (
+        <div
+          onClick={() => setPasoEliminarCuenta(0)}
+          style={{
+            position: "fixed", inset: 0,
+            backgroundColor: "rgba(0,0,0,0.65)",
+            zIndex: 100, display: "flex",
+            alignItems: "center", justifyContent: "center", padding: "16px"
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: "#f0e8dc", borderRadius: "20px",
+              padding: "36px", maxWidth: "420px", width: "100%",
+              textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
+            }}
+          >
+            <div style={{ fontSize: "48px", marginBottom: "16px" }}>⚠️</div>
+            <h3 style={{
+              fontFamily: "'Baloo Bhai 2', Helvetica",
+              fontSize: "20px", fontWeight: "700",
+              color: "#1a1a1a", marginBottom: "12px"
+            }}>
+              ¿Eliminar tu perfil de empresa?
+            </h3>
+            <p style={{
+              fontFamily: "'Baloo Bhai 2', Helvetica",
+              fontSize: "15px", color: "#4a4a4a",
+              marginBottom: "24px", lineHeight: "1.5"
+            }}>
+              Se eliminarán tu cuenta y todos tus eventos publicados. Esta acción no se puede deshacer.
+            </p>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+              <button
+                onClick={() => setPasoEliminarCuenta(0)}
+                style={{ ...estiloBotonPrimario, backgroundColor: "#818181" }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#5a5a5a"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#818181"}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => setPasoEliminarCuenta(2)}
+                style={{ ...estiloBotonPrimario, backgroundColor: "#c0392b" }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#922b21"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#c0392b"}
+              >
+                Sí, quiero eliminarlo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* modal eliminar cuenta - paso 2 */}
+      {pasoEliminarCuenta === 2 && (
+        <div
+          onClick={() => setPasoEliminarCuenta(0)}
+          style={{
+            position: "fixed", inset: 0,
+            backgroundColor: "rgba(0,0,0,0.65)",
+            zIndex: 100, display: "flex",
+            alignItems: "center", justifyContent: "center", padding: "16px"
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: "#f0e8dc", borderRadius: "20px",
+              padding: "36px", maxWidth: "420px", width: "100%",
+              textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
+            }}
+          >
+            <div style={{ fontSize: "48px", marginBottom: "16px" }}>🗑️</div>
+            <h3 style={{
+              fontFamily: "'Baloo Bhai 2', Helvetica",
+              fontSize: "20px", fontWeight: "700",
+              color: "#c0392b", marginBottom: "12px"
+            }}>
+              Confirmación final
+            </h3>
+            <p style={{
+              fontFamily: "'Baloo Bhai 2', Helvetica",
+              fontSize: "15px", color: "#4a4a4a",
+              marginBottom: "24px", lineHeight: "1.5"
+            }}>
+              ¿Confirmas que quieres eliminar definitivamente la cuenta de <strong>{empresa?.nombre}</strong> y todos sus eventos?
+            </p>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+              <button
+                onClick={() => setPasoEliminarCuenta(0)}
+                style={{ ...estiloBotonPrimario, backgroundColor: "#818181" }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#5a5a5a"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#818181"}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={eliminarCuenta}
+                style={{ ...estiloBotonPrimario, backgroundColor: "#922b21" }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#7b241c"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#922b21"}
+              >
+                Eliminar definitivamente
               </button>
             </div>
           </div>

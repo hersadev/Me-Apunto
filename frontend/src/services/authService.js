@@ -47,6 +47,12 @@ const cambiarContrasena = async (token, contrasena) => {
   return response.data;
 };
 
+const eliminarCuenta = async () => {
+  await api.delete("/auth/cuenta");
+  localStorage.removeItem("empresa");
+  localStorage.removeItem("token");
+};
+
 const authService = {
   registrar,
   login,
@@ -56,6 +62,7 @@ const authService = {
   getPerfil,
   solicitarRecuperacion,
   cambiarContrasena,
+  eliminarCuenta,
 };
 
 export default authService;

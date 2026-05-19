@@ -59,6 +59,12 @@ function Register() {
       return;
     }
 
+    const cifRegex = /^[A-Z]\d{7}[A-Z0-9]$/i;
+    if (!cifRegex.test(formData.nifCif.trim())) {
+      setError("El CIF no es válido. Formato esperado: B12345678");
+      return;
+    }
+
     setCargando(true);
 
     try {
@@ -235,7 +241,7 @@ function Register() {
               />
             </div>
 
-            {/* nif/cif */}
+            {/* cif */}
             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
               <label
                 htmlFor="nifCif"
@@ -246,7 +252,7 @@ function Register() {
                   color: "#1a1a1a"
                 }}
               >
-                NIF/CIF
+                CIF
               </label>
               <span style={{
                 fontFamily: "'Baloo Bhai 2', Helvetica",
@@ -254,7 +260,7 @@ function Register() {
                 color: "#818181",
                 marginTop: "-2px"
               }}>
-                NIF para autónomos (12345678Z) o CIF para sociedades (B12345678)
+                CIF de la empresa (ej: B12345678)
               </span>
               <input
                 id="nifCif"
