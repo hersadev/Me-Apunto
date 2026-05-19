@@ -68,4 +68,6 @@ const inscripcionSchema = new mongoose.Schema(
     }
 );
 
+inscripcionSchema.index({ evento: 1, createdAt: -1 });
+
 module.exports = mongoose.model("Inscripcion", inscripcionSchema);

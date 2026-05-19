@@ -3,7 +3,7 @@
 // calendario con vista de mes y semana funcionales
 // al hacer click en un dia con evento navega al detalle
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
 
@@ -182,14 +182,6 @@ function Home({ estaLogueado }) {
     return new Date(anioCalendario, mesCalendario + 1, 0).getDate();
   };
 
-  const diasDeLaSemana = () => {
-    return [...Array(7)].map((_, i) => {
-      const dia = new Date(lunesSemana);
-      dia.setDate(lunesSemana.getDate() + i);
-      return dia;
-    });
-  };
-
   const semanaPrevia = () => {
     const nuevaFecha = new Date(lunesSemana);
     nuevaFecha.setDate(lunesSemana.getDate() - 7);
@@ -202,27 +194,35 @@ function Home({ estaLogueado }) {
     setLunesSemana(nuevaFecha);
   };
 
-  const eventosDelDia = (fecha) => {
-    return [...eventos, ...eventosPatrocinados].filter((e) => {
-      const fechaEvento = new Date(e.fecha);
-      return (
-        fechaEvento.getDate() === fecha.getDate() &&
-        fechaEvento.getMonth() === fecha.getMonth() &&
-        fechaEvento.getFullYear() === fecha.getFullYear()
-      );
+  const eventosIndexados = useMemo(() => {
+    const map = {};
+    [...eventos, ...eventosPatrocinados].forEach((e) => {
+      const key = new Date(e.fecha).toDateString();
+      if (!map[key]) map[key] = [];
+      map[key].push(e);
     });
-  };
+    return map;
+  }, [eventos, eventosPatrocinados]);
 
-  const tituloSemana = () => {
-    const dias = diasDeLaSemana();
-    const primero = dias[0];
-    const ultimo = dias[6];
+  const eventosDelDia = (fecha) => eventosIndexados[fecha.toDateString()] || [];
+
+  const diasDeLaSemana = useMemo(() => {
+    return [...Array(7)].map((_, i) => {
+      const dia = new Date(lunesSemana);
+      dia.setDate(lunesSemana.getDate() + i);
+      return dia;
+    });
+  }, [lunesSemana]);
+
+  const tituloSemana = useMemo(() => {
+    const primero = diasDeLaSemana[0];
+    const ultimo = diasDeLaSemana[6];
     if (primero.getMonth() === ultimo.getMonth()) {
       return `${primero.getDate()} - ${ultimo.getDate()} ${nombresMeses[primero.getMonth()]} ${primero.getFullYear()}`;
     } else {
       return `${primero.getDate()} ${nombresMeses[primero.getMonth()]} - ${ultimo.getDate()} ${nombresMeses[ultimo.getMonth()]} ${ultimo.getFullYear()}`;
     }
-  };
+  }, [diasDeLaSemana]);
 
   const handleClickEvento = (evento) => {
     navegar(`/evento/${evento._id}`);
@@ -588,7 +588,7 @@ function Home({ estaLogueado }) {
               }}>
                 {vistaCalendario === "Mes"
                   ? `${nombresMeses[mesCalendario]} de ${anioCalendario}`
-                  : tituloSemana()}
+                  : tituloSemana}
               </span>
 
               {!esMobil && (
@@ -647,15 +647,8 @@ function Home({ estaLogueado }) {
 
                   {[...Array(diasEnMes())].map((_, i) => {
                     const dia = i + 1;
-                    const todosEventos = [...eventos, ...eventosPatrocinados];
-                    const evsDia = todosEventos.filter((e) => {
-                      const fe = new Date(e.fecha);
-                      return (
-                        fe.getDate() === dia &&
-                        fe.getMonth() === mesCalendario &&
-                        fe.getFullYear() === anioCalendario
-                      );
-                    });
+                    const diaDate = new Date(anioCalendario, mesCalendario, dia);
+                    const evsDia = eventosIndexados[diaDate.toDateString()] || [];
                     const hoy = new Date();
                     const esHoy = dia === hoy.getDate() &&
                       mesCalendario === hoy.getMonth() &&
@@ -711,7 +704,7 @@ function Home({ estaLogueado }) {
                   display: "grid", gridTemplateColumns: "repeat(7, 1fr)",
                   borderBottom: "1px solid #e5e7eb"
                 }}>
-                  {diasDeLaSemana().map((diaFecha, i) => {
+                  {diasDeLaSemana.map((diaFecha, i) => {
                     const hoy = new Date();
                     const esHoy = diaFecha.getDate() === hoy.getDate() &&
                       diaFecha.getMonth() === hoy.getMonth() &&
@@ -741,7 +734,7 @@ function Home({ estaLogueado }) {
                 <div style={{
                   display: "grid", gridTemplateColumns: "repeat(7, 1fr)", minHeight: "120px"
                 }}>
-                  {diasDeLaSemana().map((diaFecha, i) => {
+                  {diasDeLaSemana.map((diaFecha, i) => {
                     const evsDia = eventosDelDia(diaFecha);
                     const hoy = new Date();
                     const esHoy = diaFecha.getDate() === hoy.getDate() &&
@@ -775,7 +768,7 @@ function Home({ estaLogueado }) {
                   })}
                 </div>
 
-                {diasDeLaSemana().every((d) => eventosDelDia(d).length === 0) && (
+                {diasDeLaSemana.every((d) => eventosDelDia(d).length === 0) && (
                   <div style={{
                     textAlign: "center", padding: "16px", color: "#818181",
                     fontSize: "13px", fontFamily: "'Baloo Bhai 2', Helvetica",

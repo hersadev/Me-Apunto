@@ -12,8 +12,6 @@
   box-sizing: border-box;
 }
 
-/* importar fuente baloo de google fonts */
-@import url('https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@400;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;

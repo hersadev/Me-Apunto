@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import calendarioIcon from "../assets/icons/iconoCalendario.svg";
 import relojIcon from "../assets/icons/iconoReloj.svg";
@@ -35,6 +35,7 @@ function EventCard({ evento, destacado = false }) {
         <img
           src={evento.imagen || `https://picsum.photos/seed/${evento._id}/400/300`}
           alt={evento.titulo}
+          loading="lazy"
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
 
@@ -120,4 +121,4 @@ function EventCard({ evento, destacado = false }) {
   );
 }
 
-export default EventCard;
+export default memo(EventCard);

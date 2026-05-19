@@ -1,8 +1,9 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 function Footer() {
 
   const navegar = useNavigate();
+  const { pathname } = useLocation();
 
   const estiloEnlace = {
     color: "#f8f8f8",
@@ -14,6 +15,12 @@ function Footer() {
     transition: "opacity 0.15s ease",
     padding: "0 4px"
   };
+
+  const enlaces = [
+    { ruta: "/contacto", label: "Contacte con nosotros" },
+    { ruta: "/cookies",  label: "Política de Cookies" },
+    { ruta: "/terminos", label: "Términos y Condiciones" },
+  ].filter((enlace) => enlace.ruta !== pathname);
 
   return (
     <footer
@@ -30,36 +37,19 @@ function Footer() {
         flexWrap: "wrap"
       }}
     >
-      <button
-        onClick={() => navegar("/contacto")}
-        style={estiloEnlace}
-        onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
-        onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
-      >
-        Contacte con nosotros
-      </button>
-
-      <span style={{ color: "#f0e0c8", fontSize: "14px" }}>|</span>
-
-      <button
-        onClick={() => navegar("/cookies")}
-        style={estiloEnlace}
-        onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
-        onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
-      >
-        Política de Cookies
-      </button>
-
-      <span style={{ color: "#f0e0c8", fontSize: "14px" }}>|</span>
-
-      <button
-        onClick={() => navegar("/terminos")}
-        style={estiloEnlace}
-        onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
-        onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
-      >
-        Términos y Condiciones
-      </button>
+      {enlaces.map((enlace, i) => (
+        <span key={enlace.ruta} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          {i > 0 && <span style={{ color: "#f0e0c8", fontSize: "14px" }}>|</span>}
+          <button
+            onClick={() => navegar(enlace.ruta)}
+            style={estiloEnlace}
+            onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
+            onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
+          >
+            {enlace.label}
+          </button>
+        </span>
+      ))}
     </footer>
   );
 }

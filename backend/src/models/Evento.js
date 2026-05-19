@@ -127,4 +127,8 @@ const eventoSchema = new mongoose.Schema(
     }
 );
 
+eventoSchema.index({ empresa: 1, activo: 1 });
+eventoSchema.index({ activo: 1, patrocinado: -1, fecha: 1 });
+eventoSchema.index({ activo: 1, categoria: 1, fecha: 1 });
+
 module.exports = mongoose.model("Evento", eventoSchema);
