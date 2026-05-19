@@ -105,6 +105,7 @@ function Home({ estaLogueado }) {
 
   useEffect(() => {
     cargarEventos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paginaActual, tipo]);
 
   // recarga cuando se limpian todos los filtros
@@ -112,6 +113,7 @@ function Home({ estaLogueado }) {
     if (!busqueda && !categoria && !fecha && !tipo) {
       cargarEventos();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [busqueda, categoria, fecha, tipo]);
 
   const cargarEventos = async () => {

@@ -67,6 +67,7 @@ function EventDetail({ estaLogueado }) {
   // cargamos el evento al montar el componente
   useEffect(() => {
     cargarEvento();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const cargarEvento = async () => {
