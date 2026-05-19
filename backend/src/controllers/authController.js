@@ -1,5 +1,33 @@
 const Empresa = require("../models/Empresa");
 const Evento = require("../models/Evento");
+
+function validarCIF(cif) {
+  const upper = cif.toUpperCase();
+  if (!/^[ABCDEFGHJNPQRSUVW]\d{7}[0-9A-J]$/.test(upper)) return false;
+
+  const digits = upper.substring(1, 8);
+  const control = upper[8];
+
+  let sumImpar = 0;
+  for (let i = 0; i < 7; i += 2) {
+    const d = parseInt(digits[i]) * 2;
+    sumImpar += Math.floor(d / 10) + (d % 10);
+  }
+  let sumPar = 0;
+  for (let i = 1; i < 7; i += 2) sumPar += parseInt(digits[i]);
+
+  const total = (sumImpar + sumPar) % 10;
+  const digitoControl = total === 0 ? 0 : 10 - total;
+  const letraControl = "JABCDEFGHI"[digitoControl];
+
+  const soloDigito = "ABEH";
+  const soloLetra = "KPQS";
+  const letra = upper[0];
+
+  if (soloDigito.includes(letra)) return control === String(digitoControl);
+  if (soloLetra.includes(letra)) return control === letraControl;
+  return control === String(digitoControl) || control === letraControl;
+}
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
@@ -30,8 +58,7 @@ const registrarEmpresa = async (req, res) => {
       return res.status(400).json({ mensaje: "Ya existe una cuenta con ese correo" });
     }
 
-    const cifRegex = /^[A-Z]\d{7}[A-Z0-9]$/i;
-    if (!cifRegex.test(nifCif.trim())) {
+    if (!validarCIF(nifCif.trim())) {
       return res.status(400).json({ mensaje: "El CIF no es válido. Formato esperado: B12345678" });
     }
 
