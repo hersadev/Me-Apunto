@@ -65,9 +65,9 @@ const eventoSchema = new mongoose.Schema(
     // categoria del evento
     categoria: {
     type: String,
-    default: "",
+    required: [true, "La categoría es obligatoria"],
     trim: true,
-    enum: ["", "taller", "exposicion", "concurso", "concierto", "deporte", "gastronomia", "teatro", "otros"],
+    enum: ["taller", "exposicion", "concurso", "concierto", "deporte", "gastronomia", "teatro", "otros"],
     },
 
     // empresa que publica el evento

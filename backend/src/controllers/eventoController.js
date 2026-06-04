@@ -156,7 +156,7 @@ const crearEvento = async (req, res) => {
       categoria,
     } = req.body;
 
-    if (!titulo || !descripcion || !venue || !direccion || !fecha || !hora) {
+    if (!titulo || !descripcion || !venue || !direccion || !fecha || !hora || !categoria) {
       return res.status(400).json({ mensaje: "Faltan campos obligatorios" });
     }
 
@@ -173,7 +173,7 @@ const crearEvento = async (req, res) => {
       imagen: imagenUrl,
       maxPersonasPorInscripcion: maxPersonasPorInscripcion || null,
       empresa: req.empresa._id,
-      categoria: categoria || "",
+      categoria,
     });
 
     res.status(201).json({
@@ -227,7 +227,12 @@ const editarEvento = async (req, res) => {
           ? null
           : parseInt(maxPersonasPorInscripcion, 10);
     }
-    if (categoria !== undefined) evento.categoria = categoria;
+    if (categoria !== undefined) {
+      if (!categoria) {
+        return res.status(400).json({ mensaje: "La categoría es obligatoria" });
+      }
+      evento.categoria = categoria;
+    }
 
     if (req.file) {
       if (evento.imagen) {
@@ -358,7 +363,12 @@ const restaurarEvento = async (req, res) => {
           ? null
           : parseInt(maxPersonasPorInscripcion, 10);
     }
-    if (categoria !== undefined) evento.categoria = categoria;
+    if (categoria !== undefined) {
+      if (!categoria) {
+        return res.status(400).json({ mensaje: "La categoría es obligatoria" });
+      }
+      evento.categoria = categoria;
+    }
 
     if (req.file) {
       if (evento.imagen) {

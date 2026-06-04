@@ -6,6 +6,8 @@ const cors = require("cors");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
 const { rateLimit } = require("express-rate-limit");
+const mongoSanitize = require("express-mongo-sanitize");
+const xssSanitize = require("./src/middleware/xssSanitize");
 const conectarDB = require("./src/config/db");
 const { iniciarCron } = require("./src/services/cronService");
 
@@ -24,8 +26,10 @@ app.use(cors({
 }));
 
 app.use(cookieParser());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "10kb" }));
+app.use(express.urlencoded({ extended: true, limit: "10kb" }));
+app.use(mongoSanitize());
+app.use(xssSanitize);
 
 // limita a 10 intentos por IP cada 15 minutos en rutas de autenticación
 const authLimiter = rateLimit({

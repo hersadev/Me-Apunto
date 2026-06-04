@@ -50,6 +50,7 @@ function CompanyPanel({ setEstaLogueado }) {
   const modalEliminarRef = useRef(null);
   const modalCuentaRef = useRef(null);
   const modalPatrocinioRef = useRef(null);
+  const imagenInputRef = useRef(null);
 
   useEffect(() => {
     if (modalEliminar === null || !modalEliminarRef.current) return;
@@ -441,18 +442,64 @@ const abrirFormularioRestaurar = (evento) => {
           </div>
         </div>
 
-        {/* formulario de evento */}
+        {/* formulario de evento — modal */}
         {formularioAbierto && (
+          <div
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setFormularioAbierto(false);
+                setEditandoId(null);
+                setRestaurandoId(null);
+              }
+            }}
+            style={{
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(0,0,0,0.5)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1000,
+              padding: "16px"
+            }}
+          >
           <div
             id="formulario-evento"
             style={{
               backgroundColor: "#c9aa80",
               borderRadius: "20px",
-              padding: "32px 36px",
-              marginBottom: "36px",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.1)"
+              padding: "28px 32px",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.25)",
+              width: "100%",
+              maxWidth: "960px",
+              maxHeight: "96vh",
+              overflowY: "auto",
+              position: "relative"
             }}
           >
+            <button
+              type="button"
+              onClick={() => {
+                setFormularioAbierto(false);
+                setEditandoId(null);
+                setRestaurandoId(null);
+              }}
+              style={{
+                position: "absolute",
+                top: "16px",
+                right: "20px",
+                background: "none",
+                border: "none",
+                fontSize: "22px",
+                cursor: "pointer",
+                color: "#4a4a4a",
+                lineHeight: 1,
+                padding: "4px"
+              }}
+              aria-label="Cerrar formulario"
+            >
+              ✕
+            </button>
             <h2 style={{
               fontFamily: "'Baloo Bhai 2', Helvetica",
               fontSize: "22px",
@@ -482,8 +529,8 @@ const abrirFormularioRestaurar = (evento) => {
               onSubmit={handleSubmitEvento}
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "16px"
+                gridTemplateColumns: window.innerWidth < 600 ? "1fr 1fr" : "1fr 1fr 1fr 1fr",
+                gap: "12px"
               }}
             >
 
@@ -503,7 +550,7 @@ const abrirFormularioRestaurar = (evento) => {
               </div>
 
               {/* venue */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: "4px" }}>
                 <label style={estiloLabel} htmlFor="venue">Lugar / Venue *</label>
                 <input
                   id="venue"
@@ -518,7 +565,7 @@ const abrirFormularioRestaurar = (evento) => {
               </div>
 
               {/* direccion */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: "4px" }}>
                 <label style={estiloLabel} htmlFor="direccion">Dirección *</label>
                 <input
                   id="direccion"
@@ -562,7 +609,7 @@ const abrirFormularioRestaurar = (evento) => {
 
               {/* precio */}
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <label style={estiloLabel} htmlFor="precio">Precio (€) — 0 si es gratuito</label>
+                <label style={estiloLabel} htmlFor="precio">Precio (€)</label>
                 <input
                   id="precio"
                   type="number"
@@ -571,22 +618,23 @@ const abrirFormularioRestaurar = (evento) => {
                   onChange={handleFormChange}
                   min="0"
                   step="0.01"
-                  placeholder="0"
+                  placeholder="0 = gratuito"
                   style={estiloInput}
                 />
               </div>
 
               {/* categoria */}
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <label style={estiloLabel} htmlFor="categoria">Categoría</label>
+                <label style={estiloLabel} htmlFor="categoria">Categoría *</label>
                 <select
                   id="categoria"
                   name="categoria"
                   value={formEvento.categoria}
                   onChange={handleFormChange}
+                  required
                   style={estiloInput}
                 >
-                  <option value="">Sin categoría</option>
+                  <option value="" disabled hidden>Selecciona...</option>
                   <option value="taller">Taller</option>
                   <option value="exposicion">Exposición</option>
                   <option value="concurso">Concurso</option>
@@ -597,48 +645,81 @@ const abrirFormularioRestaurar = (evento) => {
                   <option value="otros">Otros</option>
                 </select>
               </div>
+
               {/* limite de personas por inscripcion */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <label style={estiloLabel} htmlFor="maxPersonasPorInscripcion">
-                    Límite de personas por inscripción
-                  </label>
-                  <span style={{
-                    fontFamily: "'Baloo Bhai 2', Helvetica",
-                    fontSize: "13px", color: "#4a4a4a", marginBottom: "4px"
-                  }}>
-                    Déjalo vacío para sin límite
-                  </span>
-                  <input
-                    id="maxPersonasPorInscripcion"
-                    type="number"
-                    name="maxPersonasPorInscripcion"
-                    value={formEvento.maxPersonasPorInscripcion}
-                    onChange={handleFormChange}
-                    min="1"
-                    placeholder="Sin límite"
-                    style={estiloInput}
-                  />
-                </div>
+              <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: "4px" }}>
+                <label style={estiloLabel} htmlFor="maxPersonasPorInscripcion">
+                  Límite de personas por inscripción
+                </label>
+                <input
+                  id="maxPersonasPorInscripcion"
+                  type="number"
+                  name="maxPersonasPorInscripcion"
+                  value={formEvento.maxPersonasPorInscripcion}
+                  onChange={handleFormChange}
+                  min="1"
+                  placeholder="Sin límite"
+                  style={estiloInput}
+                />
+              </div>
 
               {/* imagen */}
-              <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: "4px" }}>
+              <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: "4px" }}>
                 <label style={estiloLabel} htmlFor="imagen">Imagen del evento</label>
-                <span style={{
-                  fontFamily: "'Baloo Bhai 2', Helvetica",
-                  fontSize: "13px",
-                  color: "#4a4a4a",
-                  marginBottom: "4px"
-                }}>
-                  Si no subes imagen se usará una imagen aleatoria automáticamente
-                </span>
-                <input
-                  id="imagen"
-                  type="file"
-                  name="imagen"
-                  accept="image/*"
-                  onChange={handleFormChange}
-                  style={{ ...estiloInput, height: "auto", padding: "10px 12px", cursor: "pointer" }}
-                />
+                {imagenFile ? (
+                  <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    backgroundColor: "#f8f8f8",
+                    border: "1px solid #d4b896",
+                    borderRadius: "8px",
+                    padding: "10px 12px"
+                  }}>
+                    <span style={{
+                      fontFamily: "'Baloo Bhai 2', Helvetica",
+                      fontSize: "14px",
+                      color: "#1a1a1a",
+                      flex: 1,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap"
+                    }}>
+                      {imagenFile.name}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImagenFile(null);
+                        if (imagenInputRef.current) imagenInputRef.current.value = "";
+                      }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: "16px",
+                        color: "#7a5c2e",
+                        padding: "0 2px",
+                        lineHeight: 1,
+                        flexShrink: 0
+                      }}
+                      aria-label="Eliminar imagen seleccionada"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <input
+                    ref={imagenInputRef}
+                    id="imagen"
+                    type="file"
+                    name="imagen"
+                    accept="image/*"
+                    onChange={handleFormChange}
+                    title="Si no subes imagen se usará una imagen aleatoria automáticamente"
+                    style={{ ...estiloInput, height: "auto", padding: "10px 12px", cursor: "pointer" }}
+                  />
+                )}
               </div>
 
               {/* descripcion */}
@@ -651,7 +732,7 @@ const abrirFormularioRestaurar = (evento) => {
                   onChange={handleFormChange}
                   required
                   placeholder="Describe tu evento..."
-                  rows={5}
+                  rows={3}
                   style={{
                     width: "100%",
                     backgroundColor: "#f8f8f8",
@@ -662,8 +743,7 @@ const abrirFormularioRestaurar = (evento) => {
                     border: "1px solid #d4b896",
                     borderRadius: "8px",
                     outline: "none",
-                    resize: "vertical",
-                    minHeight: "120px"
+                    resize: "vertical"
                   }}
                 />
               </div>
@@ -674,7 +754,7 @@ const abrirFormularioRestaurar = (evento) => {
                 display: "flex",
                 gap: "12px",
                 justifyContent: "flex-end",
-                marginTop: "8px"
+                marginTop: "4px"
               }}>
                 <button
                   type="button"
@@ -705,6 +785,7 @@ const abrirFormularioRestaurar = (evento) => {
               </div>
 
             </form>
+          </div>
           </div>
         )}
 

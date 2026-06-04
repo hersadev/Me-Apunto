@@ -10,12 +10,13 @@ const {
     eliminarCuenta,
 } = require("../controllers/authController");
 const { protegerRuta } = require("../middleware/authMiddleware");
+const { validarRegistro, validarLogin, validarRecuperar, validarReset } = require("../middleware/authValidaciones");
 
-router.post("/register", registrarEmpresa);
-router.post("/login", loginEmpresa);
+router.post("/register", validarRegistro, registrarEmpresa);
+router.post("/login", validarLogin, loginEmpresa);
 router.post("/logout", logoutEmpresa);
-router.post("/recuperar", solicitarRecuperacion);
-router.post("/reset/:token", cambiarContrasena);
+router.post("/recuperar", validarRecuperar, solicitarRecuperacion);
+router.post("/reset/:token", validarReset, cambiarContrasena);
 router.get("/perfil", protegerRuta, obtenerPerfil);
 router.delete("/cuenta", protegerRuta, eliminarCuenta);
 
