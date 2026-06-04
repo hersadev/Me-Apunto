@@ -7,6 +7,7 @@
     const Evento = require("../models/Evento");
     const Empresa = require("../models/Empresa");
     const { enviarCorreoAvisoRenovacion } = require("./emailService");
+    const { eliminarImagen } = require("./cloudinaryService");
 
     // funcion que revisa los patrocinios proximos a renovarse
     // se ejecuta una vez al dia a las 9:00
@@ -131,6 +132,44 @@
     }
     };
 
+    // funcion que purga la papelera eliminando definitivamente los eventos
+    // que llevan mas de 30 dias enviados a papelera
+    // tambien borra la imagen asociada en Cloudinary
+    const purgarPapelera = async () => {
+    try {
+        console.log("Purgando papelera (eventos > 30 dias)...");
+
+        const hace30dias = new Date();
+        hace30dias.setDate(hace30dias.getDate() - 30);
+
+        const expirados = await Evento.find({
+        activo: false,
+        fechaEliminacion: { $ne: null, $lt: hace30dias },
+        });
+
+        console.log(`Encontrados ${expirados.length} eventos para purgar`);
+
+        for (const evento of expirados) {
+        try {
+            if (evento.imagen) {
+            const publicId = evento.imagen
+                .split("/")
+                .slice(-2)
+                .join("/")
+                .split(".")[0];
+            await eliminarImagen(publicId);
+            }
+            await evento.deleteOne();
+        } catch (errEvento) {
+            console.error(`Error al purgar evento ${evento._id}:`, errEvento);
+        }
+        }
+
+    } catch (error) {
+        console.error("Error en purga de papelera:", error);
+    }
+    };
+
     // iniciamos las tareas programadas
     const iniciarCron = () => {
     // tarea 1: revisar patrocinios proximos a renovarse
@@ -145,6 +184,13 @@
     cron.schedule("0 0 * * *", () => {
         console.log("Cron: renovando patrocinios vencidos...");
         renovarPatrociniosVencidos();
+    });
+
+    // tarea 3: purgar la papelera (>30 dias)
+    // se ejecuta todos los dias a las 3:00
+    cron.schedule("0 3 * * *", () => {
+        console.log("Cron: purgando papelera...");
+        purgarPapelera();
     });
 
     console.log("Tareas programadas iniciadas correctamente");

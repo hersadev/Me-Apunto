@@ -20,11 +20,16 @@ function CompanyPanel({ setEstaLogueado }) {
 
   const [eventosActivos, setEventosActivos] = useState([]);
   const [eventosPasados, setEventosPasados] = useState([]);
+  const [eventosPapelera, setEventosPapelera] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
 
   const [formularioAbierto, setFormularioAbierto] = useState(false);
+  const [eventosPasadosAbierto, setEventosPasadosAbierto] = useState(false);
+  const [papeleraAbierta, setPapeleraAbierta] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
+  const [restaurandoId, setRestaurandoId] = useState(null);
+  const [modalEliminarDefinitivo, setModalEliminarDefinitivo] = useState(null);
   const [formEvento, setFormEvento] = useState({
     titulo: "",
     descripcion: "",
@@ -93,9 +98,13 @@ function CompanyPanel({ setEstaLogueado }) {
   const cargarEventos = async () => {
     try {
       setCargando(true);
-      const data = await eventoService.getMisEventos();
+      const [data, papelera] = await Promise.all([
+        eventoService.getMisEventos(),
+        eventoService.getPapelera(),
+      ]);
       setEventosActivos(data.eventosActivos);
       setEventosPasados(data.eventosPasados);
+      setEventosPapelera(papelera.eventos || []);
     } catch (err) {
       setError("Error al cargar los eventos");
       console.error(err);
@@ -115,6 +124,7 @@ function CompanyPanel({ setEstaLogueado }) {
 
   const abrirFormularioNuevo = () => {
     setEditandoId(null);
+    setRestaurandoId(null);
     setFormEvento({
       titulo: "",
       descripcion: "",
@@ -135,6 +145,28 @@ function CompanyPanel({ setEstaLogueado }) {
 
 const abrirFormularioEditar = (evento) => {
   setEditandoId(evento._id);
+  setRestaurandoId(null);
+  setFormEvento({
+    titulo: evento.titulo,
+    descripcion: evento.descripcion || "",
+    venue: evento.venue,
+    direccion: evento.direccion || "",
+    fecha: evento.fecha ? evento.fecha.split("T")[0] : "",
+    hora: evento.hora,
+    precio: evento.precio,
+    categoria: evento.categoria || "",
+    maxPersonasPorInscripcion: evento.maxPersonasPorInscripcion || "",
+  });
+  setImagenFile(null);
+  setFormularioAbierto(true);
+  setTimeout(() => {
+    document.getElementById("formulario-evento")?.scrollIntoView({ behavior: "smooth" });
+  }, 100);
+};
+
+const abrirFormularioRestaurar = (evento) => {
+  setEditandoId(null);
+  setRestaurandoId(evento._id);
   setFormEvento({
     titulo: evento.titulo,
     descripcion: evento.descripcion || "",
@@ -158,7 +190,9 @@ const abrirFormularioEditar = (evento) => {
     setError("");
 
     try {
-      if (editandoId !== null) {
+      if (restaurandoId !== null) {
+        await eventoService.restaurarEvento(restaurandoId, formEvento, imagenFile);
+      } else if (editandoId !== null) {
         await eventoService.editarEvento(editandoId, formEvento, imagenFile);
       } else {
         await eventoService.crearEvento(formEvento, imagenFile);
@@ -167,10 +201,31 @@ const abrirFormularioEditar = (evento) => {
       await cargarEventos();
       setFormularioAbierto(false);
       setEditandoId(null);
+      setRestaurandoId(null);
 
     } catch (err) {
       setError(err.response?.data?.mensaje || "Error al guardar el evento");
     }
+  };
+
+  const eliminarEventoDefinitivo = async () => {
+    try {
+      await eventoService.eliminarEventoDefinitivo(modalEliminarDefinitivo);
+      await cargarEventos();
+      setModalEliminarDefinitivo(null);
+    } catch (err) {
+      setError(err.response?.data?.mensaje || "Error al eliminar el evento");
+      setModalEliminarDefinitivo(null);
+    }
+  };
+
+  const diasRestantesPapelera = (fechaEliminacion) => {
+    if (!fechaEliminacion) return 30;
+    const eliminado = new Date(fechaEliminacion);
+    const expira = new Date(eliminado);
+    expira.setDate(expira.getDate() + 30);
+    const diff = Math.ceil((expira - new Date()) / (1000 * 60 * 60 * 24));
+    return Math.max(diff, 0);
   };
 
   const eliminarEvento = async () => {
@@ -405,8 +460,23 @@ const abrirFormularioEditar = (evento) => {
               color: "#1a1a1a",
               marginBottom: "24px"
             }}>
-              {editandoId !== null ? "Editar evento" : "Publicar nuevo evento"}
+              {restaurandoId !== null
+                ? "Recuperar evento de la papelera"
+                : editandoId !== null
+                  ? "Editar evento"
+                  : "Publicar nuevo evento"}
             </h2>
+            {restaurandoId !== null && (
+              <p style={{
+                fontFamily: "'Baloo Bhai 2', Helvetica",
+                fontSize: "14px",
+                color: "#4a4a4a",
+                marginTop: "-16px",
+                marginBottom: "20px"
+              }}>
+                Revisa y modifica los datos antes de publicarlo de nuevo.
+              </p>
+            )}
 
             <form
               onSubmit={handleSubmitEvento}
@@ -608,7 +678,11 @@ const abrirFormularioEditar = (evento) => {
               }}>
                 <button
                   type="button"
-                  onClick={() => setFormularioAbierto(false)}
+                  onClick={() => {
+                    setFormularioAbierto(false);
+                    setEditandoId(null);
+                    setRestaurandoId(null);
+                  }}
                   style={{ ...estiloBotonPrimario, backgroundColor: "#818181" }}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#5a5a5a"}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#818181"}
@@ -622,7 +696,11 @@ const abrirFormularioEditar = (evento) => {
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#7a5c2e"}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
                 >
-                  {editandoId !== null ? "Guardar cambios" : "Publicar evento"}
+                  {restaurandoId !== null
+                    ? "Recuperar y publicar"
+                    : editandoId !== null
+                      ? "Guardar cambios"
+                      : "Publicar evento"}
                 </button>
               </div>
 
@@ -815,23 +893,51 @@ const abrirFormularioEditar = (evento) => {
           {/* Eventos pasados */}
           {!cargando && eventosPasados.length > 0 && (
             <>
-              <h2 style={{
-                fontFamily: "'Baloo Bhai 2', Helvetica",
-                fontSize: "22px",
-                fontWeight: "700",
-                color: "#1a1a1a",
-                marginTop: "40px",
-                marginBottom: "20px"
-              }}>
+              <button
+                type="button"
+                onClick={() => setEventosPasadosAbierto((prev) => !prev)}
+                aria-expanded={eventosPasadosAbierto}
+                aria-controls="lista-eventos-pasados"
+                style={{
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  marginTop: "40px",
+                  marginBottom: "20px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  fontFamily: "'Baloo Bhai 2', Helvetica",
+                  fontSize: "22px",
+                  fontWeight: "700",
+                  color: "#1a1a1a"
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  style={{
+                    display: "inline-block",
+                    transition: "transform 0.2s ease",
+                    transform: eventosPasadosAbierto ? "rotate(90deg)" : "rotate(0deg)",
+                    fontSize: "18px"
+                  }}
+                >
+                  ▶
+                </span>
                 Eventos pasados ({eventosPasados.length})
-              </h2>
+              </button>
 
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-                gap: "24px",
-                opacity: 0.75
-              }}>
+              {eventosPasadosAbierto && (
+              <div
+                id="lista-eventos-pasados"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+                  gap: "24px",
+                  opacity: 0.75
+                }}
+              >
                 {eventosPasados.map((evento) => (
                   <div
                     key={evento._id}
@@ -905,6 +1011,167 @@ const abrirFormularioEditar = (evento) => {
                   </div>
                 ))}
               </div>
+              )}
+            </>
+          )}
+
+          {/* Papelera */}
+          {!cargando && eventosPapelera.length > 0 && (
+            <>
+              <button
+                type="button"
+                onClick={() => setPapeleraAbierta((prev) => !prev)}
+                aria-expanded={papeleraAbierta}
+                aria-controls="lista-papelera"
+                style={{
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  marginTop: "40px",
+                  marginBottom: "8px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  fontFamily: "'Baloo Bhai 2', Helvetica",
+                  fontSize: "22px",
+                  fontWeight: "700",
+                  color: "#1a1a1a"
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  style={{
+                    display: "inline-block",
+                    transition: "transform 0.2s ease",
+                    transform: papeleraAbierta ? "rotate(90deg)" : "rotate(0deg)",
+                    fontSize: "18px"
+                  }}
+                >
+                  ▶
+                </span>
+                <span aria-hidden="true">🗑️</span> Papelera ({eventosPapelera.length})
+              </button>
+
+              <p style={{
+                fontFamily: "'Baloo Bhai 2', Helvetica",
+                fontSize: "13px",
+                color: "#6a6a6a",
+                marginBottom: "20px"
+              }}>
+                Los eventos eliminados se conservan 30 días. Después se borran definitivamente.
+              </p>
+
+              {papeleraAbierta && (
+                <div
+                  id="lista-papelera"
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+                    gap: "24px"
+                  }}
+                >
+                  {eventosPapelera.map((evento) => {
+                    const dias = diasRestantesPapelera(evento.fechaEliminacion);
+                    return (
+                      <div
+                        key={evento._id}
+                        style={{
+                          backgroundColor: "#fdecea",
+                          borderRadius: "16px",
+                          overflow: "hidden",
+                          boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+                          display: "flex",
+                          flexDirection: "column",
+                          border: "1px solid #f5c6c2"
+                        }}
+                      >
+                        <div style={{ width: "100%", height: "140px", overflow: "hidden" }}>
+                          <img
+                            src={evento.imagen
+                              ? evento.imagen
+                              : `https://picsum.photos/seed/${evento._id}/400/300`
+                            }
+                            alt={evento.titulo}
+                            style={{ width: "100%", height: "100%", objectFit: "cover", filter: "grayscale(60%)" }}
+                          />
+                        </div>
+
+                        <div style={{ padding: "16px", flex: 1, display: "flex", flexDirection: "column", gap: "8px" }}>
+                          <div style={{
+                            fontFamily: "'Baloo Bhai 2', Helvetica",
+                            fontSize: "15px",
+                            fontWeight: "700",
+                            color: "#1a1a1a",
+                            lineHeight: "1.3"
+                          }}>
+                            {evento.titulo}
+                          </div>
+
+                          <div style={{
+                            fontFamily: "'Baloo Bhai 2', Helvetica",
+                            fontSize: "13px",
+                            color: "#818181"
+                          }}>
+                            📅 {new Date(evento.fecha).toLocaleDateString("es-ES")}
+                            {evento.hora && ` · ${evento.hora.slice(0, 5)}`}
+                          </div>
+
+                          <div style={{
+                            fontFamily: "'Baloo Bhai 2', Helvetica",
+                            fontSize: "13px",
+                            color: "#818181"
+                          }}>
+                            📍 {evento.venue}
+                          </div>
+
+                          <div style={{
+                            backgroundColor: dias <= 7 ? "#c0392b" : "#b79868",
+                            color: "white",
+                            fontFamily: "'Baloo Bhai 2', Helvetica",
+                            fontSize: "12px",
+                            fontWeight: "700",
+                            padding: "4px 10px",
+                            borderRadius: "999px",
+                            display: "inline-block",
+                            alignSelf: "flex-start"
+                          }}>
+                            {dias === 0
+                              ? "Se eliminará hoy"
+                              : dias === 1
+                                ? "Queda 1 día"
+                                : `Quedan ${dias} días`}
+                          </div>
+
+                          <div style={{ height: "1px", backgroundColor: "#f5c6c2", margin: "4px 0" }} />
+
+                          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                            <button
+                              aria-label={`Recuperar evento: ${evento.titulo}`}
+                              onClick={() => abrirFormularioRestaurar(evento)}
+                              style={estiloBotonSecundario}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#b79868"}
+                            >
+                              <span aria-hidden="true">♻️</span> Recuperar
+                            </button>
+
+                            <button
+                              aria-label={`Eliminar definitivamente: ${evento.titulo}`}
+                              onClick={() => setModalEliminarDefinitivo(evento._id)}
+                              style={estiloBotonPeligro}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#922b21"}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#c0392b"}
+                            >
+                              <span aria-hidden="true">🗑️</span> Eliminar ya
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </>
           )}
         </div>
@@ -937,20 +1204,20 @@ const abrirFormularioEditar = (evento) => {
               textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
             }}
           >
-            <div aria-hidden="true" style={{ fontSize: "48px", marginBottom: "16px" }}>⚠️</div>
+            <div aria-hidden="true" style={{ fontSize: "48px", marginBottom: "16px" }}>🗑️</div>
             <h3 id="modal-eliminar-titulo" style={{
               fontFamily: "'Baloo Bhai 2', Helvetica",
               fontSize: "20px", fontWeight: "700",
               color: "#1a1a1a", marginBottom: "12px"
             }}>
-              ¿Eliminar este evento?
+              ¿Enviar este evento a la papelera?
             </h3>
             <p style={{
               fontFamily: "'Baloo Bhai 2', Helvetica",
               fontSize: "15px", color: "#4a4a4a",
               marginBottom: "24px", lineHeight: "1.5"
             }}>
-              Esta acción no se puede deshacer. El evento se eliminará permanentemente.
+              Podrás recuperarlo durante 30 días desde la papelera. Después se eliminará definitivamente.
             </p>
             <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
               <button
@@ -967,7 +1234,67 @@ const abrirFormularioEditar = (evento) => {
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#922b21"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#c0392b"}
               >
-                Sí, eliminar
+                Sí, a la papelera
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* modal eliminar definitivamente (desde papelera) */}
+      {modalEliminarDefinitivo !== null && (
+        <div
+          onClick={() => setModalEliminarDefinitivo(null)}
+          style={{
+            position: "fixed", inset: 0,
+            backgroundColor: "rgba(0,0,0,0.65)",
+            zIndex: 100, display: "flex",
+            alignItems: "center", justifyContent: "center", padding: "16px"
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-eliminar-def-titulo"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => { if (e.key === "Escape") setModalEliminarDefinitivo(null); }}
+            style={{
+              backgroundColor: "#f0e8dc", borderRadius: "20px",
+              padding: "36px", maxWidth: "420px", width: "100%",
+              textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
+            }}
+          >
+            <div aria-hidden="true" style={{ fontSize: "48px", marginBottom: "16px" }}>⚠️</div>
+            <h3 id="modal-eliminar-def-titulo" style={{
+              fontFamily: "'Baloo Bhai 2', Helvetica",
+              fontSize: "20px", fontWeight: "700",
+              color: "#c0392b", marginBottom: "12px"
+            }}>
+              ¿Eliminar definitivamente?
+            </h3>
+            <p style={{
+              fontFamily: "'Baloo Bhai 2', Helvetica",
+              fontSize: "15px", color: "#4a4a4a",
+              marginBottom: "24px", lineHeight: "1.5"
+            }}>
+              El evento se borrará para siempre. Esta acción no se puede deshacer.
+            </p>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+              <button
+                onClick={() => setModalEliminarDefinitivo(null)}
+                style={{ ...estiloBotonPrimario, backgroundColor: "#818181" }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#5a5a5a"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#818181"}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={eliminarEventoDefinitivo}
+                style={{ ...estiloBotonPrimario, backgroundColor: "#922b21" }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#7b241c"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#922b21"}
+              >
+                Sí, eliminar para siempre
               </button>
             </div>
           </div>

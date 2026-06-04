@@ -8,6 +8,9 @@ const {
   crearEvento,
   editarEvento,
   eliminarEvento,
+  obtenerPapelera,
+  restaurarEvento,
+  eliminarEventoDefinitivo,
   togglePatrocinio,
 } = require("../controllers/eventoController");
 const { protegerRuta } = require("../middleware/authMiddleware");
@@ -18,6 +21,7 @@ router.get("/", obtenerEventos);
 
 // rutas especificas antes que /:id
 router.get("/empresa/mis-eventos", protegerRuta, obtenerEventosEmpresa);
+router.get("/empresa/papelera", protegerRuta, obtenerPapelera);
 
 // POST /api/eventos - crear evento con imagen opcional
 // upload.single("imagen") procesa el archivo antes del controlador
@@ -26,8 +30,14 @@ router.post("/", protegerRuta, upload.single("imagen"), crearEvento);
 // PUT /api/eventos/:id - editar evento con imagen opcional
 router.put("/:id", protegerRuta, upload.single("imagen"), editarEvento);
 
-// DELETE /api/eventos/:id - eliminar evento
+// PUT /api/eventos/:id/restaurar - recuperar de la papelera permitiendo editar
+router.put("/:id/restaurar", protegerRuta, upload.single("imagen"), restaurarEvento);
+
+// DELETE /api/eventos/:id - enviar a la papelera (borrado logico)
 router.delete("/:id", protegerRuta, eliminarEvento);
+
+// DELETE /api/eventos/:id/permanente - eliminar definitivamente desde la papelera
+router.delete("/:id/permanente", protegerRuta, eliminarEventoDefinitivo);
 
 // PATCH /api/eventos/:id/patrocinio - activar o desactivar patrocinio
 router.patch("/:id/patrocinio", protegerRuta, togglePatrocinio);

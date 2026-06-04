@@ -121,6 +121,14 @@ const eventoSchema = new mongoose.Schema(
         type: Boolean,
         default: true,
     },
+
+    // fecha en la que se envio el evento a la papelera
+    // null mientras esta activo; al hacer soft-delete se rellena con la fecha actual
+    // tras 30 dias en papelera se elimina definitivamente desde el cron
+    fechaEliminacion: {
+        type: Date,
+        default: null,
+    },
     },
     {
         timestamps: true,
@@ -130,5 +138,6 @@ const eventoSchema = new mongoose.Schema(
 eventoSchema.index({ empresa: 1, activo: 1 });
 eventoSchema.index({ activo: 1, patrocinado: -1, fecha: 1 });
 eventoSchema.index({ activo: 1, categoria: 1, fecha: 1 });
+eventoSchema.index({ activo: 1, fechaEliminacion: 1 });
 
 module.exports = mongoose.model("Evento", eventoSchema);

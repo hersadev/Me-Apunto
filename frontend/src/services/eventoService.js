@@ -69,10 +69,43 @@ const editarEvento = async (id, datos, imagen) => {
   return response.data;
 };
 
-// eliminar un evento
+// eliminar un evento (lo envia a la papelera durante 30 dias)
 // ruta protegida
 const eliminarEvento = async (id) => {
   const response = await api.delete(`/eventos/${id}`);
+  return response.data;
+};
+
+// obtener los eventos de la papelera (eliminados hace menos de 30 dias)
+// ruta protegida
+const getPapelera = async () => {
+  const response = await api.get("/eventos/empresa/papelera");
+  return response.data;
+};
+
+// recuperar un evento de la papelera permitiendo editar los datos antes de republicar
+// ruta protegida
+const restaurarEvento = async (id, datos, imagen) => {
+  const formData = new FormData();
+
+  Object.keys(datos).forEach((key) => {
+    if (datos[key] !== null && datos[key] !== undefined) {
+      formData.append(key, datos[key]);
+    }
+  });
+
+  if (imagen) {
+    formData.append("imagen", imagen);
+  }
+
+  const response = await api.put(`/eventos/${id}/restaurar`, formData);
+  return response.data;
+};
+
+// eliminar definitivamente un evento de la papelera
+// ruta protegida
+const eliminarEventoDefinitivo = async (id) => {
+  const response = await api.delete(`/eventos/${id}/permanente`);
   return response.data;
 };
 
@@ -90,6 +123,9 @@ const eventoService = {
   crearEvento,
   editarEvento,
   eliminarEvento,
+  getPapelera,
+  restaurarEvento,
+  eliminarEventoDefinitivo,
   togglePatrocinio,
 };
 

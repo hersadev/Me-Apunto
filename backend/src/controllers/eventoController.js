@@ -255,7 +255,8 @@ const editarEvento = async (req, res) => {
 };
 
 // DELETE /api/eventos/:id
-// elimina un evento (borrado logico - solo cambia activo a false)
+// envia el evento a la papelera (soft delete con timestamp)
+// el evento se mantendra 30 dias y se podra recuperar antes de eliminarse definitivamente
 // ruta protegida - solo la empresa propietaria puede eliminar
 const eliminarEvento = async (req, res) => {
   try {
@@ -270,12 +271,160 @@ const eliminarEvento = async (req, res) => {
     }
 
     evento.activo = false;
+    evento.fechaEliminacion = new Date();
     await evento.save();
 
-    res.json({ mensaje: "Evento eliminado correctamente" });
+    res.json({ mensaje: "Evento enviado a la papelera" });
 
   } catch (error) {
     console.error("Error al eliminar evento:", error);
+    res.status(500).json({ mensaje: "Error interno del servidor" });
+  }
+};
+
+// GET /api/eventos/empresa/papelera
+// devuelve los eventos de la empresa que estan en la papelera
+// (eliminados hace menos de 30 dias)
+// ruta protegida
+const obtenerPapelera = async (req, res) => {
+  try {
+    const hace30dias = new Date();
+    hace30dias.setDate(hace30dias.getDate() - 30);
+
+    const eventos = await Evento.find({
+      empresa: req.empresa._id,
+      activo: false,
+      fechaEliminacion: { $ne: null, $gte: hace30dias },
+    }).sort({ fechaEliminacion: -1 });
+
+    res.json({ eventos });
+
+  } catch (error) {
+    console.error("Error al obtener papelera:", error);
+    res.status(500).json({ mensaje: "Error interno del servidor" });
+  }
+};
+
+// PUT /api/eventos/:id/restaurar
+// restaura un evento de la papelera permitiendo editar sus datos antes de republicar
+// ruta protegida - solo la empresa propietaria
+const restaurarEvento = async (req, res) => {
+  try {
+    const evento = await Evento.findById(req.params.id);
+
+    if (!evento) {
+      return res.status(404).json({ mensaje: "Evento no encontrado" });
+    }
+
+    if (evento.activo) {
+      return res.status(400).json({ mensaje: "El evento ya está activo" });
+    }
+
+    if (evento.empresa.toString() !== req.empresa._id.toString()) {
+      return res.status(403).json({ mensaje: "No tienes permiso para restaurar este evento" });
+    }
+
+    // si lleva mas de 30 dias en la papelera no se puede recuperar
+    if (evento.fechaEliminacion) {
+      const limite = new Date();
+      limite.setDate(limite.getDate() - 30);
+      if (evento.fechaEliminacion < limite) {
+        return res.status(410).json({ mensaje: "El evento ya no se puede recuperar" });
+      }
+    }
+
+    const {
+      titulo,
+      descripcion,
+      venue,
+      direccion,
+      fecha,
+      hora,
+      precio,
+      maxPersonasPorInscripcion,
+      categoria,
+    } = req.body;
+
+    if (titulo) evento.titulo = titulo;
+    if (descripcion) evento.descripcion = descripcion;
+    if (venue) evento.venue = venue;
+    if (direccion) evento.direccion = direccion;
+    if (fecha) evento.fecha = fecha;
+    if (hora) evento.hora = hora;
+    if (precio !== undefined) evento.precio = precio;
+    if (maxPersonasPorInscripcion !== undefined) {
+      evento.maxPersonasPorInscripcion =
+        maxPersonasPorInscripcion === "" || maxPersonasPorInscripcion === null
+          ? null
+          : parseInt(maxPersonasPorInscripcion, 10);
+    }
+    if (categoria !== undefined) evento.categoria = categoria;
+
+    if (req.file) {
+      if (evento.imagen) {
+        const publicId = evento.imagen
+          .split("/")
+          .slice(-2)
+          .join("/")
+          .split(".")[0];
+        await eliminarImagen(publicId);
+      }
+      evento.imagen = req.file.path;
+    }
+
+    evento.activo = true;
+    evento.fechaEliminacion = null;
+    await evento.save();
+
+    res.json({
+      mensaje: "Evento recuperado correctamente",
+      evento,
+    });
+
+  } catch (error) {
+    console.error("Error al restaurar evento:", error);
+    res.status(500).json({ mensaje: "Error interno del servidor" });
+  }
+};
+
+// DELETE /api/eventos/:id/permanente
+// elimina definitivamente un evento que esta en la papelera
+// ruta protegida - solo la empresa propietaria
+const eliminarEventoDefinitivo = async (req, res) => {
+  try {
+    const evento = await Evento.findById(req.params.id);
+
+    if (!evento) {
+      return res.status(404).json({ mensaje: "Evento no encontrado" });
+    }
+
+    if (evento.activo) {
+      return res.status(400).json({ mensaje: "No se puede eliminar un evento activo. Envíalo primero a la papelera." });
+    }
+
+    if (evento.empresa.toString() !== req.empresa._id.toString()) {
+      return res.status(403).json({ mensaje: "No tienes permiso para eliminar este evento" });
+    }
+
+    if (evento.imagen) {
+      try {
+        const publicId = evento.imagen
+          .split("/")
+          .slice(-2)
+          .join("/")
+          .split(".")[0];
+        await eliminarImagen(publicId);
+      } catch (errImg) {
+        console.error("Error al eliminar imagen de Cloudinary:", errImg);
+      }
+    }
+
+    await evento.deleteOne();
+
+    res.json({ mensaje: "Evento eliminado definitivamente" });
+
+  } catch (error) {
+    console.error("Error al eliminar definitivamente:", error);
     res.status(500).json({ mensaje: "Error interno del servidor" });
   }
 };
@@ -331,5 +480,8 @@ module.exports = {
   crearEvento,
   editarEvento,
   eliminarEvento,
+  obtenerPapelera,
+  restaurarEvento,
+  eliminarEventoDefinitivo,
   togglePatrocinio,
 };
