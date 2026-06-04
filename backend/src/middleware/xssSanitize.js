@@ -11,6 +11,14 @@ function sanitizar(valor) {
 
 module.exports = (req, res, next) => {
   if (req.body) req.body = sanitizar(req.body);
-  if (req.query) req.query = sanitizar(req.query);
+  if (req.query) {
+    const sanitized = sanitizar(req.query);
+    Object.defineProperty(req, "query", {
+      value: sanitized,
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
+  }
   next();
 };
