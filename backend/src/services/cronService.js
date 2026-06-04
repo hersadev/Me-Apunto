@@ -22,10 +22,12 @@
 
         // buscamos eventos patrocinados cuya fecha de fin este
         // entre hoy y dentro de 7 dias y que aun no hayan recibido aviso
+        // excluimos los que ya estan cancelados (no tiene sentido avisar de renovacion)
         const eventosProximos = await Evento.find({
         patrocinado: true,
         activo: true,
         avisoPrevioEnviado: false,
+        cancelacionPatrocinio: false,
         fechaFinPatrocinio: {
             $gte: hoy,
             $lte: en7dias,
@@ -88,8 +90,19 @@
 
         for (const evento of eventosVencidos) {
         try {
+            if (evento.cancelacionPatrocinio) {
+            // la empresa cancelo, desactivar sin renovar
+            evento.patrocinado = false;
+            evento.fechaInicioPatrocinio = null;
+            evento.fechaFinPatrocinio = null;
+            evento.cancelacionPatrocinio = false;
+            evento.avisoPrevioEnviado = false;
+            await evento.save();
+
+            console.log(`Patrocinio expirado (cancelado) para evento ${evento._id}`);
+
+            } else if (evento.empresa.stripePaymentMethodId) {
             // si la empresa tiene tarjeta guardada renovamos el patrocinio
-            if (evento.empresa.stripePaymentMethodId) {
             // TODO: procesar el cobro de 10€ con stripe
             // await stripeService.cobrarPatrocinio(evento);
 

@@ -223,10 +223,10 @@ function EventDetail({ estaLogueado }) {
         {/* titulo del evento */}
         <h1 style={{
           fontFamily: "'Baloo Bhai 2', Helvetica",
-          fontSize: "36px",
+          fontSize: "28px",
           fontWeight: "700",
           color: "#1a1a1a",
-          marginBottom: "32px",
+          marginBottom: "24px",
           textTransform: "uppercase"
         }}>
           {evento.titulo}
@@ -236,155 +236,118 @@ function EventDetail({ estaLogueado }) {
         <div style={{
           display: "flex",
           flexDirection: "row",
-          gap: "48px",
-          marginBottom: "40px",
+          gap: "40px",
+          marginBottom: "32px",
           flexWrap: "wrap"
         }}>
 
           {/* columna izquierda - datos del evento */}
           <div style={{
             flex: 1,
-            minWidth: "280px",
+            minWidth: "260px",
             display: "flex",
             flexDirection: "column",
-            gap: "24px"
+            gap: "0"
           }}>
 
-            {/* lugar */}
-            <div>
-              <span style={{
-                fontFamily: "'Baloo Bhai 2', Helvetica",
-                fontSize: "22px",
-                fontWeight: "700",
-                color: "#1a1a1a",
-                display: "block",
-                marginBottom: "4px"
-              }}>
-                Lugar:
-              </span>
-              <span style={{
-                fontFamily: "'Baloo Bhai 2', Helvetica",
-                fontSize: "20px",
-                color: "#333333"
-              }}>
-                {evento.venue}
-              </span>
+            {/* tabla de datos compacta */}
+            <div style={{
+              backgroundColor: "white",
+              borderRadius: "14px",
+              overflow: "hidden",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+              marginBottom: "16px"
+            }}>
+              {[
+                { label: "📍 Lugar", value: evento.venue },
+                { label: "🗺️ Dirección", value: evento.direccion },
+                {
+                  label: "📅 Fecha y hora",
+                  value: `${new Date(evento.fecha).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" })} · ${evento.hora}`
+                },
+                {
+                  label: "💰 Precio",
+                  value: evento.precio === 0 ? "Gratuito" : `${evento.precio}€`,
+                  valueColor: evento.precio === 0 ? "#2e7d32" : "#91703d"
+                },
+                evento.categoria && {
+                  label: "🏷️ Categoría",
+                  value: evento.categoria,
+                  capitalize: true
+                },
+                { label: "🏢 Organiza", value: evento.empresa?.nombre },
+              ].filter(Boolean).map((fila, i, arr) => (
+                <div
+                  key={fila.label}
+                  style={{
+                    display: "flex",
+                    alignItems: "baseline",
+                    gap: "8px",
+                    padding: "10px 16px",
+                    borderBottom: i < arr.length - 1 ? "1px solid #f0e8dc" : "none"
+                  }}
+                >
+                  <span style={{
+                    fontFamily: "'Baloo Bhai 2', Helvetica",
+                    fontSize: "13px",
+                    fontWeight: "700",
+                    color: "#818181",
+                    whiteSpace: "nowrap",
+                    minWidth: "120px"
+                  }}>
+                    {fila.label}
+                  </span>
+                  <span style={{
+                    fontFamily: "'Baloo Bhai 2', Helvetica",
+                    fontSize: "15px",
+                    fontWeight: "600",
+                    color: fila.valueColor || "#1a1a1a",
+                    textTransform: fila.capitalize ? "capitalize" : "none"
+                  }}>
+                    {fila.value}
+                  </span>
+                </div>
+              ))}
             </div>
 
-            {/* direccion */}
-            <div>
-              <span style={{
+            {/* descripcion */}
+            <div style={{
+              backgroundColor: "white",
+              borderRadius: "14px",
+              padding: "16px",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.07)"
+            }}>
+              <h2 style={{
                 fontFamily: "'Baloo Bhai 2', Helvetica",
-                fontSize: "22px",
+                fontSize: "15px",
                 fontWeight: "700",
-                color: "#1a1a1a",
-                display: "block",
-                marginBottom: "4px"
+                color: "#818181",
+                marginBottom: "8px"
               }}>
-                Dirección:
-              </span>
-              <span style={{
+                📝 Descripción
+              </h2>
+              <p style={{
                 fontFamily: "'Baloo Bhai 2', Helvetica",
-                fontSize: "20px",
-                color: "#333333"
+                fontSize: "15px",
+                color: "#444444",
+                lineHeight: "1.6",
+                margin: 0
               }}>
-                {evento.direccion}
-              </span>
-            </div>
-
-            {/* fecha */}
-            <div>
-              <span style={{
-                fontFamily: "'Baloo Bhai 2', Helvetica",
-                fontSize: "22px",
-                fontWeight: "700",
-                color: "#1a1a1a",
-                display: "block",
-                marginBottom: "4px"
-              }}>
-                Fecha:
-              </span>
-              <span style={{
-                fontFamily: "'Baloo Bhai 2', Helvetica",
-                fontSize: "20px",
-                color: "#333333"
-              }}>
-                {new Date(evento.fecha).toLocaleDateString("es-ES", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "numeric"
-                })}
-              </span>
-            </div>
-
-            {/* hora */}
-            <div>
-              <span style={{
-                fontFamily: "'Baloo Bhai 2', Helvetica",
-                fontSize: "22px",
-                fontWeight: "700",
-                color: "#1a1a1a",
-                display: "block",
-                marginBottom: "4px"
-              }}>
-                Hora:
-              </span>
-              <span style={{
-                fontFamily: "'Baloo Bhai 2', Helvetica",
-                fontSize: "20px",
-                color: "#333333"
-              }}>
-                {evento.hora}
-              </span>
-            </div>
-
-            {/* precio */}
-            <div>
-              <span style={{
-                fontFamily: "'Baloo Bhai 2', Helvetica",
-                fontSize: "22px",
-                fontWeight: "700",
-                color: "#1a1a1a",
-                display: "block",
-                marginBottom: "4px"
-              }}>
-                Precio:
-              </span>
-              <span style={{
-                fontFamily: "'Baloo Bhai 2', Helvetica",
-                fontSize: "20px",
-                fontWeight: "600",
-                color: evento.precio === 0 ? "#2e7d32" : "#91703d"
-              }}>
-                {evento.precio === 0 ? "Gratuito" : `${evento.precio}€`}
-              </span>
-            </div>
-
-            {/* organizador */}
-            <div>
-              <span style={{
-                fontFamily: "'Baloo Bhai 2', Helvetica",
-                fontSize: "22px",
-                fontWeight: "700",
-                color: "#1a1a1a",
-                display: "block",
-                marginBottom: "4px"
-              }}>
-                Organiza:
-              </span>
-              <span style={{
-                fontFamily: "'Baloo Bhai 2', Helvetica",
-                fontSize: "20px",
-                color: "#333333"
-              }}>
-                {evento.empresa?.nombre}
-              </span>
+                {evento.descripcion}
+              </p>
             </div>
 
           </div>
 
-          {/* columna derecha - imagen */}
-          <div style={{ flex: 1, minWidth: "280px", maxWidth: "550px" }}>
+          {/* columna derecha - imagen + boton + mapa */}
+          <div style={{
+            flex: 1,
+            minWidth: "260px",
+            maxWidth: "520px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px"
+          }}>
             <img
               src={evento.imagen
                 ? evento.imagen
@@ -393,84 +356,56 @@ function EventDetail({ estaLogueado }) {
               alt={evento.titulo}
               style={{
                 width: "100%",
-                height: "460px",
+                aspectRatio: "4/3",
                 objectFit: "cover",
-                borderRadius: "16px",
+                borderRadius: "14px",
                 boxShadow: "0 4px 20px rgba(0,0,0,0.12)"
               }}
             />
+
+            {/* boton me apunto */}
+            <button
+              onClick={() => setModalAbierto(true)}
+              style={{
+                backgroundColor: "#b79868",
+                color: "white",
+                fontFamily: "'Baloo Bhai 2', Helvetica",
+                fontWeight: "700",
+                fontSize: "22px",
+                padding: "14px 0",
+                borderRadius: "999px",
+                border: "none",
+                cursor: "pointer",
+                width: "100%",
+                transition: "background-color 0.15s ease",
+                boxShadow: "0 4px 16px rgba(183,152,104,0.4)"
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#b79868"}
+            >
+              ¡Me apunto!
+            </button>
+
+            {/* mapa */}
+            <div style={{
+              backgroundColor: "#818181",
+              padding: "8px",
+              borderRadius: "12px",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.1)"
+            }}>
+              <iframe
+                title="mapa del evento"
+                width="100%"
+                height="260"
+                style={{ border: 0, borderRadius: "8px", display: "block" }}
+                loading="lazy"
+                allowFullScreen
+                referrerPolicy="no-referrer-when-downgrade"
+                src={`https://www.google.com/maps?q=${encodeURIComponent(evento.direccion)}&output=embed`}
+              />
+            </div>
           </div>
 
-        </div>
-
-        {/* descripcion */}
-        <div style={{ marginBottom: "40px" }}>
-          <h2 style={{
-            fontFamily: "'Baloo Bhai 2', Helvetica",
-            fontSize: "26px",
-            fontWeight: "700",
-            color: "#1a1a1a",
-            marginBottom: "12px"
-          }}>
-            Descripción:
-          </h2>
-          <p style={{
-            fontFamily: "'Baloo Bhai 2', Helvetica",
-            fontSize: "18px",
-            color: "#444444",
-            lineHeight: "1.7",
-            textAlign: "justify",
-            maxWidth: "900px"
-          }}>
-            {evento.descripcion}
-          </p>
-        </div>
-
-        {/* boton me apunto */}
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: "48px" }}>
-          <button
-            onClick={() => setModalAbierto(true)}
-            style={{
-              backgroundColor: "#b79868",
-              color: "white",
-              fontFamily: "'Baloo Bhai 2', Helvetica",
-              fontWeight: "700",
-              fontSize: "28px",
-              padding: "18px 64px",
-              borderRadius: "999px",
-              border: "none",
-              cursor: "pointer",
-              transition: "background-color 0.15s ease",
-              boxShadow: "0 4px 16px rgba(183,152,104,0.4)"
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#b79868"}
-          >
-            ¡Me apunto!
-          </button>
-        </div>
-
-        {/* mapa */}
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: "32px" }}>
-          <div style={{
-            width: "100%",
-            maxWidth: "700px",
-            backgroundColor: "#818181",
-            padding: "12px",
-            borderRadius: "12px",
-            boxShadow: "0 2px 12px rgba(0,0,0,0.1)"
-          }}>
-            <iframe
-              title="mapa del evento"
-              width="100%"
-              height="380"
-              style={{ border: 0, borderRadius: "8px" }}
-              loading="lazy"
-              allowFullScreen
-              referrerPolicy="no-referrer-when-downgrade"
-              src={`https://www.google.com/maps?q=${encodeURIComponent(evento.direccion)}&output=embed`}
-            />
-          </div>
         </div>
 
       </main>

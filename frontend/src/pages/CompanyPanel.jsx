@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import Cropper from "react-easy-crop";
 
 import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
@@ -11,6 +12,38 @@ import Footer from "../components/Footer";
 
 import authService from "../services/authService";
 import eventoService from "../services/eventoService";
+
+function crearImagen(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.addEventListener("load", () => resolve(img));
+    img.addEventListener("error", reject);
+    img.setAttribute("crossOrigin", "anonymous");
+    img.src = url;
+  });
+}
+
+const MAX_ANCHO_SALIDA = 1200;
+
+async function recortarImagen(imageSrc, pixelCrop) {
+  const image = await crearImagen(imageSrc);
+  const canvas = document.createElement("canvas");
+
+  // escalar al maximo util — por encima de 1200px no aporta calidad visible
+  const escala = Math.min(1, MAX_ANCHO_SALIDA / pixelCrop.width);
+  canvas.width = Math.round(pixelCrop.width * escala);
+  canvas.height = Math.round(pixelCrop.height * escala);
+
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(
+    image,
+    pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height,
+    0, 0, canvas.width, canvas.height
+  );
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.82);
+  });
+}
 
 function CompanyPanel({ setEstaLogueado }) {
 
@@ -43,6 +76,11 @@ function CompanyPanel({ setEstaLogueado }) {
   });
 
   const [imagenFile, setImagenFile] = useState(null);
+  const [previewRecorte, setPreviewRecorte] = useState(null);
+  const [modalRecorteAbierto, setModalRecorteAbierto] = useState(false);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [modalEliminar, setModalEliminar] = useState(null);
   const [modalPatrocinio, setModalPatrocinio] = useState(null);
   const [pasoEliminarCuenta, setPasoEliminarCuenta] = useState(0);
@@ -117,10 +155,36 @@ function CompanyPanel({ setEstaLogueado }) {
   const handleFormChange = (e) => {
     const { name, value, files } = e.target;
     if (name === "imagen") {
-      setImagenFile(files[0]);
+      const file = files[0];
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      setPreviewRecorte(url);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setModalRecorteAbierto(true);
     } else {
       setFormEvento((prev) => ({ ...prev, [name]: value }));
     }
+  };
+
+  const confirmarRecorte = async () => {
+    try {
+      const blob = await recortarImagen(previewRecorte, croppedAreaPixels);
+      const file = new File([blob], "imagen.jpg", { type: "image/jpeg" });
+      setImagenFile(file);
+      setModalRecorteAbierto(false);
+      URL.revokeObjectURL(previewRecorte);
+      setPreviewRecorte(null);
+    } catch (err) {
+      console.error("Error al recortar imagen:", err);
+    }
+  };
+
+  const cancelarRecorte = () => {
+    setModalRecorteAbierto(false);
+    URL.revokeObjectURL(previewRecorte);
+    setPreviewRecorte(null);
+    if (imagenInputRef.current) imagenInputRef.current.value = "";
   };
 
   const abrirFormularioNuevo = () => {
@@ -912,7 +976,7 @@ const abrirFormularioRestaurar = (evento) => {
 
                     {evento.patrocinado && (
                       <div style={{
-                        backgroundColor: "#b79868",
+                        backgroundColor: evento.cancelacionPatrocinio ? "#818181" : "#b79868",
                         color: "white",
                         fontFamily: "'Baloo Bhai 2', Helvetica",
                         fontSize: "11px",
@@ -922,7 +986,9 @@ const abrirFormularioRestaurar = (evento) => {
                         display: "inline-block",
                         alignSelf: "flex-start"
                       }}>
-                        ★ Patrocinado
+                        ★ Patrocinado{evento.cancelacionPatrocinio && evento.fechaFinPatrocinio
+                          ? ` · hasta ${new Date(evento.fechaFinPatrocinio).toLocaleDateString("es-ES")}`
+                          : ""}
                       </div>
                     )}
 
@@ -952,17 +1018,32 @@ const abrirFormularioRestaurar = (evento) => {
                       </div>
 
                       <button
-                        aria-label={evento.patrocinado ? `Desactivar patrocinio de: ${evento.titulo}` : `Activar patrocinio de: ${evento.titulo} (10€/mes)`}
+                        aria-label={
+                          !evento.patrocinado
+                            ? `Activar patrocinio de: ${evento.titulo} (10€/mes)`
+                            : evento.cancelacionPatrocinio
+                              ? `Reactivar patrocinio de: ${evento.titulo}`
+                              : `Cancelar patrocinio de: ${evento.titulo}`
+                        }
                         onClick={() => setModalPatrocinio(evento)}
                         style={{
                           ...estiloBotonSecundario,
-                          backgroundColor: evento.patrocinado ? "#818181" : "#91703d",
+                          backgroundColor: !evento.patrocinado
+                            ? "#91703d"
+                            : evento.cancelacionPatrocinio
+                              ? "#2e7d32"
+                              : "#818181",
                           width: "100%"
                         }}
                         onMouseEnter={(e) => e.currentTarget.style.opacity = "0.85"}
                         onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
                       >
-                        <span aria-hidden="true">⭐</span> {evento.patrocinado ? "Desactivar patrocinio" : "Activar patrocinio (10€/mes)"}
+                        <span aria-hidden="true">⭐</span>{" "}
+                        {!evento.patrocinado
+                          ? "Activar patrocinio (10€/mes)"
+                          : evento.cancelacionPatrocinio
+                            ? "Reactivar patrocinio"
+                            : "Cancelar patrocinio"}
                       </button>
                     </div>
                   </div>
@@ -1261,6 +1342,81 @@ const abrirFormularioRestaurar = (evento) => {
 
       <Footer />
 
+      {/* modal recorte de imagen */}
+      {modalRecorteAbierto && previewRecorte && (
+        <div
+          style={{
+            position: "fixed", inset: 0,
+            backgroundColor: "rgba(0,0,0,0.85)",
+            zIndex: 1100, display: "flex",
+            flexDirection: "column",
+            alignItems: "center", justifyContent: "center",
+            padding: "16px", gap: "16px"
+          }}
+        >
+          <p style={{
+            fontFamily: "'Baloo Bhai 2', Helvetica",
+            fontSize: "16px", fontWeight: "700",
+            color: "white", margin: 0
+          }}>
+            Ajusta el encuadre de la imagen
+          </p>
+
+          {/* contenedor del recortador */}
+          <div style={{ position: "relative", width: "100%", maxWidth: "600px", height: "360px" }}>
+            <Cropper
+              image={previewRecorte}
+              crop={crop}
+              zoom={zoom}
+              aspect={4 / 3}
+              onCropChange={setCrop}
+              onZoomChange={setZoom}
+              onCropComplete={(_, pixels) => setCroppedAreaPixels(pixels)}
+            />
+          </div>
+
+          {/* zoom slider */}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", width: "100%", maxWidth: "600px" }}>
+            <span style={{ color: "white", fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "13px", whiteSpace: "nowrap" }}>
+              Zoom
+            </span>
+            <input
+              type="range"
+              min={1} max={3} step={0.05}
+              value={zoom}
+              onChange={(e) => setZoom(Number(e.target.value))}
+              style={{ flex: 1, accentColor: "#b79868" }}
+            />
+          </div>
+
+          {/* botones */}
+          <div style={{ display: "flex", gap: "12px" }}>
+            <button
+              onClick={cancelarRecorte}
+              style={{
+                backgroundColor: "#818181", color: "white",
+                fontFamily: "'Baloo Bhai 2', Helvetica", fontWeight: "700",
+                fontSize: "15px", padding: "10px 24px",
+                borderRadius: "999px", border: "none", cursor: "pointer"
+              }}
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={confirmarRecorte}
+              style={{
+                backgroundColor: "#b79868", color: "white",
+                fontFamily: "'Baloo Bhai 2', Helvetica", fontWeight: "700",
+                fontSize: "15px", padding: "10px 24px",
+                borderRadius: "999px", border: "none", cursor: "pointer"
+              }}
+            >
+              Usar este encuadre
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* modal eliminar */}
       {modalEliminar !== null && (
         <div
@@ -1533,20 +1689,24 @@ const abrirFormularioRestaurar = (evento) => {
               fontSize: "20px", fontWeight: "700",
               color: "#1a1a1a", marginBottom: "12px"
             }}>
-              {modalPatrocinio.patrocinado
-                ? "¿Desactivar el patrocinio?"
-                : "¿Activar el patrocinio?"}
+              {!modalPatrocinio.patrocinado
+                ? "¿Activar el patrocinio?"
+                : modalPatrocinio.cancelacionPatrocinio
+                  ? "¿Reactivar el patrocinio?"
+                  : "¿Cancelar el patrocinio?"}
             </h3>
             <p style={{
               fontFamily: "'Baloo Bhai 2', Helvetica",
               fontSize: "15px", color: "#4a4a4a",
               marginBottom: "24px", lineHeight: "1.5"
             }}>
-              {modalPatrocinio.patrocinado
-                ? "El evento dejará de aparecer en la sección destacada al finalizar el período mensual."
-                : "Tu evento aparecerá en la sección destacada. El coste es de 10€/mes."}
+              {!modalPatrocinio.patrocinado
+                ? "Tu evento aparecerá en la sección destacada. El coste es de 10€/mes."
+                : modalPatrocinio.cancelacionPatrocinio
+                  ? "Tu evento volverá a renovarse automáticamente cada mes (10€/mes)."
+                  : `El evento seguirá apareciendo en la sección destacada hasta el ${new Date(modalPatrocinio.fechaFinPatrocinio).toLocaleDateString("es-ES")}. Después no se renovará.`}
             </p>
-            {!modalPatrocinio.patrocinado && (
+            {(!modalPatrocinio.patrocinado || modalPatrocinio.cancelacionPatrocinio) && (
               <div style={{
                 backgroundColor: "#e8f5e9", borderRadius: "8px",
                 padding: "10px 16px", marginBottom: "20px"
@@ -1574,7 +1734,11 @@ const abrirFormularioRestaurar = (evento) => {
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#7a5c2e"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
               >
-                {modalPatrocinio.patrocinado ? "Sí, desactivar" : "Sí, activar"}
+                {!modalPatrocinio.patrocinado
+                  ? "Sí, activar"
+                  : modalPatrocinio.cancelacionPatrocinio
+                    ? "Sí, reactivar"
+                    : "Sí, cancelar"}
               </button>
             </div>
           </div>

@@ -109,6 +109,13 @@ const eventoSchema = new mongoose.Schema(
         default: false,
     },
 
+    // indica que la empresa cancelo el patrocinio pero sigue activo hasta fechaFinPatrocinio
+    // al vencer el cron lo desactiva en lugar de renovarlo
+    cancelacionPatrocinio: {
+        type: Boolean,
+        default: false,
+    },
+
     // numero maximo de personas por inscripcion
     // null significa sin limite
     maxPersonasPorInscripcion: {

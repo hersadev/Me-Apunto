@@ -454,12 +454,8 @@ const togglePatrocinio = async (req, res) => {
       return res.status(403).json({ mensaje: "No tienes permiso para modificar este evento" });
     }
 
-    if (evento.patrocinado) {
-      evento.patrocinado = false;
-      evento.fechaInicioPatrocinio = null;
-      evento.fechaFinPatrocinio = null;
-      evento.avisoPrevioEnviado = false;
-    } else {
+    if (!evento.patrocinado) {
+      // activar patrocinio
       const ahora = new Date();
       const finPatrocinio = new Date(ahora);
       finPatrocinio.setMonth(finPatrocinio.getMonth() + 1);
@@ -467,15 +463,26 @@ const togglePatrocinio = async (req, res) => {
       evento.patrocinado = true;
       evento.fechaInicioPatrocinio = ahora;
       evento.fechaFinPatrocinio = finPatrocinio;
+      evento.cancelacionPatrocinio = false;
+      evento.avisoPrevioEnviado = false;
+    } else if (!evento.cancelacionPatrocinio) {
+      // cancelar: el evento sigue patrocinado hasta fechaFinPatrocinio, no se renueva
+      evento.cancelacionPatrocinio = true;
+      evento.avisoPrevioEnviado = false;
+    } else {
+      // reactivar: volver a renovacion automatica
+      evento.cancelacionPatrocinio = false;
       evento.avisoPrevioEnviado = false;
     }
 
     await evento.save();
 
-    res.json({
-      mensaje: evento.patrocinado ? "Patrocinio activado" : "Patrocinio desactivado",
-      evento,
-    });
+    let mensaje;
+    if (!evento.patrocinado) mensaje = "Patrocinio desactivado";
+    else if (evento.cancelacionPatrocinio) mensaje = "Patrocinio cancelado - activo hasta " + evento.fechaFinPatrocinio.toLocaleDateString("es-ES");
+    else mensaje = evento.fechaInicioPatrocinio ? "Patrocinio reactivado" : "Patrocinio activado";
+
+    res.json({ mensaje, evento });
 
   } catch (error) {
     console.error("Error al cambiar patrocinio:", error);
