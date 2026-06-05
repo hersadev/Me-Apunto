@@ -84,6 +84,7 @@ function CompanyPanel({ setEstaLogueado }) {
   const [modalEliminar, setModalEliminar] = useState(null);
   const [modalPatrocinio, setModalPatrocinio] = useState(null);
   const [pasoEliminarCuenta, setPasoEliminarCuenta] = useState(0);
+  const [seccionActiva, setSeccionActiva] = useState("eventos");
 
   const modalEliminarRef = useRef(null);
   const modalCuentaRef = useRef(null);
@@ -414,7 +415,7 @@ const abrirFormularioRestaurar = (evento) => {
 
       <div style={{ position: "relative" }}>
         <Navbar mostrarInicio={true} estaLogueado={true} />
-        <Hero mostrarBuscador={false} />
+        <Hero mostrarBuscador={false} compacto={true} />
       </div>
 
       <main id="main-content" style={{
@@ -444,67 +445,61 @@ const abrirFormularioRestaurar = (evento) => {
         )}
 
         {/* cabecera de empresa */}
-        <div style={{
-          backgroundColor: "#c9aa80",
-          borderRadius: "20px",
-          padding: "28px 36px",
-          marginBottom: "36px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "16px",
-          boxShadow: "0 4px 16px rgba(0,0,0,0.1)"
+        <h1 style={{
+          fontFamily: "'Baloo Bhai 2', Helvetica",
+          fontSize: "26px",
+          fontWeight: "700",
+          color: "#1a1a1a",
+          margin: 0,
+          marginBottom: "24px"
         }}>
-          <div>
-            <h1 style={{
-              fontFamily: "'Baloo Bhai 2', Helvetica",
-              fontSize: "26px",
-              fontWeight: "700",
-              color: "#1a1a1a",
-              margin: 0,
-              marginBottom: "4px"
+          Hola, {empresa?.nombre || "empresa"}
+        </h1>
+
+        {/* tabs de navegación */}
+        {(() => {
+          const tabs = [
+            { id: "eventos", label: "Gestión de eventos" },
+            { id: "analiticas", label: "Analíticas" },
+            { id: "notificaciones", label: "Notificaciones" },
+            { id: "perfil", label: "Perfil" },
+          ];
+          return (
+            <div style={{
+              display: "flex",
+              gap: "8px",
+              flexWrap: "wrap",
+              marginBottom: "36px",
+              backgroundColor: "white",
+              borderRadius: "999px",
+              padding: "6px",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+              width: "fit-content",
+              margin: "0 auto 36px auto"
             }}>
-              {empresa?.nombre || "Mi empresa"}
-            </h1>
-            <span style={{
-              fontFamily: "'Baloo Bhai 2', Helvetica",
-              fontSize: "15px",
-              color: "#4a4a4a"
-            }}>
-              {empresa?.correo || ""}
-            </span>
-          </div>
-
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            <button
-              onClick={abrirFormularioNuevo}
-              style={estiloBotonPrimario}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#7a5c2e"}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
-            >
-              + Publicar evento
-            </button>
-
-            <button
-              onClick={cerrarSesion}
-              style={{ ...estiloBotonPrimario, backgroundColor: "#7a5c2e" }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#5c3d1a"}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#7a5c2e"}
-            >
-              Cerrar sesión
-            </button>
-
-            <button
-              onClick={() => setPasoEliminarCuenta(1)}
-              style={{ ...estiloBotonPrimario, backgroundColor: "#c0392b" }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#922b21"}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#c0392b"}
-            >
-              Eliminar perfil
-            </button>
-          </div>
-        </div>
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setSeccionActiva(tab.id)}
+                  style={{
+                    fontFamily: "'Baloo Bhai 2', Helvetica",
+                    fontWeight: "700",
+                    fontSize: "14px",
+                    padding: "8px 20px",
+                    borderRadius: "999px",
+                    border: "none",
+                    cursor: "pointer",
+                    transition: "background-color 0.15s ease, color 0.15s ease",
+                    backgroundColor: seccionActiva === tab.id ? "#91703d" : "transparent",
+                    color: seccionActiva === tab.id ? "white" : "#4a4a4a",
+                  }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* formulario de evento — modal */}
         {formularioAbierto && (
@@ -853,17 +848,28 @@ const abrirFormularioRestaurar = (evento) => {
           </div>
         )}
 
-        {/* mis eventos */}
+        {/* gestión de eventos */}
+        {seccionActiva === "eventos" && (
         <div>
-          <h2 style={{
-            fontFamily: "'Baloo Bhai 2', Helvetica",
-            fontSize: "22px",
-            fontWeight: "700",
-            color: "#1a1a1a",
-            marginBottom: "20px"
-          }}>
-            Mis eventos ({eventosActivos.length})
-          </h2>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", marginBottom: "20px" }}>
+            <h2 style={{
+              fontFamily: "'Baloo Bhai 2', Helvetica",
+              fontSize: "22px",
+              fontWeight: "700",
+              color: "#1a1a1a",
+              margin: 0
+            }}>
+              Mis eventos ({eventosActivos.length})
+            </h2>
+            <button
+              onClick={abrirFormularioNuevo}
+              style={estiloBotonPrimario}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#7a5c2e"}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
+            >
+              + Publicar evento
+            </button>
+          </div>
 
           {cargando && (
             <div style={{
@@ -1337,6 +1343,124 @@ const abrirFormularioRestaurar = (evento) => {
             </>
           )}
         </div>
+        )}
+
+        {/* analíticas */}
+        {seccionActiva === "analiticas" && (
+          <div style={{
+            textAlign: "center",
+            padding: "80px 0",
+            color: "#818181",
+            fontFamily: "'Baloo Bhai 2', Helvetica",
+            fontSize: "18px"
+          }}>
+            <div style={{ fontSize: "48px", marginBottom: "16px" }}>📊</div>
+            Analíticas próximamente
+          </div>
+        )}
+
+        {/* notificaciones */}
+        {seccionActiva === "notificaciones" && (
+          <div style={{
+            textAlign: "center",
+            padding: "80px 0",
+            color: "#818181",
+            fontFamily: "'Baloo Bhai 2', Helvetica",
+            fontSize: "18px"
+          }}>
+            <div style={{ fontSize: "48px", marginBottom: "16px" }}>🔔</div>
+            Notificaciones próximamente
+          </div>
+        )}
+
+        {/* perfil */}
+        {seccionActiva === "perfil" && (
+          <div style={{ maxWidth: "500px" }}>
+            <h2 style={{
+              fontFamily: "'Baloo Bhai 2', Helvetica",
+              fontSize: "22px",
+              fontWeight: "700",
+              color: "#1a1a1a",
+              marginBottom: "24px"
+            }}>
+              Información del perfil
+            </h2>
+
+            <div style={{
+              backgroundColor: "white",
+              borderRadius: "16px",
+              padding: "24px",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+              marginBottom: "32px"
+            }}>
+              <div>
+                <span style={{ ...estiloLabel, marginBottom: "2px" }}>Nombre de empresa</span>
+                <div style={{
+                  fontFamily: "'Baloo Bhai 2', Helvetica",
+                  fontSize: "16px",
+                  color: "#1a1a1a",
+                  padding: "10px 12px",
+                  backgroundColor: "#f8f8f8",
+                  borderRadius: "8px",
+                  border: "1px solid #d4b896"
+                }}>
+                  {empresa?.nombre || "—"}
+                </div>
+              </div>
+              <div>
+                <span style={{ ...estiloLabel, marginBottom: "2px" }}>Correo electrónico</span>
+                <div style={{
+                  fontFamily: "'Baloo Bhai 2', Helvetica",
+                  fontSize: "16px",
+                  color: "#1a1a1a",
+                  padding: "10px 12px",
+                  backgroundColor: "#f8f8f8",
+                  borderRadius: "8px",
+                  border: "1px solid #d4b896"
+                }}>
+                  {empresa?.correo || "—"}
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              backgroundColor: "#fdecea",
+              borderRadius: "16px",
+              padding: "24px",
+              border: "1px solid #f5c6c2"
+            }}>
+              <h3 style={{
+                fontFamily: "'Baloo Bhai 2', Helvetica",
+                fontSize: "17px",
+                fontWeight: "700",
+                color: "#c0392b",
+                marginBottom: "8px"
+              }}>
+                Zona de peligro
+              </h3>
+              <p style={{
+                fontFamily: "'Baloo Bhai 2', Helvetica",
+                fontSize: "14px",
+                color: "#4a4a4a",
+                marginBottom: "16px",
+                lineHeight: "1.5"
+              }}>
+                Eliminar el perfil borrará tu cuenta y todos tus eventos. Esta acción no se puede deshacer.
+              </p>
+              <button
+                onClick={() => setPasoEliminarCuenta(1)}
+                style={{ ...estiloBotonPrimario, backgroundColor: "#c0392b" }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#922b21"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#c0392b"}
+              >
+                Eliminar perfil
+              </button>
+            </div>
+          </div>
+        )}
 
       </main>
 

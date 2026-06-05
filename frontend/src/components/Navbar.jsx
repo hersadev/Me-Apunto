@@ -44,33 +44,32 @@ function Navbar({ mostrarInicio = false, estaLogueado }) {
       paddingRight: "0px",
     }}>
 
-      {/* boton inicio */}
-      {mostrarInicio ? (
-        <button
-          onClick={() => navegar("/")}
-          style={estiloBoton}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colorBoton}
-        >
-          Inicio
-        </button>
-      ) : (
-        <div />
-      )}
+      <div />
 
       {/* botones derecha */}
       <div style={{ display: "flex", gap: window.innerWidth < 768 ? "6px" : "10px", marginRight: window.innerWidth < 768 ? "10px" : "50px" }}>
 
         {logueado ? (
           <>
-            <button
-              onClick={() => navegar("/panel")}
-              style={estiloBoton}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colorBoton}
-            >
-              Mi panel
-            </button>
+            {mostrarInicio ? (
+              <button
+                onClick={() => navegar("/")}
+                style={estiloBoton}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colorBoton}
+              >
+                Inicio
+              </button>
+            ) : (
+              <button
+                onClick={() => navegar("/panel")}
+                style={estiloBoton}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colorBoton}
+              >
+                Mi panel
+              </button>
+            )}
 
             <button
             onClick={async () => {

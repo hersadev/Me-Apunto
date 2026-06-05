@@ -5,7 +5,7 @@ import eventoService from "../services/eventoService";
 
 const esMobil = window.innerWidth < 768;
 
-function Hero({ mostrarBuscador = false, onBuscar, onSubmit }) {
+function Hero({ mostrarBuscador = false, compacto = false, onBuscar, onSubmit }) {
   const navegar = useNavigate();
   const [valor, setValor] = useState("");
   const [sugerencias, setSugerencias] = useState([]);
@@ -89,7 +89,7 @@ function Hero({ mostrarBuscador = false, onBuscar, onSubmit }) {
     <div style={{
       position: "relative",
       width: "100%",
-      height: esMobil ? "160px" : "300px",
+      height: compacto ? (esMobil ? "70px" : "100px") : (esMobil ? "160px" : "300px"),
     }}>
 
       {/* imagen de fondo recortada */}
@@ -102,8 +102,33 @@ function Hero({ mostrarBuscador = false, onBuscar, onSubmit }) {
         <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0)" }} />
       </div>
 
+      {/* titulo compacto */}
+      {compacto && (
+        <div style={{
+          position: "absolute", inset: 0, zIndex: 60,
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <h1
+            onClick={() => window.location.href = "/"}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); window.location.href = "/"; } }}
+            tabIndex={0}
+            role="link"
+            aria-label="Me Apunto — ir a la página de inicio"
+            style={{
+              fontSize: esMobil ? "22px" : "32px",
+              color: "white",
+              textShadow: "2px 2px 8px rgba(0,0,0,0.5)",
+              margin: 0, cursor: "pointer",
+              fontFamily: "'Butterpop', Helvetica, sans-serif"
+            }}
+          >
+            ME APUNTO
+          </h1>
+        </div>
+      )}
+
       {/* titulo y buscador encima de la imagen */}
-      <div style={{
+      {!compacto && <div style={{
         position: "absolute", inset: 0, zIndex: 10,
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
@@ -254,7 +279,7 @@ function Hero({ mostrarBuscador = false, onBuscar, onSubmit }) {
             )}
           </div>
         )}
-      </div>
+      </div>}
     </div>
   );
 }
