@@ -3,10 +3,9 @@ import { useNavigate } from "react-router-dom";
 import headerImg from "../assets/images/header_.png";
 import eventoService from "../services/eventoService";
 
-const esMobil = window.innerWidth < 768;
-
 function Hero({ mostrarBuscador = false, compacto = false, onBuscar, onSubmit }) {
   const navegar = useNavigate();
+  const [esMobil, setEsMobil] = useState(() => window.innerWidth < 768);
   const [valor, setValor] = useState("");
   const [sugerencias, setSugerencias] = useState([]);
   const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
@@ -14,6 +13,12 @@ function Hero({ mostrarBuscador = false, compacto = false, onBuscar, onSubmit })
   const debounceRef = useRef(null);
   const contenedorRef = useRef(null);
   const listboxId = "hero-sugerencias-listbox";
+
+  useEffect(() => {
+    const handler = () => setEsMobil(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
   // cierra el dropdown al hacer clic fuera
   useEffect(() => {
@@ -38,18 +43,22 @@ function Hero({ mostrarBuscador = false, compacto = false, onBuscar, onSubmit })
       return;
     }
 
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
+    if (debounceRef.current?.abort) debounceRef.current.abort();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(async () => {
       try {
-        const data = await eventoService.getEventos({ busqueda: v, limite: 6 });
+        const data = await eventoService.getEventos({ busqueda: v, limite: 6 }, { signal: controller.signal });
         setSugerencias(data.eventos || []);
         setMostrarSugerencias((data.eventos || []).length > 0);
         setIndiceActivo(-1);
-      } catch {
-        setSugerencias([]);
-        setMostrarSugerencias(false);
+      } catch (err) {
+        if (err.name !== "CanceledError" && err.name !== "AbortError") {
+          setSugerencias([]);
+          setMostrarSugerencias(false);
+        }
       }
     }, 300);
+    debounceRef.current = { abort: () => { clearTimeout(timeoutId); controller.abort(); } };
   };
 
   const handleSubmit = () => {

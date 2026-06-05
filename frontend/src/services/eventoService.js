@@ -6,8 +6,8 @@ import api from "./api";
 
 // obtener todos los eventos con filtros y paginacion
 // ruta publica - no necesita token
-const getEventos = async (params = {}) => {
-  const response = await api.get("/eventos", { params });
+const getEventos = async (params = {}, config = {}) => {
+  const response = await api.get("/eventos", { params, ...config });
   return response.data;
 };
 

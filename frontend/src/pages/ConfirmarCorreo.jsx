@@ -1,0 +1,136 @@
+import { useEffect, useRef, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
+import authService from "../services/authService";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
+
+function ConfirmarCorreo() {
+  const { token } = useParams();
+  const navegar = useNavigate();
+  const [estado, setEstado] = useState("cargando");
+  const [mensaje, setMensaje] = useState("");
+  const llamadaHecha = useRef(false);
+
+  useEffect(() => {
+    if (llamadaHecha.current) return;
+    llamadaHecha.current = true;
+
+    const confirmar = async () => {
+      try {
+        const res = await authService.confirmarCambioCorreo(token);
+        setMensaje(res.mensaje);
+        setEstado("ok");
+      } catch (err) {
+        setMensaje(err.response?.data?.mensaje || "El enlace ha expirado o es inválido.");
+        setEstado("error");
+      }
+    };
+    confirmar();
+  }, [token]);
+
+  return (
+    <div style={{ minHeight: "100vh", backgroundColor: "#f0e8dc", display: "flex", flexDirection: "column" }}>
+      <Helmet>
+        <title>Confirmar correo | Me Apunto</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
+
+      <Navbar />
+
+      <main style={{
+        flex: 1,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "40px 24px"
+      }}>
+        <div style={{
+          backgroundColor: "white",
+          borderRadius: "20px",
+          padding: "40px 36px",
+          maxWidth: "440px",
+          width: "100%",
+          textAlign: "center",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.08)"
+        }}>
+          {estado === "cargando" && (
+            <p style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "16px", color: "#818181" }}>
+              Verificando enlace...
+            </p>
+          )}
+
+          {estado === "ok" && (
+            <>
+              <div style={{ fontSize: "48px", marginBottom: "16px" }}>✅</div>
+              <h1 style={{
+                fontFamily: "'Baloo Bhai 2', Helvetica",
+                fontSize: "22px", fontWeight: "700",
+                color: "#1a1a1a", marginBottom: "12px"
+              }}>
+                Correo confirmado
+              </h1>
+              <p style={{
+                fontFamily: "'Baloo Bhai 2', Helvetica",
+                fontSize: "15px", color: "#4a4a4a",
+                marginBottom: "28px", lineHeight: "1.5"
+              }}>
+                {mensaje}
+              </p>
+              <button
+                onClick={() => navegar("/login")}
+                style={{
+                  backgroundColor: "#91703d", color: "white",
+                  fontFamily: "'Baloo Bhai 2', Helvetica", fontWeight: "700",
+                  fontSize: "15px", padding: "10px 28px",
+                  borderRadius: "999px", border: "none", cursor: "pointer"
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#7a5c2e"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
+              >
+                Ir a iniciar sesión
+              </button>
+            </>
+          )}
+
+          {estado === "error" && (
+            <>
+              <div style={{ fontSize: "48px", marginBottom: "16px" }}>⚠️</div>
+              <h1 style={{
+                fontFamily: "'Baloo Bhai 2', Helvetica",
+                fontSize: "22px", fontWeight: "700",
+                color: "#c0392b", marginBottom: "12px"
+              }}>
+                Enlace inválido
+              </h1>
+              <p style={{
+                fontFamily: "'Baloo Bhai 2', Helvetica",
+                fontSize: "15px", color: "#4a4a4a",
+                marginBottom: "28px", lineHeight: "1.5"
+              }}>
+                {mensaje}
+              </p>
+              <button
+                onClick={() => navegar("/panel")}
+                style={{
+                  backgroundColor: "#91703d", color: "white",
+                  fontFamily: "'Baloo Bhai 2', Helvetica", fontWeight: "700",
+                  fontSize: "15px", padding: "10px 28px",
+                  borderRadius: "999px", border: "none", cursor: "pointer"
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#7a5c2e"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
+              >
+                Volver al panel
+              </button>
+            </>
+          )}
+        </div>
+      </main>
+
+      <Footer />
+    </div>
+  );
+}
+
+export default ConfirmarCorreo;

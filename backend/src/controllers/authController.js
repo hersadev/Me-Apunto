@@ -2,6 +2,7 @@ const Empresa = require("../models/Empresa");
 const Evento = require("../models/Evento");
 
 function validarCIF(cif) {
+  if (typeof cif !== "string" || !cif) return false;
   const upper = cif.toUpperCase();
   if (!/^[ABCDEFGHJNPQRSUVW]\d{7}[0-9A-J]$/.test(upper)) return false;
 
@@ -29,9 +30,8 @@ function validarCIF(cif) {
   return control === String(digitoControl) || control === letraControl;
 }
 const jwt = require("jsonwebtoken");
-const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
-const { enviarCorreoBienvenida, enviarCorreoRecuperacion } = require("../services/emailService");
+const { enviarCorreoBienvenida, enviarCorreoRecuperacion, enviarCorreoConfirmacionCambio } = require("../services/emailService");
 
 const COOKIE_OPTS = {
   httpOnly: true,
@@ -138,7 +138,7 @@ const loginEmpresa = async (req, res) => {
         nombre: empresa.nombre,
         correo: empresa.correo,
         nifCif: empresa.nifCif,
-        tieneTarjeta: empresa.stripePaymentMethodId !== null,
+        tieneTarjeta: !!empresa.stripePaymentMethodId,
       },
     });
 
@@ -173,7 +173,7 @@ const obtenerPerfil = async (req, res) => {
         nombre: empresa.nombre,
         correo: empresa.correo,
         nifCif: empresa.nifCif,
-        tieneTarjeta: empresa.stripePaymentMethodId !== null,
+        tieneTarjeta: !!empresa.stripePaymentMethodId,
         createdAt: empresa.createdAt,
       },
     });
@@ -195,38 +195,29 @@ const solicitarRecuperacion = async (req, res) => {
 
     const empresa = await Empresa.findOne({ correo });
 
-    if (!empresa) {
-      return res.status(404).json({ mensaje: "No existe ninguna cuenta con ese correo" });
-    }
+    // siempre respondemos igual para no revelar si el correo existe o la cuenta está suspendida
+    const mensajeGenerico = "Si existe una cuenta con ese correo, recibirás un enlace para recuperar tu contraseña.";
 
-    if (!empresa.activa) {
-      return res.status(401).json({ mensaje: "Esta cuenta ha sido suspendida" });
-    }
+    if (empresa && empresa.activa) {
+      const resetToken = crypto.randomBytes(32).toString("hex");
+      const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
 
-    // generamos el token en texto plano (se envía por email)
-    // y guardamos sólo su hash en la DB
-    const resetToken = crypto.randomBytes(32).toString("hex");
-    const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+      empresa.resetToken = hashedToken;
+      empresa.resetTokenExpiracion = new Date(Date.now() + 60 * 60 * 1000);
+      await empresa.save();
 
-    await Empresa.findOneAndUpdate(
-      { correo },
-      {
-        resetToken: hashedToken,
-        resetTokenExpiracion: new Date(Date.now() + 60 * 60 * 1000),
+      try {
+        await enviarCorreoRecuperacion({
+          correoEmpresa: empresa.correo,
+          nombreEmpresa: empresa.nombre,
+          token: resetToken,
+        });
+      } catch (errorCorreo) {
+        console.error("Error al enviar correo de recuperación:", errorCorreo.message);
       }
-    );
-
-    try {
-      await enviarCorreoRecuperacion({
-        correoEmpresa: empresa.correo,
-        nombreEmpresa: empresa.nombre,
-        token: resetToken,
-      });
-    } catch (errorCorreo) {
-      console.error("Error al enviar correo de recuperación:", errorCorreo.message);
     }
 
-    res.json({ mensaje: "Se ha enviado un correo con las instrucciones para recuperar tu contraseña" });
+    res.json({ mensaje: mensajeGenerico });
 
   } catch (error) {
     console.error("Error en recuperación:", error);
@@ -260,17 +251,10 @@ const cambiarContrasena = async (req, res) => {
       return res.status(400).json({ mensaje: "El enlace de recuperación ha expirado o es inválido" });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedContrasena = await bcrypt.hash(contrasena, salt);
-
-    await Empresa.findOneAndUpdate(
-      { _id: empresa._id },
-      {
-        contrasena: hashedContrasena,
-        resetToken: null,
-        resetTokenExpiracion: null,
-      }
-    );
+    empresa.contrasena = contrasena;
+    empresa.resetToken = null;
+    empresa.resetTokenExpiracion = null;
+    await empresa.save();
 
     res.json({ mensaje: "Contraseña actualizada correctamente" });
 
@@ -280,10 +264,228 @@ const cambiarContrasena = async (req, res) => {
   }
 };
 
+const sumarDosMeses = (fecha) => {
+  const d = new Date(fecha);
+  d.setMonth(d.getMonth() + 2);
+  return d;
+};
+
+const puedeModificar = (fecha) => {
+  if (!fecha) return true;
+  return new Date() >= sumarDosMeses(fecha);
+};
+
+const proximaFechaPermitida = (fecha) => {
+  return sumarDosMeses(fecha).toLocaleDateString("es-ES");
+};
+
+// PUT /api/auth/perfil
+const actualizarPerfil = async (req, res) => {
+  try {
+    const { nombre, correo, descripcion, contrasena } = req.body;
+
+    if (!contrasena) {
+      return res.status(400).json({ mensaje: "Introduce tu contraseña para confirmar los cambios" });
+    }
+    if (!nombre && !correo && descripcion === undefined) {
+      return res.status(400).json({ mensaje: "Indica al menos un campo a actualizar" });
+    }
+
+    const empresaActual = await Empresa.findById(req.empresa.id);
+
+    if (!empresaActual) {
+      return res.status(404).json({ mensaje: "Cuenta no encontrada" });
+    }
+
+    const contrasenaCorrecta = await empresaActual.compararContrasena(contrasena);
+    if (!contrasenaCorrecta) {
+      return res.status(401).json({ mensaje: "Contraseña incorrecta" });
+    }
+
+    const campos = {};
+    let mensajeRespuesta = "";
+
+    if (nombre && nombre.trim() !== empresaActual.nombre) {
+      if (!puedeModificar(empresaActual.nombreCambiadoEn)) {
+        return res.status(429).json({
+          mensaje: `El nombre solo puede cambiarse una vez cada 2 meses. Podrás cambiarlo el ${proximaFechaPermitida(empresaActual.nombreCambiadoEn)}.`,
+        });
+      }
+      campos.nombre = nombre.trim();
+      campos.nombreCambiadoEn = new Date();
+    }
+
+    const correoNuevoNorm = correo ? correo.trim().toLowerCase() : null;
+    const cambiandoCorreo = correoNuevoNorm && correoNuevoNorm !== empresaActual.correo;
+
+    if (cambiandoCorreo) {
+      if (!puedeModificar(empresaActual.correoCambiadoEn)) {
+        return res.status(429).json({
+          mensaje: `El correo solo puede cambiarse una vez cada 2 meses. Podrás cambiarlo el ${proximaFechaPermitida(empresaActual.correoCambiadoEn)}.`,
+        });
+      }
+      const existente = await Empresa.findOne({ correo: correoNuevoNorm, _id: { $ne: req.empresa.id } });
+      if (existente) {
+        return res.status(400).json({ mensaje: "Ya existe una cuenta con ese correo" });
+      }
+
+      const tokenPlano = crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto.createHash("sha256").update(tokenPlano).digest("hex");
+
+      campos.correoNuevo = correoNuevoNorm;
+      campos.correoToken = tokenHash;
+      campos.correoTokenExpiracion = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      campos.correoCambiadoEn = new Date();
+
+      if (descripcion !== undefined && descripcion !== empresaActual.descripcion) {
+        campos.descripcion = descripcion.trim().slice(0, 500);
+      }
+
+      await Empresa.findByIdAndUpdate(req.empresa.id, campos);
+
+      try {
+        await enviarCorreoConfirmacionCambio({
+          correoNuevo: correoNuevoNorm,
+          nombreEmpresa: empresaActual.nombre,
+          token: tokenPlano,
+        });
+      } catch (e) {
+        console.error("Error al enviar correo de confirmación:", e.message);
+      }
+
+      const empresaActualizada = await Empresa.findById(req.empresa.id);
+      return res.json({
+        mensaje: campos.nombre
+          ? "Nombre actualizado. Revisa tu nuevo correo para confirmar el cambio de dirección."
+          : "Te hemos enviado un correo de confirmación a la nueva dirección.",
+        empresa: {
+          id: empresaActualizada._id,
+          nombre: empresaActualizada.nombre,
+          correo: empresaActualizada.correo,
+          nifCif: empresaActualizada.nifCif,
+          descripcion: empresaActualizada.descripcion,
+          fotoPerfil: empresaActualizada.fotoPerfil,
+          nombreCambiadoEn: empresaActualizada.nombreCambiadoEn,
+          correoCambiadoEn: empresaActualizada.correoCambiadoEn,
+        },
+      });
+    }
+
+    if (descripcion !== undefined && descripcion !== empresaActual.descripcion) {
+      campos.descripcion = descripcion.trim().slice(0, 500);
+    }
+
+    if (Object.keys(campos).length === 0) {
+      return res.status(400).json({ mensaje: "No hay cambios que guardar" });
+    }
+
+    const empresa = await Empresa.findByIdAndUpdate(req.empresa.id, campos, { new: true });
+
+    res.json({
+      mensaje: "Perfil actualizado correctamente.",
+      empresa: {
+        id: empresa._id,
+        nombre: empresa.nombre,
+        correo: empresa.correo,
+        nifCif: empresa.nifCif,
+        descripcion: empresa.descripcion,
+        fotoPerfil: empresa.fotoPerfil,
+        nombreCambiadoEn: empresa.nombreCambiadoEn,
+        correoCambiadoEn: empresa.correoCambiadoEn,
+      },
+    });
+
+  } catch (error) {
+    console.error("Error al actualizar perfil:", error);
+    res.status(500).json({ mensaje: "Error interno del servidor" });
+  }
+};
+
+// PUT /api/auth/foto-perfil
+const actualizarFotoPerfil = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ mensaje: "No se recibió ninguna imagen" });
+    }
+
+    const empresa = await Empresa.findById(req.empresa.id);
+
+    if (empresa.fotoPerfilPublicId) {
+      try {
+        await require("../services/cloudinaryService").eliminarImagen(empresa.fotoPerfilPublicId);
+      } catch (err) {
+        console.error("Error al eliminar foto anterior de Cloudinary:", err.message);
+      }
+    }
+
+    empresa.fotoPerfil = req.file.path;
+    empresa.fotoPerfilPublicId = req.file.filename;
+    await empresa.save();
+
+    res.json({
+      mensaje: "Foto de perfil actualizada.",
+      empresa: {
+        id: empresa._id,
+        nombre: empresa.nombre,
+        correo: empresa.correo,
+        nifCif: empresa.nifCif,
+        descripcion: empresa.descripcion,
+        fotoPerfil: empresa.fotoPerfil,
+      },
+    });
+  } catch (error) {
+    console.error("Error al actualizar foto de perfil:", error);
+    res.status(500).json({ mensaje: "Error interno del servidor" });
+  }
+};
+
+// GET /api/auth/confirmar-correo/:token
+const confirmarCambioCorreo = async (req, res) => {
+  try {
+    const tokenHash = crypto.createHash("sha256").update(req.params.token).digest("hex");
+
+    const empresa = await Empresa.findOne({
+      correoToken: tokenHash,
+      correoTokenExpiracion: { $gt: Date.now() },
+    });
+
+    if (!empresa) {
+      return res.status(400).json({ mensaje: "El enlace de confirmación ha expirado o es inválido" });
+    }
+
+    const correoYaOcupado = await Empresa.findOne({ correo: empresa.correoNuevo, _id: { $ne: empresa._id } });
+    if (correoYaOcupado) {
+      return res.status(409).json({ mensaje: "El correo ya está en uso por otra cuenta. Por favor, solicita un nuevo cambio desde tu panel." });
+    }
+
+    empresa.correo = empresa.correoNuevo;
+    empresa.correoCambiadoEn = new Date();
+    empresa.correoNuevo = null;
+    empresa.correoToken = null;
+    empresa.correoTokenExpiracion = null;
+    await empresa.save();
+
+    res.json({ mensaje: "Correo actualizado correctamente. Ya puedes iniciar sesión con tu nueva dirección." });
+
+  } catch (error) {
+    console.error("Error al confirmar cambio de correo:", error);
+    res.status(500).json({ mensaje: "Error interno del servidor" });
+  }
+};
+
 // DELETE /api/auth/cuenta
 const eliminarCuenta = async (req, res) => {
   try {
     const empresaId = req.empresa.id;
+
+    const empresa = await Empresa.findById(empresaId);
+    if (empresa?.fotoPerfilPublicId) {
+      try {
+        await require("../services/cloudinaryService").eliminarImagen(empresa.fotoPerfilPublicId);
+      } catch (err) {
+        console.error("Error al eliminar foto de perfil de Cloudinary:", err.message);
+      }
+    }
 
     await Evento.deleteMany({ empresa: empresaId });
     await Empresa.findByIdAndDelete(empresaId);
@@ -307,6 +509,9 @@ module.exports = {
   loginEmpresa,
   logoutEmpresa,
   obtenerPerfil,
+  actualizarPerfil,
+  actualizarFotoPerfil,
+  confirmarCambioCorreo,
   solicitarRecuperacion,
   cambiarContrasena,
   eliminarCuenta,

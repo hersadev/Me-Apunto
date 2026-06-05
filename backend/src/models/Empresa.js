@@ -58,6 +58,47 @@ const empresaSchema = new mongoose.Schema(
         default: true,
     },
 
+    // fechas de ultimo cambio de campos sensibles (limite: 1 vez cada 2 meses)
+    nombreCambiadoEn: {
+        type: Date,
+        default: null,
+    },
+    correoCambiadoEn: {
+        type: Date,
+        default: null,
+    },
+
+    // foto de perfil de la empresa
+    fotoPerfil: {
+        type: String,
+        default: null,
+    },
+    fotoPerfilPublicId: {
+        type: String,
+        default: null,
+    },
+
+    // descripcion publica de la empresa
+    descripcion: {
+        type: String,
+        default: null,
+        maxlength: 500,
+    },
+
+    // cambio de correo pendiente de confirmacion
+    correoNuevo: {
+        type: String,
+        default: null,
+    },
+    correoToken: {
+        type: String,
+        default: null,
+    },
+    correoTokenExpiracion: {
+        type: Date,
+        default: null,
+    },
+
     // token para recuperar contraseña
     resetToken: {
         type: String,

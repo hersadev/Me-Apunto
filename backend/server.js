@@ -83,10 +83,11 @@ app.use((err, req, res, next) => {
     }
 
     if (err.http_code) {
-        return res.status(400).json({ mensaje: "Error al subir la imagen a Cloudinary: " + err.message });
+        return res.status(400).json({ mensaje: "Error al subir la imagen" });
     }
 
-    res.status(500).json({ mensaje: err.message || "Error interno del servidor" });
+    console.error("Error no controlado:", err);
+    res.status(500).json({ mensaje: "Error interno del servidor" });
 });
 
 iniciarCron();

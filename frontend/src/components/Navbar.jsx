@@ -1,26 +1,34 @@
 // navbar - barra de navegacion superior
 // responsive para movil y escritorio
 
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import authService from "../services/authService";
 
 const colorBoton = "#b79868";
 
-const estiloBoton = {
-  backgroundColor: colorBoton,
-  color: "white",
-  fontWeight: "bold",
-  fontSize: window.innerWidth < 768 ? "12px" : "16px",
-  padding: window.innerWidth < 768 ? "6px 12px" : "10px 28px",
-  borderRadius: "999px",
-  border: "none",
-  cursor: "pointer",
-  fontFamily: "'Baloo Bhai 2', Helvetica",
-  transition: "background-color 0.15s ease"
-};
-
 function Navbar({ mostrarInicio = false, estaLogueado }) {
   const navegar = useNavigate();
+  const [esMobil, setEsMobil] = useState(() => window.innerWidth < 768);
+
+  useEffect(() => {
+    const handler = () => setEsMobil(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+
+  const estiloBoton = {
+    backgroundColor: colorBoton,
+    color: "white",
+    fontWeight: "bold",
+    fontSize: esMobil ? "12px" : "16px",
+    padding: esMobil ? "6px 12px" : "10px 28px",
+    borderRadius: "999px",
+    border: "none",
+    cursor: "pointer",
+    fontFamily: "'Baloo Bhai 2', Helvetica",
+    transition: "background-color 0.15s ease"
+  };
 
   const logueado = estaLogueado !== undefined
     ? estaLogueado
@@ -38,8 +46,8 @@ function Navbar({ mostrarInicio = false, estaLogueado }) {
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
-      paddingTop: window.innerWidth < 768 ? "10px" : "16px",
-      paddingBottom: window.innerWidth < 768 ? "10px" : "16px",
+      paddingTop: esMobil ? "10px" : "16px",
+      paddingBottom: esMobil ? "10px" : "16px",
       paddingLeft: "20px",
       paddingRight: "0px",
     }}>
@@ -47,7 +55,7 @@ function Navbar({ mostrarInicio = false, estaLogueado }) {
       <div />
 
       {/* botones derecha */}
-      <div style={{ display: "flex", gap: window.innerWidth < 768 ? "6px" : "10px", marginRight: window.innerWidth < 768 ? "10px" : "50px" }}>
+      <div style={{ display: "flex", gap: esMobil ? "6px" : "10px", marginRight: esMobil ? "10px" : "50px" }}>
 
         {logueado ? (
           <>

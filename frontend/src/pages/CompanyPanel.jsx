@@ -49,7 +49,7 @@ function CompanyPanel({ setEstaLogueado }) {
 
   const navegar = useNavigate();
 
-  const empresa = authService.getEmpresa();
+  const [empresa, setEmpresa] = useState(authService.getEmpresa());
 
   const [eventosActivos, setEventosActivos] = useState([]);
   const [eventosPasados, setEventosPasados] = useState([]);
@@ -85,6 +85,20 @@ function CompanyPanel({ setEstaLogueado }) {
   const [modalPatrocinio, setModalPatrocinio] = useState(null);
   const [pasoEliminarCuenta, setPasoEliminarCuenta] = useState(0);
   const [seccionActiva, setSeccionActiva] = useState("eventos");
+  const [formPerfil, setFormPerfil] = useState({ nombre: "", correo: "", descripcion: "", contrasena: "" });
+  const [perfilGuardando, setPerfilGuardando] = useState(false);
+  const [perfilExito, setPerfilExito] = useState("");
+  const [perfilError, setPerfilError] = useState("");
+  const [fotoSubiendo, setFotoSubiendo] = useState(false);
+  const [fotoError, setFotoError] = useState("");
+  const [previewRecortePerfil, setPreviewRecortePerfil] = useState(null);
+  const [modalRecortePerfilAbierto, setModalRecortePerfilAbierto] = useState(false);
+  const [cropPerfil, setCropPerfil] = useState({ x: 0, y: 0 });
+  const [zoomPerfil, setZoomPerfil] = useState(1);
+  const [croppedAreaPixelsPerfil, setCroppedAreaPixelsPerfil] = useState(null);
+  const [recortando, setRecortando] = useState(false);
+  const [anchoVentana, setAnchoVentana] = useState(window.innerWidth);
+  const fotoInputRef = useRef(null);
 
   const modalEliminarRef = useRef(null);
   const modalCuentaRef = useRef(null);
@@ -135,6 +149,21 @@ function CompanyPanel({ setEstaLogueado }) {
     cargarEventos();
   }, []);
 
+  useEffect(() => {
+    const handler = () => setAnchoVentana(window.innerWidth);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+
+  useEffect(() => {
+    if (seccionActiva === "perfil") {
+      setFormPerfil({ nombre: empresa?.nombre || "", correo: empresa?.correo || "", descripcion: empresa?.descripcion || "", contrasena: "" });
+      setFotoError("");
+      setPerfilExito("");
+      setPerfilError("");
+    }
+  }, [seccionActiva]);
+
   const cargarEventos = async () => {
     try {
       setCargando(true);
@@ -169,6 +198,8 @@ function CompanyPanel({ setEstaLogueado }) {
   };
 
   const confirmarRecorte = async () => {
+    if (recortando || !croppedAreaPixels) return;
+    setRecortando(true);
     try {
       const blob = await recortarImagen(previewRecorte, croppedAreaPixels);
       const file = new File([blob], "imagen.jpg", { type: "image/jpeg" });
@@ -178,6 +209,8 @@ function CompanyPanel({ setEstaLogueado }) {
       setPreviewRecorte(null);
     } catch (err) {
       console.error("Error al recortar imagen:", err);
+    } finally {
+      setRecortando(false);
     }
   };
 
@@ -312,6 +345,68 @@ const abrirFormularioRestaurar = (evento) => {
     } catch (err) {
       setError("Error al cambiar el patrocinio");
       setModalPatrocinio(null);
+    }
+  };
+
+  const handleSubirFoto = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFotoError("");
+    const url = URL.createObjectURL(file);
+    setPreviewRecortePerfil(url);
+    setCropPerfil({ x: 0, y: 0 });
+    setZoomPerfil(1);
+    setModalRecortePerfilAbierto(true);
+    if (fotoInputRef.current) fotoInputRef.current.value = "";
+  };
+
+  const confirmarRecortePerfil = async () => {
+    if (fotoSubiendo || !croppedAreaPixelsPerfil) return;
+    setFotoSubiendo(true);
+    try {
+      const blob = await recortarImagen(previewRecortePerfil, croppedAreaPixelsPerfil);
+      const file = new File([blob], "foto-perfil.jpg", { type: "image/jpeg" });
+      setModalRecortePerfilAbierto(false);
+      URL.revokeObjectURL(previewRecortePerfil);
+      setPreviewRecortePerfil(null);
+      const res = await authService.actualizarFotoPerfil(file);
+      setEmpresa(res.empresa);
+    } catch (err) {
+      setFotoError(err.response?.data?.mensaje || "Error al subir la foto");
+    } finally {
+      setFotoSubiendo(false);
+    }
+  };
+
+  const cancelarRecortePerfil = () => {
+    setModalRecortePerfilAbierto(false);
+    URL.revokeObjectURL(previewRecortePerfil);
+    setPreviewRecortePerfil(null);
+  };
+
+  const handleGuardarPerfil = async (e) => {
+    e.preventDefault();
+    setPerfilError("");
+    setPerfilExito("");
+    setPerfilGuardando(true);
+    try {
+      const datos = { contrasena: formPerfil.contrasena };
+      if (formPerfil.nombre !== empresa?.nombre) datos.nombre = formPerfil.nombre;
+      if (formPerfil.correo !== empresa?.correo) datos.correo = formPerfil.correo;
+      if (formPerfil.descripcion !== (empresa?.descripcion || "")) datos.descripcion = formPerfil.descripcion;
+      if (Object.keys(datos).filter((k) => k !== "contrasena").length === 0) {
+        setPerfilExito("No hay cambios que guardar.");
+        setPerfilGuardando(false);
+        return;
+      }
+      const res = await authService.actualizarPerfil(datos);
+      setEmpresa(res.empresa);
+      setFormPerfil((p) => ({ ...p, contrasena: "" }));
+      setPerfilExito(res.mensaje);
+    } catch (err) {
+      setPerfilError(err.response?.data?.mensaje || "Error al actualizar el perfil");
+    } finally {
+      setPerfilGuardando(false);
     }
   };
 
@@ -588,7 +683,7 @@ const abrirFormularioRestaurar = (evento) => {
               onSubmit={handleSubmitEvento}
               style={{
                 display: "grid",
-                gridTemplateColumns: window.innerWidth < 600 ? "1fr 1fr" : "1fr 1fr 1fr 1fr",
+                gridTemplateColumns: anchoVentana < 600 ? "1fr 1fr" : "1fr 1fr 1fr 1fr",
                 gap: "12px"
               }}
             >
@@ -1375,7 +1470,7 @@ const abrirFormularioRestaurar = (evento) => {
 
         {/* perfil */}
         {seccionActiva === "perfil" && (
-          <div style={{ maxWidth: "500px" }}>
+          <div>
             <h2 style={{
               fontFamily: "'Baloo Bhai 2', Helvetica",
               fontSize: "22px",
@@ -1387,72 +1482,247 @@ const abrirFormularioRestaurar = (evento) => {
             </h2>
 
             <div style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 260px",
+              gap: "24px",
+              alignItems: "start",
+              marginBottom: "24px"
+            }}>
+
+            {/* columna izquierda — datos */}
+            <form
+              onSubmit={handleGuardarPerfil}
+              style={{
+                backgroundColor: "white",
+                borderRadius: "16px",
+                padding: "20px",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+                marginBottom: "24px"
+              }}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <label style={{ ...estiloLabel, fontSize: "13px" }} htmlFor="perfil-nombre">Nombre de empresa</label>
+                <input
+                  id="perfil-nombre"
+                  type="text"
+                  value={formPerfil.nombre}
+                  onChange={(e) => setFormPerfil((p) => ({ ...p, nombre: e.target.value }))}
+                  required
+                  style={{ ...estiloInput, height: "38px", fontSize: "14px" }}
+                />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <label style={{ ...estiloLabel, fontSize: "13px" }} htmlFor="perfil-correo">Correo electrónico</label>
+                <input
+                  id="perfil-correo"
+                  type="email"
+                  value={formPerfil.correo}
+                  onChange={(e) => setFormPerfil((p) => ({ ...p, correo: e.target.value }))}
+                  required
+                  style={{ ...estiloInput, height: "38px", fontSize: "14px" }}
+                />
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <label style={{ ...estiloLabel, fontSize: "13px" }} htmlFor="perfil-descripcion">Descripción</label>
+                <textarea
+                  id="perfil-descripcion"
+                  value={formPerfil.descripcion}
+                  onChange={(e) => setFormPerfil((p) => ({ ...p, descripcion: e.target.value }))}
+                  maxLength={500}
+                  rows={3}
+                  placeholder="Cuéntanos sobre tu empresa..."
+                  style={{
+                    width: "100%",
+                    backgroundColor: "#f8f8f8",
+                    padding: "10px 12px",
+                    fontFamily: "'Baloo Bhai 2', Helvetica",
+                    fontSize: "14px",
+                    color: "#1a1a1a",
+                    border: "1px solid #d4b896",
+                    borderRadius: "8px",
+                    outline: "none",
+                    resize: "vertical",
+                    boxSizing: "border-box"
+                  }}
+                />
+                <span style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "11px", color: "#b0b0b0", textAlign: "right" }}>
+                  {formPerfil.descripcion.length}/500
+                </span>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <label style={{ ...estiloLabel, fontSize: "13px" }} htmlFor="perfil-contrasena">Contraseña actual</label>
+                <input
+                  id="perfil-contrasena"
+                  type="password"
+                  value={formPerfil.contrasena}
+                  onChange={(e) => setFormPerfil((p) => ({ ...p, contrasena: e.target.value }))}
+                  required
+                  placeholder="Introduce tu contraseña para confirmar"
+                  style={{ ...estiloInput, height: "38px", fontSize: "14px" }}
+                />
+              </div>
+
+              <p style={{
+                fontFamily: "'Baloo Bhai 2', Helvetica",
+                fontSize: "12px",
+                color: "#818181",
+                margin: 0,
+                lineHeight: "1.4"
+              }}>
+                Cada campo solo puede modificarse una vez cada 2 meses.
+              </p>
+
+              {perfilExito && (
+                <div style={{
+                  backgroundColor: "#e8f5e9",
+                  borderRadius: "8px",
+                  padding: "8px 12px",
+                  fontFamily: "'Baloo Bhai 2', Helvetica",
+                  fontSize: "13px",
+                  color: "#2e7d32"
+                }}>
+                  {perfilExito}
+                </div>
+              )}
+              {perfilError && (
+                <div style={{
+                  backgroundColor: "#fdecea",
+                  borderRadius: "8px",
+                  padding: "8px 12px",
+                  fontFamily: "'Baloo Bhai 2', Helvetica",
+                  fontSize: "13px",
+                  color: "#c0392b"
+                }}>
+                  {perfilError}
+                </div>
+              )}
+
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <button
+                  type="submit"
+                  disabled={perfilGuardando}
+                  style={{ ...estiloBotonPrimario, fontSize: "14px", padding: "8px 20px", opacity: perfilGuardando ? 0.7 : 1 }}
+                  onMouseEnter={(e) => { if (!perfilGuardando) e.currentTarget.style.backgroundColor = "#7a5c2e"; }}
+                  onMouseLeave={(e) => { if (!perfilGuardando) e.currentTarget.style.backgroundColor = "#91703d"; }}
+                >
+                  {perfilGuardando ? "Guardando..." : "Guardar cambios"}
+                </button>
+              </div>
+            </form>
+
+            {/* columna derecha — foto de perfil */}
+            <div style={{
               backgroundColor: "white",
               borderRadius: "16px",
-              padding: "24px",
+              padding: "20px",
               boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
               display: "flex",
               flexDirection: "column",
-              gap: "16px",
-              marginBottom: "32px"
+              alignItems: "center",
+              gap: "16px"
             }}>
-              <div>
-                <span style={{ ...estiloLabel, marginBottom: "2px" }}>Nombre de empresa</span>
-                <div style={{
-                  fontFamily: "'Baloo Bhai 2', Helvetica",
-                  fontSize: "16px",
-                  color: "#1a1a1a",
-                  padding: "10px 12px",
-                  backgroundColor: "#f8f8f8",
-                  borderRadius: "8px",
-                  border: "1px solid #d4b896"
-                }}>
-                  {empresa?.nombre || "—"}
-                </div>
+              <div style={{
+                width: "120px", height: "120px",
+                borderRadius: "50%",
+                overflow: "hidden",
+                border: "3px solid #d4b896",
+                backgroundColor: "#f0e8dc",
+                flexShrink: 0
+              }}>
+                {empresa?.fotoPerfil ? (
+                  <img
+                    src={empresa.fotoPerfil}
+                    alt="Foto de perfil"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                ) : (
+                  <div style={{
+                    width: "100%", height: "100%",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: "40px", color: "#b79868"
+                  }}>
+                    🏢
+                  </div>
+                )}
               </div>
-              <div>
-                <span style={{ ...estiloLabel, marginBottom: "2px" }}>Correo electrónico</span>
-                <div style={{
+
+              <input
+                ref={fotoInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleSubirFoto}
+                style={{ display: "none" }}
+                id="foto-perfil-input"
+              />
+              <button
+                type="button"
+                onClick={() => fotoInputRef.current?.click()}
+                disabled={fotoSubiendo}
+                style={{
+                  ...estiloBotonSecundario,
+                  fontSize: "13px",
+                  padding: "7px 18px",
+                  opacity: fotoSubiendo ? 0.7 : 1,
+                  width: "100%"
+                }}
+                onMouseEnter={(e) => { if (!fotoSubiendo) e.currentTarget.style.backgroundColor = "#91703d"; }}
+                onMouseLeave={(e) => { if (!fotoSubiendo) e.currentTarget.style.backgroundColor = "#b79868"; }}
+              >
+                {fotoSubiendo ? "Subiendo..." : "Cambiar foto"}
+              </button>
+
+              {fotoError && (
+                <p style={{
                   fontFamily: "'Baloo Bhai 2', Helvetica",
-                  fontSize: "16px",
-                  color: "#1a1a1a",
-                  padding: "10px 12px",
-                  backgroundColor: "#f8f8f8",
-                  borderRadius: "8px",
-                  border: "1px solid #d4b896"
+                  fontSize: "12px", color: "#c0392b",
+                  margin: 0, textAlign: "center"
                 }}>
-                  {empresa?.correo || "—"}
-                </div>
-              </div>
+                  {fotoError}
+                </p>
+              )}
             </div>
+
+            </div>{/* fin grid */}
 
             <div style={{
               backgroundColor: "#fdecea",
-              borderRadius: "16px",
-              padding: "24px",
-              border: "1px solid #f5c6c2"
+              borderRadius: "12px",
+              padding: "14px 18px",
+              border: "1px solid #f5c6c2",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "16px",
+              flexWrap: "wrap"
             }}>
-              <h3 style={{
-                fontFamily: "'Baloo Bhai 2', Helvetica",
-                fontSize: "17px",
-                fontWeight: "700",
-                color: "#c0392b",
-                marginBottom: "8px"
-              }}>
-                Zona de peligro
-              </h3>
-              <p style={{
-                fontFamily: "'Baloo Bhai 2', Helvetica",
-                fontSize: "14px",
-                color: "#4a4a4a",
-                marginBottom: "16px",
-                lineHeight: "1.5"
-              }}>
-                Eliminar el perfil borrará tu cuenta y todos tus eventos. Esta acción no se puede deshacer.
-              </p>
+              <div>
+                <p style={{
+                  fontFamily: "'Baloo Bhai 2', Helvetica",
+                  fontSize: "14px",
+                  fontWeight: "700",
+                  color: "#c0392b",
+                  margin: "0 0 2px 0"
+                }}>
+                  Zona de peligro
+                </p>
+                <p style={{
+                  fontFamily: "'Baloo Bhai 2', Helvetica",
+                  fontSize: "13px",
+                  color: "#4a4a4a",
+                  margin: 0,
+                  lineHeight: "1.4"
+                }}>
+                  Eliminar la cuenta borrará todos tus eventos. Esta acción no se puede deshacer.
+                </p>
+              </div>
               <button
                 onClick={() => setPasoEliminarCuenta(1)}
-                style={{ ...estiloBotonPrimario, backgroundColor: "#c0392b" }}
+                style={{ ...estiloBotonPrimario, backgroundColor: "#c0392b", flexShrink: 0 }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#922b21"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#c0392b"}
               >
@@ -1528,14 +1798,17 @@ const abrirFormularioRestaurar = (evento) => {
             </button>
             <button
               onClick={confirmarRecorte}
+              disabled={recortando}
               style={{
                 backgroundColor: "#b79868", color: "white",
                 fontFamily: "'Baloo Bhai 2', Helvetica", fontWeight: "700",
                 fontSize: "15px", padding: "10px 24px",
-                borderRadius: "999px", border: "none", cursor: "pointer"
+                borderRadius: "999px", border: "none",
+                cursor: recortando ? "not-allowed" : "pointer",
+                opacity: recortando ? 0.7 : 1
               }}
             >
-              Usar este encuadre
+              {recortando ? "Procesando..." : "Usar este encuadre"}
             </button>
           </div>
         </div>
@@ -1865,6 +2138,81 @@ const abrirFormularioRestaurar = (evento) => {
                     : "Sí, cancelar"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* modal recorte foto de perfil */}
+      {modalRecortePerfilAbierto && previewRecortePerfil && (
+        <div style={{
+          position: "fixed", inset: 0,
+          backgroundColor: "rgba(0,0,0,0.85)",
+          zIndex: 1100, display: "flex",
+          flexDirection: "column",
+          alignItems: "center", justifyContent: "center",
+          padding: "16px", gap: "16px"
+        }}>
+          <p style={{
+            fontFamily: "'Baloo Bhai 2', Helvetica",
+            fontSize: "16px", fontWeight: "700",
+            color: "white", margin: 0
+          }}>
+            Ajusta el encuadre de tu foto
+          </p>
+
+          <div style={{ position: "relative", width: "280px", height: "280px" }}>
+            <Cropper
+              image={previewRecortePerfil}
+              crop={cropPerfil}
+              zoom={zoomPerfil}
+              aspect={1}
+              cropShape="round"
+              showGrid={false}
+              onCropChange={setCropPerfil}
+              onZoomChange={setZoomPerfil}
+              onCropComplete={(_, pixels) => setCroppedAreaPixelsPerfil(pixels)}
+            />
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", width: "100%", maxWidth: "280px" }}>
+            <span style={{ color: "white", fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "13px", whiteSpace: "nowrap" }}>
+              Zoom
+            </span>
+            <input
+              type="range"
+              min={1} max={3} step={0.05}
+              value={zoomPerfil}
+              onChange={(e) => setZoomPerfil(Number(e.target.value))}
+              style={{ flex: 1, accentColor: "#b79868" }}
+            />
+          </div>
+
+          <div style={{ display: "flex", gap: "12px" }}>
+            <button
+              onClick={cancelarRecortePerfil}
+              style={{
+                backgroundColor: "#818181", color: "white",
+                fontFamily: "'Baloo Bhai 2', Helvetica", fontWeight: "700",
+                fontSize: "15px", padding: "10px 24px",
+                borderRadius: "999px", border: "none", cursor: "pointer"
+              }}
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={confirmarRecortePerfil}
+              disabled={fotoSubiendo}
+              style={{
+                backgroundColor: "#b79868", color: "white",
+                fontFamily: "'Baloo Bhai 2', Helvetica", fontWeight: "700",
+                fontSize: "15px", padding: "10px 24px",
+                borderRadius: "999px", border: "none",
+                cursor: fotoSubiendo ? "not-allowed" : "pointer",
+                opacity: fotoSubiendo ? 0.7 : 1
+              }}
+            >
+              {fotoSubiendo ? "Subiendo..." : "Usar este encuadre"}
+            </button>
           </div>
         </div>
       )}
