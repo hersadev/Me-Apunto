@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import Navbar from "../components/Navbar";
@@ -8,14 +9,24 @@ function CookiesPolicy() {
 
   const navegar = useNavigate();
 
+  // deteccion de ancho para responsividad movil
+  const [anchoVentana, setAnchoVentana] = useState(window.innerWidth);
+  useEffect(() => {
+    const h = () => setAnchoVentana(window.innerWidth);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
+  const esMobil = anchoVentana < 768;
+
   const Seccion = ({ numero, titulo, children }) => (
     <div style={{ marginBottom: "28px" }}>
       <h2 style={{
         fontFamily: "'Baloo Bhai 2', Helvetica",
-        fontSize: "20px",
+        fontSize: esMobil ? "18px" : "20px",
         fontWeight: "700",
         color: "#91703d",
-        marginBottom: "10px"
+        marginBottom: "10px",
+        wordBreak: "break-word"
       }}>
         {numero}. {titulo}
       </h2>
@@ -23,7 +34,8 @@ function CookiesPolicy() {
         fontFamily: "'Baloo Bhai 2', Helvetica",
         fontSize: "16px",
         color: "#333333",
-        lineHeight: "1.7"
+        lineHeight: "1.7",
+        wordBreak: "break-word"
       }}>
         {children}
       </div>
@@ -40,23 +52,23 @@ function CookiesPolicy() {
         width: "100%",
         borderCollapse: "collapse",
         fontFamily: "'Baloo Bhai 2', Helvetica",
-        fontSize: "14px"
+        fontSize: esMobil ? "12px" : "14px"
       }}>
         <thead>
           <tr style={{ backgroundColor: "#b79868", color: "white" }}>
-            <th style={{ padding: "10px 12px", textAlign: "left", borderRadius: "0" }}>Nombre</th>
-            <th style={{ padding: "10px 12px", textAlign: "left" }}>Finalidad</th>
-            <th style={{ padding: "10px 12px", textAlign: "left" }}>Duración</th>
-            <th style={{ padding: "10px 12px", textAlign: "left" }}>Tipo</th>
+            <th style={{ padding: esMobil ? "8px" : "10px 12px", textAlign: "left", borderRadius: "0" }}>Nombre</th>
+            <th style={{ padding: esMobil ? "8px" : "10px 12px", textAlign: "left" }}>Finalidad</th>
+            <th style={{ padding: esMobil ? "8px" : "10px 12px", textAlign: "left" }}>Duración</th>
+            <th style={{ padding: esMobil ? "8px" : "10px 12px", textAlign: "left" }}>Tipo</th>
           </tr>
         </thead>
         <tbody>
           {filas.map((fila, i) => (
             <tr key={i} style={{ backgroundColor: i % 2 === 0 ? "#faf6f0" : "white" }}>
-              <td style={{ padding: "8px 12px", color: "#333" }}>{fila.nombre}</td>
-              <td style={{ padding: "8px 12px", color: "#333" }}>{fila.finalidad}</td>
-              <td style={{ padding: "8px 12px", color: "#333" }}>{fila.duracion}</td>
-              <td style={{ padding: "8px 12px", color: "#333" }}>{fila.tipo}</td>
+              <td style={{ padding: esMobil ? "6px 8px" : "8px 12px", color: "#333" }}>{fila.nombre}</td>
+              <td style={{ padding: esMobil ? "6px 8px" : "8px 12px", color: "#333" }}>{fila.finalidad}</td>
+              <td style={{ padding: esMobil ? "6px 8px" : "8px 12px", color: "#333" }}>{fila.duracion}</td>
+              <td style={{ padding: esMobil ? "6px 8px" : "8px 12px", color: "#333" }}>{fila.tipo}</td>
             </tr>
           ))}
         </tbody>
@@ -107,15 +119,17 @@ function CookiesPolicy() {
         width: "100%",
         maxWidth: "900px",
         margin: "0 auto",
-        padding: "60px 24px"
+        padding: esMobil ? "32px 16px" : "60px 24px",
+        boxSizing: "border-box"
       }}>
 
         <h1 style={{
           fontFamily: "'Baloo Bhai 2', Helvetica",
-          fontSize: "32px",
+          fontSize: esMobil ? "26px" : "32px",
           fontWeight: "700",
           color: "#2c2c2c",
-          marginBottom: "8px"
+          marginBottom: "8px",
+          wordBreak: "break-word"
         }}>
           Política de Cookies
         </h1>
@@ -244,9 +258,10 @@ function CookiesPolicy() {
 
         <div style={{
           display: "flex",
-          gap: "16px",
+          gap: "12px",
           flexWrap: "wrap",
-          marginTop: "16px"
+          marginTop: "16px",
+          flexDirection: esMobil ? "column" : "row"
         }}>
           <button
             onClick={() => navegar("/")}
@@ -257,10 +272,12 @@ function CookiesPolicy() {
               fontWeight: "700",
               fontSize: "16px",
               padding: "12px 32px",
+              minHeight: "44px",
               borderRadius: "999px",
               border: "none",
               cursor: "pointer",
-              transition: "background-color 0.15s ease"
+              transition: "background-color 0.15s ease",
+              width: esMobil ? "100%" : "auto"
             }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#b79868"}
@@ -277,10 +294,12 @@ function CookiesPolicy() {
               fontWeight: "700",
               fontSize: "16px",
               padding: "12px 32px",
+              minHeight: "44px",
               borderRadius: "999px",
               border: "2px solid #91703d",
               cursor: "pointer",
-              transition: "all 0.15s ease"
+              transition: "all 0.15s ease",
+              width: esMobil ? "100%" : "auto"
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = "#91703d";

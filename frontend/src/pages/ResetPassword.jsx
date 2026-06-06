@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 
@@ -11,6 +11,14 @@ import authService from "../services/authService";
 function ResetPassword() {
   const { token } = useParams();
   const navegar = useNavigate();
+
+  const [anchoVentana, setAnchoVentana] = useState(window.innerWidth);
+  useEffect(() => {
+    const h = () => setAnchoVentana(window.innerWidth);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
+  const esMobil = anchoVentana < 768;
 
   const [contrasena, setContrasena] = useState("");
   const [confirmarContrasena, setConfirmarContrasena] = useState("");
@@ -74,16 +82,17 @@ function ResetPassword() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        padding: "40px 20px"
+        padding: esMobil ? "16px 12px" : "40px 20px"
       }}>
         <AuthCard>
 
           <span style={{
             fontFamily: "'Baloo Bhai 2', Helvetica",
-            fontSize: "30px",
+            fontSize: esMobil ? "24px" : "30px",
             fontWeight: "700",
             color: "#2c2c2c",
-            marginBottom: "4px"
+            marginBottom: "4px",
+            textAlign: "center"
           }}>
             Nueva Contraseña
           </span>

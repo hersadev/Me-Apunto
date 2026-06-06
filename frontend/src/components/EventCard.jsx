@@ -1,4 +1,4 @@
-import { useState, memo } from "react";
+import { useState, useEffect, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import calendarioIcon from "../assets/icons/iconoCalendario.svg";
 import relojIcon from "../assets/icons/iconoReloj.svg";
@@ -6,6 +6,13 @@ import relojIcon from "../assets/icons/iconoReloj.svg";
 function EventCard({ evento, destacado = false }) {
   const navegar = useNavigate();
   const [hovered, setHovered] = useState(false);
+  const [esMobil, setEsMobil] = useState(() => window.innerWidth < 768);
+
+  useEffect(() => {
+    const handler = () => setEsMobil(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" || e.key === " ") {
@@ -24,13 +31,15 @@ function EventCard({ evento, destacado = false }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        width: destacado ? "100%" : "260px",
+        width: destacado ? "100%" : (esMobil ? "100%" : "260px"),
+        maxWidth: destacado ? "100%" : (esMobil ? "360px" : "260px"),
         cursor: "pointer",
         position: "relative",
         transition: "box-shadow 0.2s ease, translate 0.2s ease",
         translate: hovered ? "0 -4px" : "0 0",
         borderRadius: "14px",
         boxShadow: hovered ? "0 12px 28px rgba(0,0,0,0.15)" : "none",
+        boxSizing: "border-box",
       }}
       className="flex flex-col mx-auto"
     >
@@ -38,7 +47,7 @@ function EventCard({ evento, destacado = false }) {
       {/* imagen */}
       <div style={{
         width: "100%",
-        height: destacado ? "260px" : "220px",
+        height: destacado ? (esMobil ? "200px" : "260px") : (esMobil ? "180px" : "220px"),
         overflow: "hidden",
         borderRadius: "14px",
         position: "relative",
@@ -47,7 +56,7 @@ function EventCard({ evento, destacado = false }) {
           src={evento.imagen || `https://picsum.photos/seed/${evento._id}/400/300`}
           alt={evento.titulo}
           loading="lazy"
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          style={{ width: "100%", height: "100%", objectFit: "cover", maxWidth: "100%", display: "block" }}
         />
 
         {/* badge patrocinado */}
@@ -84,6 +93,9 @@ function EventCard({ evento, destacado = false }) {
         fontWeight: "600", textAlign: "center",
         marginTop: "10px", lineHeight: "1.3",
         fontFamily: "'Baloo Bhai 2', Helvetica",
+        overflowWrap: "break-word",
+        wordBreak: "break-word",
+        padding: "0 4px",
       }} className="text-black px-1">
         {evento.titulo}
       </div>

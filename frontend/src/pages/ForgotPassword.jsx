@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 
@@ -9,6 +9,14 @@ import authService from "../services/authService";
 
 function ForgotPassword() {
   const navegar = useNavigate();
+
+  const [anchoVentana, setAnchoVentana] = useState(window.innerWidth);
+  useEffect(() => {
+    const h = () => setAnchoVentana(window.innerWidth);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
+  const esMobil = anchoVentana < 768;
 
   const [correo, setCorreo] = useState("");
   const [cargando, setCargando] = useState(false);
@@ -58,16 +66,17 @@ function ForgotPassword() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        padding: "40px 20px"
+        padding: esMobil ? "16px 12px" : "40px 20px"
       }}>
         <AuthCard>
 
           <span style={{
             fontFamily: "'Baloo Bhai 2', Helvetica",
-            fontSize: "30px",
+            fontSize: esMobil ? "24px" : "30px",
             fontWeight: "700",
             color: "#2c2c2c",
-            marginBottom: "4px"
+            marginBottom: "4px",
+            textAlign: "center"
           }}>
             Recuperar Contraseña
           </span>
@@ -134,7 +143,7 @@ function ForgotPassword() {
                 htmlFor="correo"
                 style={{
                   fontFamily: "'Baloo Bhai 2', Helvetica",
-                  fontSize: "20px",
+                  fontSize: esMobil ? "17px" : "20px",
                   fontWeight: "600",
                   color: "#1a1a1a"
                 }}
@@ -156,11 +165,12 @@ function ForgotPassword() {
                   paddingLeft: "12px",
                   paddingRight: "12px",
                   fontFamily: "'Baloo Bhai 2', Helvetica",
-                  fontSize: "20px",
+                  fontSize: esMobil ? "16px" : "20px",
                   color: "#1a1a1a",
                   border: "none",
                   outline: "none",
-                  borderRadius: "6px"
+                  borderRadius: "6px",
+                  boxSizing: "border-box"
                 }}
                 autoComplete="email"
               />

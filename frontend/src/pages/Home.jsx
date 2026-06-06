@@ -16,8 +16,6 @@ import eventoService from "../services/eventoService";
 
 const EVENTOS_POR_PAGINA = 8;
 
-const esMobil = window.innerWidth < 768;
-
 const nombresMeses = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
@@ -28,6 +26,15 @@ const nombresDias = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 function Home({ estaLogueado }) {
 
   const navegar = useNavigate();
+
+  // ── detección de ancho reactiva ──
+  const [anchoVentana, setAnchoVentana] = useState(window.innerWidth);
+  useEffect(() => {
+    const h = () => setAnchoVentana(window.innerWidth);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
+  const esMobil = anchoVentana < 768;
 
   const [eventos, setEventos] = useState([]);
   const [eventosPatrocinados, setEventosPatrocinados] = useState([]);
@@ -276,18 +283,27 @@ function Home({ estaLogueado }) {
 
       <main id="main-content" style={{
         flex: 1, width: "100%", maxWidth: "1200px",
-        margin: "0 auto", padding: "24px 16px"
+        margin: "0 auto",
+        padding: esMobil ? "16px 12px" : "24px 16px"
       }}>
 
         {/* filtros */}
         <div style={{
-          display: "flex", gap: "12px", justifyContent: "center",
-          marginBottom: "40px", flexWrap: "wrap", alignItems: "center"
+          display: "flex",
+          gap: esMobil ? "8px" : "12px",
+          justifyContent: "center",
+          marginBottom: esMobil ? "24px" : "40px",
+          flexWrap: "wrap",
+          alignItems: "center",
+          padding: esMobil ? "0 4px" : "0"
         }}>
           <select aria-label="Filtrar por categoría" value={categoria} onChange={(e) => setCategoria(e.target.value)} style={{
             backgroundColor: "#f9f6f1", border: "1px solid #afacac",
-            fontSize: esMobil ? "14px" : "20px", padding: esMobil ? "6px 10px" : "8px 16px",
-            minWidth: esMobil ? "100px" : "150px", cursor: "pointer",
+            fontSize: esMobil ? "14px" : "20px",
+            padding: esMobil ? "6px 10px" : "8px 16px",
+            width: esMobil ? "calc(50% - 4px)" : "auto",
+            minWidth: esMobil ? "0" : "150px",
+            cursor: "pointer",
             fontFamily: "'Baloo Bhai 2', Helvetica"
           }}>
             <option value="">Todo evento</option>
@@ -303,8 +319,11 @@ function Home({ estaLogueado }) {
 
           <select aria-label="Filtrar por fecha" value={fecha} onChange={(e) => setFecha(e.target.value)} style={{
             backgroundColor: "#f9f6f1", border: "1px solid #afacac",
-            fontSize: esMobil ? "14px" : "20px", padding: esMobil ? "6px 10px" : "8px 16px",
-            minWidth: esMobil ? "100px" : "150px", cursor: "pointer",
+            fontSize: esMobil ? "14px" : "20px",
+            padding: esMobil ? "6px 10px" : "8px 16px",
+            width: esMobil ? "calc(50% - 4px)" : "auto",
+            minWidth: esMobil ? "0" : "150px",
+            cursor: "pointer",
             fontFamily: "'Baloo Bhai 2', Helvetica"
           }}>
             <option value="">Toda Fecha</option>
@@ -315,8 +334,11 @@ function Home({ estaLogueado }) {
 
           <select aria-label="Filtrar por tipo" value={tipo} onChange={(e) => setTipo(e.target.value)} style={{
             backgroundColor: "#f9f6f1", border: "1px solid #afacac",
-            fontSize: esMobil ? "14px" : "20px", padding: esMobil ? "6px 10px" : "8px 16px",
-            minWidth: esMobil ? "100px" : "150px", cursor: "pointer",
+            fontSize: esMobil ? "14px" : "20px",
+            padding: esMobil ? "6px 10px" : "8px 16px",
+            width: esMobil ? "calc(50% - 4px)" : "auto",
+            minWidth: esMobil ? "0" : "150px",
+            cursor: "pointer",
             fontFamily: "'Baloo Bhai 2', Helvetica"
           }}>
             <option value="">Todo Tipo</option>
@@ -326,7 +348,9 @@ function Home({ estaLogueado }) {
 
           <button onClick={handleBuscar} style={{
             backgroundColor: "#b79868", color: "white", fontWeight: "bold",
-            fontSize: esMobil ? "14px" : "20px", padding: esMobil ? "6px 16px" : "8px 24px",
+            fontSize: esMobil ? "14px" : "20px",
+            padding: esMobil ? "8px 0" : "8px 24px",
+            width: esMobil ? "calc(50% - 4px)" : "auto",
             borderRadius: "999px", border: "none", cursor: "pointer",
             fontFamily: "'Baloo Bhai 2', Helvetica", transition: "background-color 0.15s ease"
           }}
@@ -344,7 +368,8 @@ function Home({ estaLogueado }) {
                 color: "#c0392b",
                 fontWeight: "bold",
                 fontSize: esMobil ? "14px" : "18px",
-                padding: esMobil ? "6px 12px" : "8px 20px",
+                padding: esMobil ? "8px 0" : "8px 20px",
+                width: esMobil ? "100%" : "auto",
                 borderRadius: "999px",
                 border: "2px solid #c0392b",
                 cursor: "pointer",
@@ -390,14 +415,16 @@ function Home({ estaLogueado }) {
           <>
             {/* ── CARRUSEL PATROCINADOS ── */}
             {eventosPatrocinados.length > 0 && (
-              <div style={{ marginBottom: "48px" }}>
+              <div style={{ marginBottom: esMobil ? "32px" : "48px" }}>
                 <div style={{
                   display: "flex", alignItems: "center",
-                  justifyContent: "center", gap: "8px", marginBottom: "24px"
+                  justifyContent: "center", gap: "8px",
+                  marginBottom: esMobil ? "16px" : "24px"
                 }}>
                   <span style={{
                     fontFamily: "'Baloo Bhai 2', Helvetica",
-                    fontSize: "20px", fontWeight: "700", color: "#b79868"
+                    fontSize: esMobil ? "16px" : "20px",
+                    fontWeight: "700", color: "#b79868"
                   }}>
                     ★ Eventos Destacados
                   </span>
@@ -473,8 +500,10 @@ function Home({ estaLogueado }) {
             {/* ── EVENTOS NORMALES ── */}
             {filaUno.length > 0 && (
               <div style={{
-                display: "flex", flexWrap: "wrap", gap: "28px",
-                justifyContent: "center", marginBottom: "40px"
+                display: "flex", flexWrap: "wrap",
+                gap: esMobil ? "16px" : "28px",
+                justifyContent: "center",
+                marginBottom: esMobil ? "16px" : "40px"
               }}>
                 {filaUno.map((evento) => (
                   <EventCard key={evento._id} evento={evento} />
@@ -484,8 +513,10 @@ function Home({ estaLogueado }) {
 
             {filaDos.length > 0 && (
               <div style={{
-                display: "flex", flexWrap: "wrap", gap: "28px",
-                justifyContent: "center", marginBottom: "32px"
+                display: "flex", flexWrap: "wrap",
+                gap: esMobil ? "16px" : "28px",
+                justifyContent: "center",
+                marginBottom: esMobil ? "16px" : "32px"
               }}>
                 {filaDos.map((evento) => (
                   <EventCard key={evento._id} evento={evento} />
@@ -544,7 +575,7 @@ function Home({ estaLogueado }) {
         )}
 
         {/* calendario */}
-        <div style={{ marginTop: "40px", marginBottom: "16px" }}>
+        <div style={{ marginTop: esMobil ? "24px" : "40px", marginBottom: "16px" }}>
           <div translate="no" style={{
             width: "100%", maxWidth: "700px", margin: "0 auto",
             backgroundColor: "white", borderRadius: "12px",
@@ -552,7 +583,8 @@ function Home({ estaLogueado }) {
           }}>
 
             <div style={{
-              padding: "12px 16px", display: "flex", alignItems: "center",
+              padding: esMobil ? "10px 10px" : "12px 16px",
+              display: "flex", alignItems: "center",
               justifyContent: "space-between", borderBottom: "1px solid #e5e7eb"
             }}>
               <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
@@ -561,8 +593,10 @@ function Home({ estaLogueado }) {
                   onClick={vistaCalendario === "Mes" ? mesPrevio : semanaPrevia}
                   style={{
                     background: "none", border: "none", cursor: "pointer",
-                    color: "#6b7280", fontSize: "16px", padding: "4px 8px",
-                    fontFamily: "'Baloo Bhai 2', Helvetica"
+                    color: "#6b7280", fontSize: "16px",
+                    padding: esMobil ? "6px 6px" : "4px 8px",
+                    fontFamily: "'Baloo Bhai 2', Helvetica",
+                    minWidth: "32px", minHeight: "32px"
                   }}
                 ><span aria-hidden="true">&lt;</span></button>
                 <button
@@ -570,8 +604,10 @@ function Home({ estaLogueado }) {
                   onClick={vistaCalendario === "Mes" ? mesSiguiente : semanaSiguiente}
                   style={{
                     background: "none", border: "none", cursor: "pointer",
-                    color: "#6b7280", fontSize: "16px", padding: "4px 8px",
-                    fontFamily: "'Baloo Bhai 2', Helvetica"
+                    color: "#6b7280", fontSize: "16px",
+                    padding: esMobil ? "6px 6px" : "4px 8px",
+                    fontFamily: "'Baloo Bhai 2', Helvetica",
+                    minWidth: "32px", minHeight: "32px"
                   }}
                 ><span aria-hidden="true">&gt;</span></button>
                 <button onClick={() => {
@@ -592,9 +628,13 @@ function Home({ estaLogueado }) {
 
               <span style={{
                 fontWeight: "bold", color: "#374151",
-                fontSize: esMobil ? "12px" : "15px",
+                fontSize: esMobil ? "11px" : "15px",
                 fontFamily: "'Baloo Bhai 2', Helvetica",
-                textAlign: "center", flex: 1, margin: "0 8px"
+                textAlign: "center", flex: 1,
+                margin: esMobil ? "0 4px" : "0 8px",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap"
               }}>
                 {vistaCalendario === "Mes"
                   ? `${nombresMeses[mesCalendario]} de ${anioCalendario}`
@@ -613,21 +653,23 @@ function Home({ estaLogueado }) {
               )}
 
               {esMobil && (
-                <div style={{ display: "flex", gap: "4px" }}>
+                <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
                   <button onClick={() => setVistaCalendario("Mes")} style={{
-                    fontSize: "11px", padding: "4px 8px", borderRadius: "4px",
+                    fontSize: "11px", padding: "6px 8px", borderRadius: "4px",
                     border: "1px solid #d1d5db", cursor: "pointer",
                     fontFamily: "'Baloo Bhai 2', Helvetica",
+                    minHeight: "32px",
                     backgroundColor: vistaCalendario === "Mes" ? "#b79868" : "white",
                     color: vistaCalendario === "Mes" ? "white" : "#6b7280"
                   }}>Mes</button>
                   <button onClick={() => setVistaCalendario("Semana")} style={{
-                    fontSize: "11px", padding: "4px 8px", borderRadius: "4px",
+                    fontSize: "11px", padding: "6px 8px", borderRadius: "4px",
                     border: "1px solid #d1d5db", cursor: "pointer",
                     fontFamily: "'Baloo Bhai 2', Helvetica",
+                    minHeight: "32px",
                     backgroundColor: vistaCalendario === "Semana" ? "#b79868" : "white",
                     color: vistaCalendario === "Semana" ? "white" : "#6b7280"
-                  }}>Semana</button>
+                  }}>Sem</button>
                 </div>
               )}
             </div>
@@ -639,7 +681,10 @@ function Home({ estaLogueado }) {
                   display: "grid", gridTemplateColumns: "repeat(7, 1fr)",
                   textAlign: "center", borderBottom: "1px solid #e5e7eb"
                 }}>
-                  {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((dia) => (
+                  {(esMobil
+                    ? ["L", "M", "X", "J", "V", "S", "D"]
+                    : ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+                  ).map((dia) => (
                     <div key={dia} style={{
                       fontSize: "11px", fontWeight: "600", color: "#6b7280",
                       padding: "8px 0", fontFamily: "'Baloo Bhai 2', Helvetica"
@@ -725,17 +770,19 @@ function Home({ estaLogueado }) {
                       diaFecha.getFullYear() === hoy.getFullYear();
                     return (
                       <div key={i} style={{
-                        textAlign: "center", padding: "8px 4px",
+                        textAlign: "center",
+                        padding: esMobil ? "6px 2px" : "8px 4px",
                         borderRight: i < 6 ? "1px solid #f3f4f6" : "none",
                         backgroundColor: esHoy ? "#fdf6ec" : "transparent"
                       }}>
                         <div style={{
-                          fontSize: "11px", fontWeight: "600",
+                          fontSize: esMobil ? "9px" : "11px",
+                          fontWeight: "600",
                           color: esHoy ? "#b79868" : "#6b7280",
                           fontFamily: "'Baloo Bhai 2', Helvetica"
-                        }}>{nombresDias[i]}</div>
+                        }}>{esMobil ? nombresDias[i].charAt(0) : nombresDias[i]}</div>
                         <div style={{
-                          fontSize: esMobil ? "12px" : "16px",
+                          fontSize: esMobil ? "11px" : "16px",
                           fontWeight: esHoy ? "700" : "400",
                           color: esHoy ? "#b79868" : "#374151",
                           fontFamily: "'Baloo Bhai 2', Helvetica", marginTop: "2px"
@@ -746,7 +793,8 @@ function Home({ estaLogueado }) {
                 </div>
 
                 <div style={{
-                  display: "grid", gridTemplateColumns: "repeat(7, 1fr)", minHeight: "120px"
+                  display: "grid", gridTemplateColumns: "repeat(7, 1fr)",
+                  minHeight: esMobil ? "80px" : "120px"
                 }}>
                   {diasDeLaSemana.map((diaFecha, i) => {
                     const evsDia = eventosDelDia(diaFecha);
@@ -756,31 +804,52 @@ function Home({ estaLogueado }) {
                       diaFecha.getFullYear() === hoy.getFullYear();
                     return (
                       <div key={i} style={{
-                        padding: "4px",
+                        padding: esMobil ? "2px" : "4px",
                         borderRight: i < 6 ? "1px solid #f3f4f6" : "none",
-                        borderTop: "1px solid #f3f4f6", minHeight: "80px",
+                        borderTop: "1px solid #f3f4f6",
+                        minHeight: esMobil ? "56px" : "80px",
                         backgroundColor: esHoy ? "#fdf6ec" : "transparent"
                       }}>
                         {evsDia.length === 0 ? (
                           <div style={{ height: "100%" }} />
                         ) : (
-                          evsDia.map((ev) => (
-                            <div key={ev._id}
-                              role="button"
-                              tabIndex={0}
-                              aria-label={`Ver evento: ${ev.titulo}, ${ev.hora}`}
-                              onClick={() => handleClickEvento(ev)}
-                              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClickEvento(ev); } }}
-                              style={{ ...estiloEvento, whiteSpace: "normal", lineHeight: "1.3" }}
-                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
-                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#b79868"}
-                            >
-                              <div style={{ fontWeight: "700" }}>{ev.hora}</div>
-                              <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                {ev.titulo}
+                          esMobil ? (
+                            /* en móvil: solo puntos para no desbordarse en 7 columnas */
+                            evsDia.map((ev) => (
+                              <div key={ev._id}
+                                role="button"
+                                tabIndex={0}
+                                aria-label={`Ver evento: ${ev.titulo}, ${ev.hora}`}
+                                onClick={() => handleClickEvento(ev)}
+                                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClickEvento(ev); } }}
+                                style={{
+                                  width: "8px", height: "8px",
+                                  backgroundColor: "#b79868",
+                                  borderRadius: "999px",
+                                  margin: "3px auto",
+                                  cursor: "pointer"
+                                }}
+                              />
+                            ))
+                          ) : (
+                            evsDia.map((ev) => (
+                              <div key={ev._id}
+                                role="button"
+                                tabIndex={0}
+                                aria-label={`Ver evento: ${ev.titulo}, ${ev.hora}`}
+                                onClick={() => handleClickEvento(ev)}
+                                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClickEvento(ev); } }}
+                                style={{ ...estiloEvento, whiteSpace: "normal", lineHeight: "1.3" }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#b79868"}
+                              >
+                                <div style={{ fontWeight: "700" }}>{ev.hora}</div>
+                                <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                  {ev.titulo}
+                                </div>
                               </div>
-                            </div>
-                          ))
+                            ))
+                          )
                         )}
                       </div>
                     );

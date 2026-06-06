@@ -98,7 +98,7 @@ const obtenerEventos = async (req, res) => {
 const obtenerEventoPorId = async (req, res) => {
   try {
     const evento = await Evento.findById(req.params.id)
-      .populate("empresa", "nombre correo");
+      .populate("empresa", "nombre correo fotoPerfil descripcion");
 
     if (!evento || !evento.activo) {
       return res.status(404).json({ mensaje: "Evento no encontrado" });
@@ -155,6 +155,10 @@ const crearEvento = async (req, res) => {
       maxPersonasPorInscripcion,
       categoria,
     } = req.body;
+
+    if (!req.empresa.descripcion || req.empresa.descripcion.trim() === "") {
+      return res.status(403).json({ mensaje: "Debes completar la descripción de tu empresa en el perfil antes de publicar eventos." });
+    }
 
     if (!titulo || !descripcion || !venue || !direccion || !fecha || !hora || !categoria) {
       return res.status(400).json({ mensaje: "Faltan campos obligatorios" });

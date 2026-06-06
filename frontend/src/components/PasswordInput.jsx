@@ -1,12 +1,20 @@
 // input de contraseña con toggle de visibilidad
 // fondo blanco en el input para que se vea bien dentro de la tarjeta dorada
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ojoPng from "../assets/icons/iconoOjo.svg";
 
 function PasswordInput({ nombre, label, valor, onChange, disabled = false }) {
 
   const [verContrasena, setVerContrasena] = useState(false);
+
+  const [anchoVentana, setAnchoVentana] = useState(window.innerWidth);
+  useEffect(() => {
+    const h = () => setAnchoVentana(window.innerWidth);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
+  const esMobil = anchoVentana < 768;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "4px", width: "100%" }}>
@@ -16,7 +24,7 @@ function PasswordInput({ nombre, label, valor, onChange, disabled = false }) {
         htmlFor={nombre}
         style={{
           fontFamily: "'Baloo Bhai 2', Helvetica",
-          fontSize: "20px",
+          fontSize: esMobil ? "17px" : "20px",
           fontWeight: "600",
           color: "#1a1a1a"
         }}
@@ -44,11 +52,12 @@ function PasswordInput({ nombre, label, valor, onChange, disabled = false }) {
             // padding derecho para que el texto no quede debajo del ojito
             paddingRight: "44px",
             fontFamily: "'Baloo Bhai 2', Helvetica",
-            fontSize: "20px",
+            fontSize: esMobil ? "16px" : "20px",
             color: "#1a1a1a",
             border: "none",
             outline: "none",
-            borderRadius: "6px"
+            borderRadius: "6px",
+            boxSizing: "border-box"
           }}
           autoComplete={nombre === "contrasena" ? "current-password" : "new-password"}
         />
@@ -68,7 +77,10 @@ function PasswordInput({ nombre, label, valor, onChange, disabled = false }) {
             cursor: "pointer",
             padding: "4px",
             display: "flex",
-            alignItems: "center"
+            alignItems: "center",
+            minWidth: "44px",
+            minHeight: "44px",
+            justifyContent: "center"
           }}
           aria-label={verContrasena ? "Ocultar contraseña" : "Mostrar contraseña"}
         >

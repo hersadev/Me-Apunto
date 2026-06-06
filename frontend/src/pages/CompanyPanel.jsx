@@ -12,6 +12,7 @@ import Footer from "../components/Footer";
 
 import authService from "../services/authService";
 import eventoService from "../services/eventoService";
+import mensajeService from "../services/mensajeService";
 
 function crearImagen(url) {
   return new Promise((resolve, reject) => {
@@ -57,6 +58,15 @@ function CompanyPanel({ setEstaLogueado }) {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
 
+  const [mensajes, setMensajes] = useState([]);
+  const [cargandoMensajes, setCargandoMensajes] = useState(false);
+  const [errorMensajes, setErrorMensajes] = useState("");
+  const [mensajeSeleccionado, setMensajeSeleccionado] = useState(null);
+  const [textoRespuesta, setTextoRespuesta] = useState("");
+  const [enviandoRespuesta, setEnviandoRespuesta] = useState(false);
+  const [respuestaExitosa, setRespuestaExitosa] = useState(false);
+  const [errorRespuesta, setErrorRespuesta] = useState("");
+
   const [formularioAbierto, setFormularioAbierto] = useState(false);
   const [eventosPasadosAbierto, setEventosPasadosAbierto] = useState(false);
   const [papeleraAbierta, setPapeleraAbierta] = useState(false);
@@ -98,7 +108,9 @@ function CompanyPanel({ setEstaLogueado }) {
   const [croppedAreaPixelsPerfil, setCroppedAreaPixelsPerfil] = useState(null);
   const [recortando, setRecortando] = useState(false);
   const [anchoVentana, setAnchoVentana] = useState(window.innerWidth);
+  const esMobil = anchoVentana < 768;
   const fotoInputRef = useRef(null);
+  const respuestaTimerRef = useRef(null);
 
   const modalEliminarRef = useRef(null);
   const modalCuentaRef = useRef(null);
@@ -147,6 +159,7 @@ function CompanyPanel({ setEstaLogueado }) {
 
   useEffect(() => {
     cargarEventos();
+    return () => clearTimeout(respuestaTimerRef.current);
   }, []);
 
   useEffect(() => {
@@ -162,7 +175,66 @@ function CompanyPanel({ setEstaLogueado }) {
       setPerfilExito("");
       setPerfilError("");
     }
+    if (seccionActiva === "mensajes") {
+      cargarMensajes();
+    }
   }, [seccionActiva]);
+
+  const cargarMensajes = async () => {
+    setCargandoMensajes(true);
+    setErrorMensajes("");
+    try {
+      const data = await mensajeService.getMensajes();
+      setMensajes(data.mensajes || []);
+    } catch (err) {
+      if (err.response?.status !== 401) {
+        setErrorMensajes("Error al cargar los mensajes. Inténtalo de nuevo.");
+      }
+    } finally {
+      setCargandoMensajes(false);
+    }
+  };
+
+  const handleMarcarLeido = async (id) => {
+    try {
+      await mensajeService.marcarLeido(id);
+      setMensajes((prev) => prev.map((m) => m._id === id ? { ...m, leido: true } : m));
+    } catch { /* silencioso */ }
+  };
+
+  const handleToggleRespondido = async (id) => {
+    try {
+      await mensajeService.marcarRespondido(id);
+      setMensajes((prev) => prev.map((m) => m._id === id ? { ...m, respondido: !m.respondido, leido: true } : m));
+    } catch { /* silencioso */ }
+  };
+
+  const handleEliminarMensaje = async (id) => {
+    try {
+      await mensajeService.eliminarMensaje(id);
+      setMensajes((prev) => prev.filter((m) => m._id !== id));
+      if (mensajeSeleccionado?._id === id) setMensajeSeleccionado(null);
+    } catch { /* silencioso */ }
+  };
+
+  const handleResponder = async (id) => {
+    if (!textoRespuesta.trim()) return;
+    setEnviandoRespuesta(true);
+    setErrorRespuesta("");
+    try {
+      await mensajeService.responderMensaje(id, textoRespuesta);
+      setMensajes((prev) => prev.map((m) => m._id === id ? { ...m, respondido: true, leido: true } : m));
+      setMensajeSeleccionado((prev) => prev ? { ...prev, respondido: true, leido: true } : null);
+      setTextoRespuesta("");
+      setRespuestaExitosa(true);
+      clearTimeout(respuestaTimerRef.current);
+      respuestaTimerRef.current = setTimeout(() => setRespuestaExitosa(false), 3000);
+    } catch (err) {
+      setErrorRespuesta(err.response?.data?.mensaje || "Error al enviar la respuesta");
+    } finally {
+      setEnviandoRespuesta(false);
+    }
+  };
 
   const cargarEventos = async () => {
     try {
@@ -187,6 +259,7 @@ function CompanyPanel({ setEstaLogueado }) {
     if (name === "imagen") {
       const file = files[0];
       if (!file) return;
+      if (previewRecorte) URL.revokeObjectURL(previewRecorte);
       const url = URL.createObjectURL(file);
       setPreviewRecorte(url);
       setCrop({ x: 0, y: 0 });
@@ -222,6 +295,12 @@ function CompanyPanel({ setEstaLogueado }) {
   };
 
   const abrirFormularioNuevo = () => {
+    if (!empresa?.descripcion || empresa.descripcion.trim() === "") {
+      setError("No puedes publicar eventos porque tu empresa no tiene descripción. Ve a Perfil y complétala primero.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    setError("");
     setEditandoId(null);
     setRestaurandoId(null);
     setFormEvento({
@@ -437,7 +516,8 @@ const abrirFormularioRestaurar = (evento) => {
     borderRadius: "999px",
     border: "none",
     cursor: "pointer",
-    transition: "background-color 0.15s ease"
+    transition: "background-color 0.15s ease",
+    minHeight: "44px"
   };
 
   const estiloBotonPeligro = {
@@ -450,7 +530,8 @@ const abrirFormularioRestaurar = (evento) => {
     borderRadius: "999px",
     border: "none",
     cursor: "pointer",
-    transition: "background-color 0.15s ease"
+    transition: "background-color 0.15s ease",
+    minHeight: "44px"
   };
 
   const estiloBotonSecundario = {
@@ -463,7 +544,8 @@ const abrirFormularioRestaurar = (evento) => {
     borderRadius: "999px",
     border: "none",
     cursor: "pointer",
-    transition: "background-color 0.15s ease"
+    transition: "background-color 0.15s ease",
+    minHeight: "44px"
   };
 
   const estiloLabel = {
@@ -518,8 +600,50 @@ const abrirFormularioRestaurar = (evento) => {
         width: "100%",
         maxWidth: "1100px",
         margin: "0 auto",
-        padding: "40px 24px"
+        padding: esMobil ? "24px 16px" : "40px 24px",
+        boxSizing: "border-box"
       }}>
+
+        {!empresa?.descripcion && (
+          <div role="alert" style={{
+            backgroundColor: "#fff8e1",
+            border: "1px solid #ffe082",
+            borderRadius: "10px",
+            padding: "12px 20px",
+            marginBottom: "20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "12px"
+          }}>
+            <span style={{
+              fontFamily: "'Baloo Bhai 2', Helvetica",
+              fontSize: "14px",
+              color: "#5d4037",
+              lineHeight: "1.4"
+            }}>
+              Tu empresa no tiene descripción. Complétala para poder publicar eventos.
+            </span>
+            <button
+              onClick={() => setSeccionActiva("perfil")}
+              style={{
+                backgroundColor: "#91703d",
+                color: "white",
+                fontFamily: "'Baloo Bhai 2', Helvetica",
+                fontWeight: "700",
+                fontSize: "13px",
+                padding: "6px 16px",
+                borderRadius: "999px",
+                border: "none",
+                cursor: "pointer",
+                flexShrink: 0
+              }}
+            >
+              Ir a Perfil
+            </button>
+          </div>
+        )}
 
         {error && (
           <div role="alert" style={{
@@ -555,6 +679,7 @@ const abrirFormularioRestaurar = (evento) => {
         {(() => {
           const tabs = [
             { id: "eventos", label: "Gestión de eventos" },
+            { id: "mensajes", label: "Mensajes", badge: mensajes.filter((m) => !m.leido).length || 0 },
             { id: "analiticas", label: "Analíticas" },
             { id: "notificaciones", label: "Notificaciones" },
             { id: "perfil", label: "Perfil" },
@@ -562,15 +687,18 @@ const abrirFormularioRestaurar = (evento) => {
           return (
             <div style={{
               display: "flex",
-              gap: "8px",
-              flexWrap: "wrap",
+              gap: esMobil ? "4px" : "8px",
+              flexWrap: esMobil ? "nowrap" : "wrap",
+              overflowX: esMobil ? "auto" : "visible",
+              WebkitOverflowScrolling: "touch",
               marginBottom: "36px",
               backgroundColor: "white",
-              borderRadius: "999px",
+              borderRadius: esMobil ? "16px" : "999px",
               padding: "6px",
               boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-              width: "fit-content",
-              margin: "0 auto 36px auto"
+              width: esMobil ? "100%" : "fit-content",
+              margin: "0 auto 36px auto",
+              boxSizing: "border-box"
             }}>
               {tabs.map((tab) => (
                 <button
@@ -579,17 +707,37 @@ const abrirFormularioRestaurar = (evento) => {
                   style={{
                     fontFamily: "'Baloo Bhai 2', Helvetica",
                     fontWeight: "700",
-                    fontSize: "14px",
-                    padding: "8px 20px",
+                    fontSize: esMobil ? "12px" : "14px",
+                    padding: esMobil ? "8px 12px" : "8px 20px",
                     borderRadius: "999px",
                     border: "none",
                     cursor: "pointer",
                     transition: "background-color 0.15s ease, color 0.15s ease",
                     backgroundColor: seccionActiva === tab.id ? "#91703d" : "transparent",
                     color: seccionActiva === tab.id ? "white" : "#4a4a4a",
+                    flexShrink: 0,
+                    minHeight: "44px",
+                    whiteSpace: "nowrap",
                   }}
                 >
-                  {tab.label}
+                  <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    {tab.label}
+                    {tab.badge > 0 && (
+                      <span style={{
+                        backgroundColor: seccionActiva === tab.id ? "white" : "#e53e3e",
+                        color: seccionActiva === tab.id ? "#91703d" : "white",
+                        borderRadius: "999px",
+                        fontSize: "11px",
+                        fontWeight: "700",
+                        padding: "1px 7px",
+                        lineHeight: "18px",
+                        minWidth: "18px",
+                        textAlign: "center"
+                      }}>
+                        {tab.badge}
+                      </span>
+                    )}
+                  </span>
                 </button>
               ))}
             </div>
@@ -622,10 +770,10 @@ const abrirFormularioRestaurar = (evento) => {
             style={{
               backgroundColor: "#c9aa80",
               borderRadius: "20px",
-              padding: "28px 32px",
+              padding: esMobil ? "20px 16px" : "28px 32px",
               boxShadow: "0 8px 32px rgba(0,0,0,0.25)",
               width: "100%",
-              maxWidth: "960px",
+              maxWidth: esMobil ? "calc(100vw - 32px)" : "960px",
               maxHeight: "96vh",
               overflowY: "auto",
               position: "relative"
@@ -683,7 +831,7 @@ const abrirFormularioRestaurar = (evento) => {
               onSubmit={handleSubmitEvento}
               style={{
                 display: "grid",
-                gridTemplateColumns: anchoVentana < 600 ? "1fr 1fr" : "1fr 1fr 1fr 1fr",
+                gridTemplateColumns: esMobil ? "1fr" : anchoVentana < 900 ? "1fr 1fr" : "1fr 1fr 1fr 1fr",
                 gap: "12px"
               }}
             >
@@ -906,6 +1054,7 @@ const abrirFormularioRestaurar = (evento) => {
               <div style={{
                 gridColumn: "1 / -1",
                 display: "flex",
+                flexDirection: esMobil ? "column" : "row",
                 gap: "12px",
                 justifyContent: "flex-end",
                 marginTop: "4px"
@@ -946,7 +1095,7 @@ const abrirFormularioRestaurar = (evento) => {
         {/* gestión de eventos */}
         {seccionActiva === "eventos" && (
         <div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", marginBottom: "20px" }}>
+          <div style={{ display: "flex", flexDirection: esMobil ? "column" : "row", alignItems: esMobil ? "flex-start" : "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", marginBottom: "20px" }}>
             <h2 style={{
               fontFamily: "'Baloo Bhai 2', Helvetica",
               fontSize: "22px",
@@ -994,7 +1143,7 @@ const abrirFormularioRestaurar = (evento) => {
           {!cargando && eventosActivos.length > 0 && (
             <div style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+              gridTemplateColumns: esMobil ? "1fr" : "repeat(auto-fill, minmax(240px, 1fr))",
               gap: "24px"
             }}>
               {eventosActivos.map((evento) => (
@@ -1196,7 +1345,7 @@ const abrirFormularioRestaurar = (evento) => {
                 id="lista-eventos-pasados"
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+                  gridTemplateColumns: esMobil ? "1fr" : "repeat(auto-fill, minmax(240px, 1fr))",
                   gap: "24px",
                   opacity: 0.75
                 }}
@@ -1330,7 +1479,7 @@ const abrirFormularioRestaurar = (evento) => {
                   id="lista-papelera"
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+                    gridTemplateColumns: esMobil ? "1fr" : "repeat(auto-fill, minmax(240px, 1fr))",
                     gap: "24px"
                   }}
                 >
@@ -1440,6 +1589,308 @@ const abrirFormularioRestaurar = (evento) => {
         </div>
         )}
 
+        {/* mensajes */}
+        {seccionActiva === "mensajes" && (
+          <div style={{ fontFamily: "'Baloo Bhai 2', Helvetica" }}>
+            <h2 style={{ fontSize: "22px", fontWeight: "700", color: "#1a1a1a", marginBottom: "24px" }}>
+              Mensajes
+            </h2>
+
+            {cargandoMensajes ? (
+              <div style={{ textAlign: "center", padding: "48px 0", color: "#818181", fontSize: "18px" }}>
+                Cargando mensajes...
+              </div>
+            ) : errorMensajes ? (
+              <div style={{ textAlign: "center", padding: "48px 0", color: "#c0392b", fontSize: "16px", fontFamily: "'Baloo Bhai 2', Helvetica" }}>
+                {errorMensajes}
+                <br />
+                <button onClick={cargarMensajes} style={{ marginTop: "12px", background: "none", border: "none", color: "#91703d", fontWeight: "700", cursor: "pointer", fontSize: "14px", fontFamily: "'Baloo Bhai 2', Helvetica" }}>
+                  Reintentar
+                </button>
+              </div>
+            ) : mensajes.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "80px 0", color: "#818181", fontSize: "18px" }}>
+                <div style={{ fontSize: "48px", marginBottom: "16px" }}>💬</div>
+                No tienes mensajes todavía
+              </div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: esMobil ? "1fr" : mensajeSeleccionado ? "1fr 420px" : "1fr", gap: "20px", alignItems: "start" }}>
+
+                {/* tabla */}
+                <div style={{ backgroundColor: "white", borderRadius: "16px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)", overflow: "hidden" }}>
+                  <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+                  <table style={{ width: "100%", minWidth: esMobil ? "600px" : "auto", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr style={{ backgroundColor: "#f7f0e8", borderBottom: "1px solid #e8ddd0" }}>
+                        <th style={{ width: "8px", padding: "12px 8px 12px 16px" }} />
+                        <th style={{ padding: "12px 12px", textAlign: "left", fontSize: "13px", fontWeight: "700", color: "#818181" }}>Remitente</th>
+                        <th style={{ padding: "12px 12px", textAlign: "left", fontSize: "13px", fontWeight: "700", color: "#818181" }}>Asunto</th>
+                        <th style={{ padding: "12px 12px", textAlign: "left", fontSize: "13px", fontWeight: "700", color: "#818181" }}>Evento</th>
+                        <th style={{ padding: "12px 12px", textAlign: "left", fontSize: "13px", fontWeight: "700", color: "#818181" }}>Estado</th>
+                        <th style={{ padding: "12px 16px 12px 12px", textAlign: "left", fontSize: "13px", fontWeight: "700", color: "#818181" }}>Fecha</th>
+                        <th style={{ padding: "12px 16px", textAlign: "right", fontSize: "13px", fontWeight: "700", color: "#818181" }}>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {mensajes.map((m, i) => (
+                        <tr
+                          key={m._id}
+                          onClick={() => {
+                            setMensajeSeleccionado(m._id === mensajeSeleccionado?._id ? null : m);
+                            setTextoRespuesta("");
+                            setErrorRespuesta("");
+                            setRespuestaExitosa(false);
+                            if (!m.leido) { handleMarcarLeido(m._id); }
+                          }}
+                          style={{
+                            borderBottom: i < mensajes.length - 1 ? "1px solid #f0e8dc" : "none",
+                            backgroundColor: mensajeSeleccionado?._id === m._id ? "#fdf5eb" : "white",
+                            cursor: "pointer",
+                            transition: "background-color 0.1s ease"
+                          }}
+                          onMouseEnter={(e) => { if (mensajeSeleccionado?._id !== m._id) e.currentTarget.style.backgroundColor = "#fafafa"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = mensajeSeleccionado?._id === m._id ? "#fdf5eb" : "white"; }}
+                        >
+                          {/* punto no leído */}
+                          <td style={{ padding: "14px 8px 14px 16px" }}>
+                            {!m.leido && (
+                              <span style={{
+                                display: "inline-block", width: "8px", height: "8px",
+                                borderRadius: "50%", backgroundColor: "#3182ce"
+                              }} />
+                            )}
+                          </td>
+
+                          {/* remitente */}
+                          <td style={{ padding: "14px 12px" }}>
+                            <span style={{ fontSize: "14px", fontWeight: m.leido ? "400" : "700", color: "#1a1a1a", display: "block" }}>
+                              {m.nombre}
+                            </span>
+                            <span style={{ fontSize: "12px", color: "#818181" }}>{m.de}</span>
+                          </td>
+
+                          {/* asunto */}
+                          <td style={{ padding: "14px 12px", maxWidth: "180px" }}>
+                            <span style={{
+                              fontSize: "14px", fontWeight: m.leido ? "400" : "700", color: "#1a1a1a",
+                              display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"
+                            }}>
+                              {m.asunto}
+                            </span>
+                          </td>
+
+                          {/* evento */}
+                          <td style={{ padding: "14px 12px", maxWidth: "160px" }}>
+                            {m.evento?.titulo ? (
+                              <span style={{
+                                fontSize: "13px", color: "#91703d", fontWeight: "600",
+                                display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"
+                              }}>
+                                {m.evento.titulo}
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: "13px", color: "#ccc" }}>—</span>
+                            )}
+                          </td>
+
+                          {/* estado */}
+                          <td style={{ padding: "14px 12px" }}>
+                            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                              {!m.leido && (
+                                <span style={{
+                                  fontSize: "11px", fontWeight: "700", padding: "2px 8px",
+                                  borderRadius: "999px", backgroundColor: "#ebf4ff", color: "#2b6cb0"
+                                }}>
+                                  Sin leer
+                                </span>
+                              )}
+                              {!m.respondido && (
+                                <span style={{
+                                  fontSize: "11px", fontWeight: "700", padding: "2px 8px",
+                                  borderRadius: "999px", backgroundColor: "#fff5f5", color: "#c53030"
+                                }}>
+                                  Sin responder
+                                </span>
+                              )}
+                              {m.respondido && (
+                                <span style={{
+                                  fontSize: "11px", fontWeight: "700", padding: "2px 8px",
+                                  borderRadius: "999px", backgroundColor: "#f0fff4", color: "#276749"
+                                }}>
+                                  Respondido
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* fecha */}
+                          <td style={{ padding: "14px 16px 14px 12px", whiteSpace: "nowrap" }}>
+                            <span style={{ fontSize: "13px", color: "#818181" }}>
+                              {new Date(m.createdAt).toLocaleDateString("es-ES", { day: "2-digit", month: "short" })}
+                            </span>
+                          </td>
+
+                          {/* acciones */}
+                          <td style={{ padding: "14px 16px", textAlign: "right" }} onClick={(e) => e.stopPropagation()}>
+                            <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+                              {!m.leido && (
+                                <button
+                                  title="Marcar como leído"
+                                  onClick={() => handleMarcarLeido(m._id)}
+                                  style={{
+                                    background: "none", border: "1px solid #d4b896",
+                                    borderRadius: "6px", padding: "4px 8px",
+                                    fontSize: "13px", cursor: "pointer", color: "#818181"
+                                  }}
+                                >
+                                  ✓ Leído
+                                </button>
+                              )}
+                              <button
+                                title={m.respondido ? "Marcar como no respondido" : "Marcar como respondido"}
+                                onClick={() => handleToggleRespondido(m._id)}
+                                style={{
+                                  background: "none",
+                                  border: `1px solid ${m.respondido ? "#c6f6d5" : "#d4b896"}`,
+                                  borderRadius: "6px", padding: "4px 8px",
+                                  fontSize: "13px", cursor: "pointer",
+                                  color: m.respondido ? "#276749" : "#818181"
+                                }}
+                              >
+                                {m.respondido ? "↩ Desmarcar" : "↩ Respondido"}
+                              </button>
+                              <button
+                                title="Eliminar"
+                                onClick={() => handleEliminarMensaje(m._id)}
+                                style={{
+                                  background: "none", border: "1px solid #fed7d7",
+                                  borderRadius: "6px", padding: "4px 8px",
+                                  fontSize: "13px", cursor: "pointer", color: "#c53030"
+                                }}
+                              >
+                                🗑
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  </div>
+                </div>
+
+                {/* panel de detalle */}
+                {mensajeSeleccionado && (
+                  <div style={{
+                    backgroundColor: "white", borderRadius: "16px",
+                    boxShadow: "0 2px 12px rgba(0,0,0,0.08)", padding: esMobil ? "16px" : "24px",
+                    position: esMobil ? "static" : "sticky", top: "20px"
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+                      <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", margin: 0, flex: 1, paddingRight: "8px" }}>
+                        {mensajeSeleccionado.asunto}
+                      </h3>
+                      <button
+                        onClick={() => setMensajeSeleccionado(null)}
+                        style={{ background: "none", border: "none", fontSize: "22px", cursor: "pointer", color: "#818181", lineHeight: 1, flexShrink: 0 }}
+                      >
+                        ×
+                      </button>
+                    </div>
+
+                    <div style={{ marginBottom: "16px", paddingBottom: "16px", borderBottom: "1px solid #f0e8dc" }}>
+                      <p style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", margin: "0 0 2px" }}>
+                        {mensajeSeleccionado.nombre}
+                      </p>
+                      <p style={{ fontSize: "13px", color: "#818181", margin: "0 0 4px" }}>
+                        {mensajeSeleccionado.de}
+                      </p>
+                      {mensajeSeleccionado.evento?.titulo && (
+                        <p style={{ fontSize: "13px", color: "#91703d", margin: "0 0 4px", fontWeight: "600" }}>
+                          📅 Desde el evento: {mensajeSeleccionado.evento.titulo}
+                        </p>
+                      )}
+                      <p style={{ fontSize: "12px", color: "#aaa", margin: 0 }}>
+                        {new Date(mensajeSeleccionado.createdAt).toLocaleDateString("es-ES", {
+                          day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit"
+                        })}
+                      </p>
+                    </div>
+
+                    <p style={{ fontSize: "14px", color: "#1a1a1a", lineHeight: "1.6", whiteSpace: "pre-wrap", margin: "0 0 20px" }}>
+                      {mensajeSeleccionado.cuerpo}
+                    </p>
+
+                    {/* formulario de respuesta */}
+                    <div style={{ borderTop: "1px solid #f0e8dc", paddingTop: "16px" }}>
+                      <label style={{
+                        fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "13px",
+                        fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "8px"
+                      }}>
+                        Responder a {mensajeSeleccionado.nombre}
+                      </label>
+                      <textarea
+                        value={textoRespuesta}
+                        onChange={(e) => setTextoRespuesta(e.target.value)}
+                        placeholder="Escribe tu respuesta..."
+                        rows={4}
+                        maxLength={2000}
+                        style={{
+                          width: "100%", backgroundColor: "#f8f8f8", padding: "10px 12px",
+                          fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "14px", color: "#1a1a1a",
+                          border: "1px solid #d4b896", borderRadius: "8px", outline: "none",
+                          resize: "vertical", boxSizing: "border-box", marginBottom: "8px"
+                        }}
+                      />
+
+                      {errorRespuesta && (
+                        <p style={{ fontSize: "13px", color: "#c53030", margin: "0 0 8px", fontFamily: "'Baloo Bhai 2', Helvetica" }}>
+                          {errorRespuesta}
+                        </p>
+                      )}
+                      {respuestaExitosa && (
+                        <p style={{ fontSize: "13px", color: "#276749", margin: "0 0 8px", fontFamily: "'Baloo Bhai 2', Helvetica" }}>
+                          ✓ Respuesta enviada correctamente
+                        </p>
+                      )}
+
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <button
+                          onClick={() => handleResponder(mensajeSeleccionado._id)}
+                          disabled={enviandoRespuesta || !textoRespuesta.trim()}
+                          style={{
+                            flex: 1, padding: "10px 0",
+                            backgroundColor: enviandoRespuesta || !textoRespuesta.trim() ? "#ccc" : "#91703d",
+                            color: "white", border: "none",
+                            borderRadius: "999px", fontFamily: "'Baloo Bhai 2', Helvetica",
+                            fontWeight: "700", fontSize: "14px",
+                            cursor: enviandoRespuesta || !textoRespuesta.trim() ? "not-allowed" : "pointer"
+                          }}
+                        >
+                          {enviandoRespuesta ? "Enviando..." : "↩ Responder"}
+                        </button>
+                        <button
+                          onClick={() => handleEliminarMensaje(mensajeSeleccionado._id)}
+                          style={{
+                            padding: "10px 14px",
+                            backgroundColor: "#fff5f5", color: "#c53030",
+                            border: "1px solid #fed7d7", borderRadius: "999px",
+                            fontFamily: "'Baloo Bhai 2', Helvetica",
+                            fontWeight: "700", fontSize: "14px", cursor: "pointer"
+                          }}
+                        >
+                          🗑
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            )}
+          </div>
+        )}
+
         {/* analíticas */}
         {seccionActiva === "analiticas" && (
           <div style={{
@@ -1483,7 +1934,7 @@ const abrirFormularioRestaurar = (evento) => {
 
             <div style={{
               display: "grid",
-              gridTemplateColumns: "1fr 260px",
+              gridTemplateColumns: esMobil ? "1fr" : "1fr 260px",
               gap: "24px",
               alignItems: "start",
               marginBottom: "24px"
@@ -1526,33 +1977,51 @@ const abrirFormularioRestaurar = (evento) => {
                 />
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <label style={{ ...estiloLabel, fontSize: "13px" }} htmlFor="perfil-descripcion">Descripción</label>
-                <textarea
-                  id="perfil-descripcion"
-                  value={formPerfil.descripcion}
-                  onChange={(e) => setFormPerfil((p) => ({ ...p, descripcion: e.target.value }))}
-                  maxLength={500}
-                  rows={3}
-                  placeholder="Cuéntanos sobre tu empresa..."
-                  style={{
-                    width: "100%",
-                    backgroundColor: "#f8f8f8",
-                    padding: "10px 12px",
-                    fontFamily: "'Baloo Bhai 2', Helvetica",
-                    fontSize: "14px",
-                    color: "#1a1a1a",
-                    border: "1px solid #d4b896",
-                    borderRadius: "8px",
-                    outline: "none",
-                    resize: "vertical",
-                    boxSizing: "border-box"
-                  }}
-                />
-                <span style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "11px", color: "#b0b0b0", textAlign: "right" }}>
-                  {formPerfil.descripcion.length}/500
-                </span>
-              </div>
+              {(() => {
+                const bloqueadaHasta = empresa?.descripcionCambiadaEn
+                  ? (() => {
+                      const d = new Date(empresa.descripcionCambiadaEn);
+                      d.setMonth(d.getMonth() + 2);
+                      return new Date() < d ? d : null;
+                    })()
+                  : null;
+                return (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <label style={{ ...estiloLabel, fontSize: "13px" }} htmlFor="perfil-descripcion">Descripción</label>
+                    <textarea
+                      id="perfil-descripcion"
+                      value={formPerfil.descripcion}
+                      onChange={(e) => setFormPerfil((p) => ({ ...p, descripcion: e.target.value }))}
+                      maxLength={500}
+                      rows={3}
+                      placeholder="Cuéntanos sobre tu empresa..."
+                      style={{
+                        width: "100%",
+                        backgroundColor: "#f8f8f8",
+                        padding: "10px 12px",
+                        fontFamily: "'Baloo Bhai 2', Helvetica",
+                        fontSize: "14px",
+                        color: "#1a1a1a",
+                        border: "1px solid #d4b896",
+                        borderRadius: "8px",
+                        outline: "none",
+                        resize: "vertical",
+                        boxSizing: "border-box"
+                      }}
+                    />
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      {bloqueadaHasta ? (
+                        <span style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "11px", color: "#b79868" }}>
+                          Podrás modificarla el {bloqueadaHasta.toLocaleDateString("es-ES")}
+                        </span>
+                      ) : <span />}
+                      <span style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "11px", color: "#b0b0b0" }}>
+                        {formPerfil.descripcion.length}/500
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                 <label style={{ ...estiloLabel, fontSize: "13px" }} htmlFor="perfil-contrasena">Contraseña actual</label>
@@ -1757,7 +2226,7 @@ const abrirFormularioRestaurar = (evento) => {
           </p>
 
           {/* contenedor del recortador */}
-          <div style={{ position: "relative", width: "100%", maxWidth: "600px", height: "360px" }}>
+          <div style={{ position: "relative", width: "100%", maxWidth: "600px", height: esMobil ? "220px" : "360px" }}>
             <Cropper
               image={previewRecorte}
               crop={crop}
@@ -1784,14 +2253,15 @@ const abrirFormularioRestaurar = (evento) => {
           </div>
 
           {/* botones */}
-          <div style={{ display: "flex", gap: "12px" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center" }}>
             <button
               onClick={cancelarRecorte}
               style={{
                 backgroundColor: "#818181", color: "white",
                 fontFamily: "'Baloo Bhai 2', Helvetica", fontWeight: "700",
                 fontSize: "15px", padding: "10px 24px",
-                borderRadius: "999px", border: "none", cursor: "pointer"
+                borderRadius: "999px", border: "none", cursor: "pointer",
+                minHeight: "44px"
               }}
             >
               Cancelar
@@ -1805,7 +2275,8 @@ const abrirFormularioRestaurar = (evento) => {
                 fontSize: "15px", padding: "10px 24px",
                 borderRadius: "999px", border: "none",
                 cursor: recortando ? "not-allowed" : "pointer",
-                opacity: recortando ? 0.7 : 1
+                opacity: recortando ? 0.7 : 1,
+                minHeight: "44px"
               }}
             >
               {recortando ? "Procesando..." : "Usar este encuadre"}
@@ -1834,7 +2305,9 @@ const abrirFormularioRestaurar = (evento) => {
             onClick={(e) => e.stopPropagation()}
             style={{
               backgroundColor: "#f0e8dc", borderRadius: "20px",
-              padding: "36px", maxWidth: "420px", width: "100%",
+              padding: esMobil ? "24px 16px" : "36px",
+              maxWidth: esMobil ? "calc(100vw - 32px)" : "420px",
+              width: "100%",
               textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
             }}
           >
@@ -1853,10 +2326,10 @@ const abrirFormularioRestaurar = (evento) => {
             }}>
               Podrás recuperarlo durante 30 días desde la papelera. Después se eliminará definitivamente.
             </p>
-            <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center" }}>
               <button
                 onClick={() => setModalEliminar(null)}
-                style={{ ...estiloBotonPrimario, backgroundColor: "#818181" }}
+                style={{ ...estiloBotonPrimario, backgroundColor: "#818181", minHeight: "44px" }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#5a5a5a"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#818181"}
               >
@@ -1864,7 +2337,7 @@ const abrirFormularioRestaurar = (evento) => {
               </button>
               <button
                 onClick={eliminarEvento}
-                style={{ ...estiloBotonPrimario, backgroundColor: "#c0392b" }}
+                style={{ ...estiloBotonPrimario, backgroundColor: "#c0392b", minHeight: "44px" }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#922b21"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#c0392b"}
               >
@@ -1894,7 +2367,9 @@ const abrirFormularioRestaurar = (evento) => {
             onKeyDown={(e) => { if (e.key === "Escape") setModalEliminarDefinitivo(null); }}
             style={{
               backgroundColor: "#f0e8dc", borderRadius: "20px",
-              padding: "36px", maxWidth: "420px", width: "100%",
+              padding: esMobil ? "24px 16px" : "36px",
+              maxWidth: esMobil ? "calc(100vw - 32px)" : "420px",
+              width: "100%",
               textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
             }}
           >
@@ -1913,10 +2388,10 @@ const abrirFormularioRestaurar = (evento) => {
             }}>
               El evento se borrará para siempre. Esta acción no se puede deshacer.
             </p>
-            <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center" }}>
               <button
                 onClick={() => setModalEliminarDefinitivo(null)}
-                style={{ ...estiloBotonPrimario, backgroundColor: "#818181" }}
+                style={{ ...estiloBotonPrimario, backgroundColor: "#818181", minHeight: "44px" }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#5a5a5a"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#818181"}
               >
@@ -1924,7 +2399,7 @@ const abrirFormularioRestaurar = (evento) => {
               </button>
               <button
                 onClick={eliminarEventoDefinitivo}
-                style={{ ...estiloBotonPrimario, backgroundColor: "#922b21" }}
+                style={{ ...estiloBotonPrimario, backgroundColor: "#922b21", minHeight: "44px" }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#7b241c"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#922b21"}
               >
@@ -1955,7 +2430,9 @@ const abrirFormularioRestaurar = (evento) => {
             onClick={(e) => e.stopPropagation()}
             style={{
               backgroundColor: "#f0e8dc", borderRadius: "20px",
-              padding: "36px", maxWidth: "420px", width: "100%",
+              padding: esMobil ? "24px 16px" : "36px",
+              maxWidth: esMobil ? "calc(100vw - 32px)" : "420px",
+              width: "100%",
               textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
             }}
           >
@@ -1974,10 +2451,10 @@ const abrirFormularioRestaurar = (evento) => {
             }}>
               Se eliminarán tu cuenta y todos tus eventos publicados. Esta acción no se puede deshacer.
             </p>
-            <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center" }}>
               <button
                 onClick={() => setPasoEliminarCuenta(0)}
-                style={{ ...estiloBotonPrimario, backgroundColor: "#818181" }}
+                style={{ ...estiloBotonPrimario, backgroundColor: "#818181", minHeight: "44px" }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#5a5a5a"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#818181"}
               >
@@ -1985,7 +2462,7 @@ const abrirFormularioRestaurar = (evento) => {
               </button>
               <button
                 onClick={() => setPasoEliminarCuenta(2)}
-                style={{ ...estiloBotonPrimario, backgroundColor: "#c0392b" }}
+                style={{ ...estiloBotonPrimario, backgroundColor: "#c0392b", minHeight: "44px" }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#922b21"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#c0392b"}
               >
@@ -2015,7 +2492,9 @@ const abrirFormularioRestaurar = (evento) => {
             onClick={(e) => e.stopPropagation()}
             style={{
               backgroundColor: "#f0e8dc", borderRadius: "20px",
-              padding: "36px", maxWidth: "420px", width: "100%",
+              padding: esMobil ? "24px 16px" : "36px",
+              maxWidth: esMobil ? "calc(100vw - 32px)" : "420px",
+              width: "100%",
               textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
             }}
           >
@@ -2034,10 +2513,10 @@ const abrirFormularioRestaurar = (evento) => {
             }}>
               ¿Confirmas que quieres eliminar definitivamente la cuenta de <strong>{empresa?.nombre}</strong> y todos sus eventos?
             </p>
-            <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center" }}>
               <button
                 onClick={() => setPasoEliminarCuenta(0)}
-                style={{ ...estiloBotonPrimario, backgroundColor: "#818181" }}
+                style={{ ...estiloBotonPrimario, backgroundColor: "#818181", minHeight: "44px" }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#5a5a5a"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#818181"}
               >
@@ -2045,7 +2524,7 @@ const abrirFormularioRestaurar = (evento) => {
               </button>
               <button
                 onClick={eliminarCuenta}
-                style={{ ...estiloBotonPrimario, backgroundColor: "#922b21" }}
+                style={{ ...estiloBotonPrimario, backgroundColor: "#922b21", minHeight: "44px" }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#7b241c"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#922b21"}
               >
@@ -2076,7 +2555,9 @@ const abrirFormularioRestaurar = (evento) => {
             onClick={(e) => e.stopPropagation()}
             style={{
               backgroundColor: "#f0e8dc", borderRadius: "20px",
-              padding: "36px", maxWidth: "440px", width: "100%",
+              padding: esMobil ? "24px 16px" : "36px",
+              maxWidth: esMobil ? "calc(100vw - 32px)" : "440px",
+              width: "100%",
               textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
             }}
           >
@@ -2116,10 +2597,10 @@ const abrirFormularioRestaurar = (evento) => {
                 </span>
               </div>
             )}
-            <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center" }}>
               <button
                 onClick={() => setModalPatrocinio(null)}
-                style={{ ...estiloBotonPrimario, backgroundColor: "#818181" }}
+                style={{ ...estiloBotonPrimario, backgroundColor: "#818181", minHeight: "44px" }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#5a5a5a"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#818181"}
               >
@@ -2127,7 +2608,7 @@ const abrirFormularioRestaurar = (evento) => {
               </button>
               <button
                 onClick={confirmarPatrocinio}
-                style={estiloBotonPrimario}
+                style={{ ...estiloBotonPrimario, minHeight: "44px" }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#7a5c2e"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
               >
@@ -2187,14 +2668,15 @@ const abrirFormularioRestaurar = (evento) => {
             />
           </div>
 
-          <div style={{ display: "flex", gap: "12px" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center" }}>
             <button
               onClick={cancelarRecortePerfil}
               style={{
                 backgroundColor: "#818181", color: "white",
                 fontFamily: "'Baloo Bhai 2', Helvetica", fontWeight: "700",
                 fontSize: "15px", padding: "10px 24px",
-                borderRadius: "999px", border: "none", cursor: "pointer"
+                borderRadius: "999px", border: "none", cursor: "pointer",
+                minHeight: "44px"
               }}
             >
               Cancelar
@@ -2208,7 +2690,8 @@ const abrirFormularioRestaurar = (evento) => {
                 fontSize: "15px", padding: "10px 24px",
                 borderRadius: "999px", border: "none",
                 cursor: fotoSubiendo ? "not-allowed" : "pointer",
-                opacity: fotoSubiendo ? 0.7 : 1
+                opacity: fotoSubiendo ? 0.7 : 1,
+                minHeight: "44px"
               }}
             >
               {fotoSubiendo ? "Subiendo..." : "Usar este encuadre"}

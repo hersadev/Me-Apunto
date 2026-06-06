@@ -42,6 +42,25 @@
     },
     });
 
+    // storage para fotos de perfil de empresa — cuadradas 300x300
+    const storagePerfil = new CloudinaryStorage({
+    cloudinary,
+    params: {
+        folder: "meapunto/perfiles",
+        allowed_formats: ["jpg", "jpeg", "png", "webp"],
+        transformation: [{ width: 300, height: 300, crop: "fill", gravity: "face" }],
+    },
+    });
+
+    const uploadPerfil = multer({
+    storage: storagePerfil,
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith("image/")) cb(null, true);
+        else cb(new Error("Solo se permiten imágenes"), false);
+    },
+    });
+
     // funcion para eliminar una imagen de cloudinary
     // se llama cuando la empresa edita o elimina un evento
     const eliminarImagen = async (publicId) => {
@@ -53,4 +72,4 @@
     }
     };
 
-    module.exports = { upload, eliminarImagen, cloudinary };
+    module.exports = { upload, uploadPerfil, eliminarImagen, cloudinary };

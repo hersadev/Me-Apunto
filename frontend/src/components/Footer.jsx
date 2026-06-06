@@ -1,19 +1,30 @@
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 function Footer() {
 
   const navegar = useNavigate();
   const { pathname } = useLocation();
+  const [esMobil, setEsMobil] = useState(() => window.innerWidth < 768);
+
+  useEffect(() => {
+    const handler = () => setEsMobil(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
   const estiloEnlace = {
     color: "#f8f8f8",
-    fontSize: "15px",
+    fontSize: esMobil ? "14px" : "15px",
     background: "none",
     border: "none",
     cursor: "pointer",
     fontFamily: "'Baloo Bhai 2', Helvetica",
     transition: "opacity 0.15s ease",
-    padding: "0 4px"
+    padding: esMobil ? "10px 8px" : "0 4px",
+    minHeight: esMobil ? "44px" : "auto",
+    display: "inline-flex",
+    alignItems: "center",
   };
 
   const enlaces = [
@@ -27,19 +38,21 @@ function Footer() {
       style={{
         backgroundColor: "#bca27a",
         width: "100%",
-        padding: "0 24px",
+        padding: esMobil ? "12px 16px" : "0 24px",
         minHeight: "70px",
         display: "flex",
+        flexDirection: esMobil ? "column" : "row",
         alignItems: "center",
         justifyContent: "center",
-        gap: "8px",
+        gap: esMobil ? "0px" : "8px",
         marginTop: "auto",
-        flexWrap: "wrap"
+        flexWrap: esMobil ? "nowrap" : "wrap",
+        boxSizing: "border-box",
       }}
     >
       {enlaces.map((enlace, i) => (
         <span key={enlace.ruta} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          {i > 0 && <span aria-hidden="true" style={{ color: "#f0e0c8", fontSize: "14px" }}>|</span>}
+          {i > 0 && !esMobil && <span aria-hidden="true" style={{ color: "#f0e0c8", fontSize: "14px" }}>|</span>}
           <button
             onClick={() => navegar(enlace.ruta)}
             style={estiloEnlace}

@@ -49,6 +49,24 @@ const contactoLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// limita suscripciones a 20 por hora por IP
+const suscripcionLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 20,
+  message: { mensaje: "Demasiadas suscripciones. Inténtalo más tarde." },
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+});
+
+// limita envío de mensajes a empresas a 10 por hora por IP
+const mensajeLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 10,
+  message: { mensaje: "Has enviado demasiados mensajes. Inténtalo más tarde." },
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+});
+
 app.use("/api/auth/login", authLimiter);
 app.use("/api/auth/register", authLimiter);
 app.use("/api/auth/recuperar", authLimiter);
@@ -58,6 +76,8 @@ app.use("/api/auth", require("./src/routes/authRoutes"));
 app.use("/api/eventos", require("./src/routes/eventoRoutes"));
 app.use("/api/inscripciones", require("./src/routes/inscripcionRoutes"));
 app.use("/api/contacto", require("./src/routes/contactoRoutes"));
+app.use("/api/suscripciones", suscripcionLimiter, require("./src/routes/suscripcionEmpresaRoutes"));
+app.use("/api/mensajes", mensajeLimiter, require("./src/routes/mensajeRoutes"));
 
 app.get("/", (req, res) => {
     res.json({ mensaje: "API de Me Apunto funcionando correctamente" });

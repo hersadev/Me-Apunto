@@ -337,8 +337,14 @@ const actualizarPerfil = async (req, res) => {
       campos.correoTokenExpiracion = new Date(Date.now() + 24 * 60 * 60 * 1000);
       campos.correoCambiadoEn = new Date();
 
-      if (descripcion !== undefined && descripcion !== empresaActual.descripcion) {
+      if (descripcion !== undefined && descripcion.trim() !== (empresaActual.descripcion || "")) {
+        if (!puedeModificar(empresaActual.descripcionCambiadaEn)) {
+          return res.status(429).json({
+            mensaje: `La descripción solo puede cambiarse una vez cada 2 meses. Podrás cambiarla el ${proximaFechaPermitida(empresaActual.descripcionCambiadaEn)}.`,
+          });
+        }
         campos.descripcion = descripcion.trim().slice(0, 500);
+        campos.descripcionCambiadaEn = new Date();
       }
 
       await Empresa.findByIdAndUpdate(req.empresa.id, campos);
@@ -367,12 +373,19 @@ const actualizarPerfil = async (req, res) => {
           fotoPerfil: empresaActualizada.fotoPerfil,
           nombreCambiadoEn: empresaActualizada.nombreCambiadoEn,
           correoCambiadoEn: empresaActualizada.correoCambiadoEn,
+          descripcionCambiadaEn: empresaActualizada.descripcionCambiadaEn,
         },
       });
     }
 
-    if (descripcion !== undefined && descripcion !== empresaActual.descripcion) {
+    if (descripcion !== undefined && descripcion.trim() !== (empresaActual.descripcion || "")) {
+      if (!puedeModificar(empresaActual.descripcionCambiadaEn)) {
+        return res.status(429).json({
+          mensaje: `La descripción solo puede cambiarse una vez cada 2 meses. Podrás cambiarla el ${proximaFechaPermitida(empresaActual.descripcionCambiadaEn)}.`,
+        });
+      }
       campos.descripcion = descripcion.trim().slice(0, 500);
+      campos.descripcionCambiadaEn = new Date();
     }
 
     if (Object.keys(campos).length === 0) {
@@ -392,6 +405,7 @@ const actualizarPerfil = async (req, res) => {
         fotoPerfil: empresa.fotoPerfil,
         nombreCambiadoEn: empresa.nombreCambiadoEn,
         correoCambiadoEn: empresa.correoCambiadoEn,
+        descripcionCambiadaEn: empresa.descripcionCambiadaEn,
       },
     });
 

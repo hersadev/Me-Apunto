@@ -21,13 +21,14 @@ function Navbar({ mostrarInicio = false, estaLogueado }) {
     backgroundColor: colorBoton,
     color: "white",
     fontWeight: "bold",
-    fontSize: esMobil ? "12px" : "16px",
-    padding: esMobil ? "6px 12px" : "10px 28px",
+    fontSize: esMobil ? "11px" : "16px",
+    padding: esMobil ? "5px 10px" : "10px 28px",
     borderRadius: "999px",
     border: "none",
     cursor: "pointer",
     fontFamily: "'Baloo Bhai 2', Helvetica",
-    transition: "background-color 0.15s ease"
+    transition: "background-color 0.15s ease",
+    whiteSpace: "nowrap",
   };
 
   const logueado = estaLogueado !== undefined
@@ -55,11 +56,17 @@ function Navbar({ mostrarInicio = false, estaLogueado }) {
       <div />
 
       {/* botones derecha */}
-      <div style={{ display: "flex", gap: esMobil ? "6px" : "10px", marginRight: esMobil ? "10px" : "50px" }}>
+      <div style={{
+        display: "flex",
+        flexDirection: "row",
+        alignItems: "center",
+        gap: esMobil ? "4px" : "10px",
+        marginRight: esMobil ? "10px" : "50px",
+      }}>
 
         {logueado ? (
           <>
-            {mostrarInicio ? (
+            {mostrarInicio && (
               <button
                 onClick={() => navegar("/")}
                 style={estiloBoton}
@@ -68,27 +75,26 @@ function Navbar({ mostrarInicio = false, estaLogueado }) {
               >
                 Inicio
               </button>
-            ) : (
-              <button
-                onClick={() => navegar("/panel")}
-                style={estiloBoton}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colorBoton}
-              >
-                Mi panel
-              </button>
             )}
+            <button
+              onClick={() => navegar("/panel")}
+              style={estiloBoton}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colorBoton}
+            >
+              Mi panel
+            </button>
 
             <button
             onClick={async () => {
-              await authService.logout();
+              try { await authService.logout(); } catch { /* token ya expirado */ }
               window.location.href = "/";
-}}
+            }}
               style={{ ...estiloBoton, backgroundColor: "#91703d" }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#7a5c2e"}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
             >
-              Cerrar sesión
+              {esMobil ? "Salir" : "Cerrar sesión"}
             </button>
           </>
         ) : (

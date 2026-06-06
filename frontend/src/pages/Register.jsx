@@ -1,7 +1,7 @@
 // pagina de registro - solo para empresas que quieran publicar eventos
 // ahora conectado con el backend usando authService
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 
@@ -45,6 +45,14 @@ function validarCIF(cif) {
 function Register() {
 
   const navegar = useNavigate();
+
+  const [anchoVentana, setAnchoVentana] = useState(window.innerWidth);
+  useEffect(() => {
+    const h = () => setAnchoVentana(window.innerWidth);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
+  const esMobil = anchoVentana < 768;
 
   const [formData, setFormData] = useState({
     nombreEmpresa: "",
@@ -182,7 +190,7 @@ function Register() {
 
           <form
             onSubmit={handleSubmit}
-            style={{ width: "100%", display: "flex", flexDirection: "column", gap: "14px" }}
+            style={{ width: "100%", display: "flex", flexDirection: "column", gap: esMobil ? "10px" : "14px" }}
           >
 
             {/* nombre de empresa */}
@@ -191,7 +199,7 @@ function Register() {
                 htmlFor="nombreEmpresa"
                 style={{
                   fontFamily: "'Baloo Bhai 2', Helvetica",
-                  fontSize: "20px",
+                  fontSize: esMobil ? "17px" : "20px",
                   fontWeight: "600",
                   color: "#1a1a1a"
                 }}
@@ -213,11 +221,12 @@ function Register() {
                   paddingLeft: "14px",
                   paddingRight: "14px",
                   fontFamily: "'Baloo Bhai 2', Helvetica",
-                  fontSize: "20px",
+                  fontSize: esMobil ? "16px" : "20px",
                   color: "#1a1a1a",
                   border: "none",
                   outline: "none",
-                  borderRadius: "6px"
+                  borderRadius: "6px",
+                  boxSizing: "border-box"
                 }}
                 autoComplete="organization"
               />
@@ -229,7 +238,7 @@ function Register() {
                 htmlFor="correoEmpresa"
                 style={{
                   fontFamily: "'Baloo Bhai 2', Helvetica",
-                  fontSize: "20px",
+                  fontSize: esMobil ? "17px" : "20px",
                   fontWeight: "600",
                   color: "#1a1a1a"
                 }}
@@ -259,11 +268,12 @@ function Register() {
                   paddingLeft: "14px",
                   paddingRight: "14px",
                   fontFamily: "'Baloo Bhai 2', Helvetica",
-                  fontSize: "20px",
+                  fontSize: esMobil ? "16px" : "20px",
                   color: "#1a1a1a",
                   border: "none",
                   outline: "none",
-                  borderRadius: "6px"
+                  borderRadius: "6px",
+                  boxSizing: "border-box"
                 }}
                 autoComplete="email"
               />
@@ -275,7 +285,7 @@ function Register() {
                 htmlFor="nifCif"
                 style={{
                   fontFamily: "'Baloo Bhai 2', Helvetica",
-                  fontSize: "20px",
+                  fontSize: esMobil ? "17px" : "20px",
                   fontWeight: "600",
                   color: "#1a1a1a"
                 }}
@@ -305,11 +315,12 @@ function Register() {
                   paddingLeft: "14px",
                   paddingRight: "14px",
                   fontFamily: "'Baloo Bhai 2', Helvetica",
-                  fontSize: "20px",
+                  fontSize: esMobil ? "16px" : "20px",
                   color: "#1a1a1a",
                   border: "none",
                   outline: "none",
-                  borderRadius: "6px"
+                  borderRadius: "6px",
+                  boxSizing: "border-box"
                 }}
                 autoComplete="off"
               />
@@ -355,7 +366,7 @@ function Register() {
               />
               <span style={{
                 fontFamily: "'Baloo Bhai 2', Helvetica",
-                fontSize: "20px",
+                fontSize: esMobil ? "16px" : "20px",
                 fontWeight: "600",
                 color: "#1a1a1a"
               }}>

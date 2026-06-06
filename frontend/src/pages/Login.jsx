@@ -2,7 +2,7 @@
     // ahora conectado con el backend usando authService
     // guarda el token en localStorage al hacer login
 
-    import { useState } from "react";
+    import { useState, useEffect } from "react";
     import { useNavigate } from "react-router-dom";
     import { Helmet } from "react-helmet-async";
 
@@ -18,6 +18,14 @@
     function Login({ setEstaLogueado }) {
 
     const navegar = useNavigate();
+
+    const [anchoVentana, setAnchoVentana] = useState(window.innerWidth);
+    useEffect(() => {
+      const h = () => setAnchoVentana(window.innerWidth);
+      window.addEventListener("resize", h);
+      return () => window.removeEventListener("resize", h);
+    }, []);
+    const esMobil = anchoVentana < 768;
 
     const [correo, setCorreo] = useState("");
     const [contrasena, setContrasena] = useState("");
@@ -88,11 +96,12 @@
 
             <h1 style={{
                 fontFamily: "'Baloo Bhai 2', Helvetica",
-                fontSize: "30px",
+                fontSize: esMobil ? "24px" : "30px",
                 fontWeight: "700",
                 color: "#2c2c2c",
                 marginBottom: "4px",
-                margin: 0
+                margin: 0,
+                textAlign: "center"
             }}>
                 Acceso Empresas
             </h1>
@@ -132,7 +141,7 @@
                     htmlFor="correo"
                     style={{
                     fontFamily: "'Baloo Bhai 2', Helvetica",
-                    fontSize: "20px",
+                    fontSize: esMobil ? "17px" : "20px",
                     fontWeight: "600",
                     color: "#1a1a1a"
                     }}
@@ -153,11 +162,12 @@
                     paddingLeft: "12px",
                     paddingRight: "12px",
                     fontFamily: "'Baloo Bhai 2', Helvetica",
-                    fontSize: "20px",
+                    fontSize: esMobil ? "16px" : "20px",
                     color: "#1a1a1a",
                     border: "none",
                     outline: "none",
-                    borderRadius: "6px"
+                    borderRadius: "6px",
+                    boxSizing: "border-box"
                     }}
                     autoComplete="email"
                 />
@@ -213,7 +223,10 @@
             <div style={{
                 width: "100%",
                 display: "flex",
-                justifyContent: "space-between"
+                flexDirection: esMobil ? "column" : "row",
+                justifyContent: esMobil ? "center" : "space-between",
+                alignItems: esMobil ? "center" : "baseline",
+                gap: esMobil ? "4px" : "0"
             }}>
                 <button
                 type="button"
@@ -224,7 +237,9 @@
                     color: "#5c3d1a",
                     background: "none",
                     border: "none",
-                    cursor: "pointer"
+                    cursor: "pointer",
+                    minHeight: "44px",
+                    padding: "0 4px"
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
                 onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
@@ -241,7 +256,9 @@
                     color: "#5c3d1a",
                     background: "none",
                     border: "none",
-                    cursor: "pointer"
+                    cursor: "pointer",
+                    minHeight: "44px",
+                    padding: "0 4px"
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
                 onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}

@@ -67,6 +67,10 @@ const empresaSchema = new mongoose.Schema(
         type: Date,
         default: null,
     },
+    descripcionCambiadaEn: {
+        type: Date,
+        default: null,
+    },
 
     // foto de perfil de la empresa
     fotoPerfil: {

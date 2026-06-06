@@ -2,7 +2,7 @@
     // ahora conectado con el backend usando contactoService
     // los mensajes llegan a juanjosehersa@gmail.com
 
-    import { useState } from "react";
+    import { useState, useEffect } from "react";
     import { Helmet } from "react-helmet-async";
     import { useNavigate } from "react-router-dom";
 
@@ -16,6 +16,15 @@
     function Contact() {
 
     const navegar = useNavigate();
+
+    // deteccion de ancho para responsividad movil
+    const [anchoVentana, setAnchoVentana] = useState(window.innerWidth);
+    useEffect(() => {
+        const h = () => setAnchoVentana(window.innerWidth);
+        window.addEventListener("resize", h);
+        return () => window.removeEventListener("resize", h);
+    }, []);
+    const esMobil = anchoVentana < 768;
 
     // estado del formulario
     const [formData, setFormData] = useState({
@@ -62,7 +71,7 @@
     // estilos compartidos
     const estiloLabel = {
         fontFamily: "'Baloo Bhai 2', Helvetica",
-        fontSize: "18px",
+        fontSize: esMobil ? "16px" : "18px",
         fontWeight: "600",
         color: "#1a1a1a",
         marginBottom: "4px",
@@ -80,7 +89,8 @@
         color: "#1a1a1a",
         border: "none",
         outline: "none",
-        borderRadius: "6px"
+        borderRadius: "6px",
+        boxSizing: "border-box"
     };
 
     return (
@@ -114,7 +124,7 @@
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            padding: "60px 16px"
+            padding: esMobil ? "32px 12px" : "60px 16px"
         }}>
 
             {/* tarjeta de contacto */}
@@ -124,20 +134,22 @@
             backgroundColor: "#c9aa80",
             borderRadius: "28px",
             boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
-            padding: "40px",
+            padding: esMobil ? "24px 16px" : "40px",
             display: "flex",
             flexDirection: "column",
-            gap: "20px"
+            gap: "20px",
+            boxSizing: "border-box"
             }}>
 
             {/* titulo */}
             <h1 style={{
                 fontFamily: "'Baloo Bhai 2', Helvetica",
-                fontSize: "24px",
+                fontSize: esMobil ? "20px" : "24px",
                 fontWeight: "700",
                 color: "#2c2c2c",
                 textAlign: "center",
-                margin: 0
+                margin: 0,
+                wordBreak: "break-word"
             }}>
                 Contacte con nosotros
             </h1>
@@ -149,7 +161,8 @@
                 color: "#4a4a4a",
                 textAlign: "center",
                 margin: 0,
-                lineHeight: "1.5"
+                lineHeight: "1.5",
+                wordBreak: "break-word"
             }}>
                 ¿Tienes alguna pregunta o sugerencia? Escríbenos y te
                 responderemos lo antes posible.
@@ -166,7 +179,8 @@
                 <span style={{
                     fontFamily: "'Baloo Bhai 2', Helvetica",
                     fontSize: "15px",
-                    color: "#c0392b"
+                    color: "#c0392b",
+                    wordBreak: "break-word"
                 }}>
                     {error}
                 </span>
@@ -188,7 +202,8 @@
                     fontFamily: "'Baloo Bhai 2', Helvetica",
                     fontSize: "16px",
                     color: "#2e7d32",
-                    fontWeight: "600"
+                    fontWeight: "600",
+                    wordBreak: "break-word"
                 }}>
                     ✓ Mensaje enviado correctamente. ¡Gracias por escribirnos!
                 </span>
@@ -202,7 +217,8 @@
                     background: "none",
                     border: "none",
                     cursor: "pointer",
-                    textDecoration: "underline"
+                    textDecoration: "underline",
+                    minHeight: "44px"
                     }}
                 >
                     Enviar otro mensaje
@@ -297,7 +313,8 @@
                         outline: "none",
                         borderRadius: "6px",
                         resize: "vertical",
-                        minHeight: "140px"
+                        minHeight: "140px",
+                        boxSizing: "border-box"
                     }}
                     />
                 </div>
@@ -310,11 +327,12 @@
                     marginTop: "4px",
                     width: "100%",
                     padding: "13px 0",
+                    minHeight: "44px",
                     backgroundColor: cargando ? "#c9aa80" : "#91703d",
                     color: "white",
                     fontFamily: "'Baloo Bhai 2', Helvetica",
                     fontWeight: "700",
-                    fontSize: "18px",
+                    fontSize: esMobil ? "16px" : "18px",
                     borderRadius: "999px",
                     border: "none",
                     cursor: cargando ? "not-allowed" : "pointer",
@@ -344,7 +362,8 @@
                 background: "none",
                 border: "none",
                 cursor: "pointer",
-                textAlign: "center"
+                textAlign: "center",
+                minHeight: "44px"
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
                 onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}

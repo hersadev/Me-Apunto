@@ -3,15 +3,19 @@
 
 import api from "./api";
 
-// enviar mensaje de contacto
-// ruta publica
 const enviarMensaje = async (datos) => {
   const response = await api.post("/contacto", datos);
   return response.data;
 };
 
+const enviarMensajeEmpresa = async (datos) => {
+  const response = await api.post("/contacto/empresa", datos);
+  return response.data;
+};
+
 const contactoService = {
   enviarMensaje,
+  enviarMensajeEmpresa,
 };
 
 export default contactoService;

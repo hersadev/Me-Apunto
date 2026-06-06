@@ -4,6 +4,10 @@
 
 const { Resend } = require("resend");
 
+if (!process.env.RESEND_API_KEY) {
+  throw new Error("RESEND_API_KEY no está configurada en las variables de entorno");
+}
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const escapeHtml = (str) => String(str ?? "")
@@ -130,7 +134,7 @@ const enviarCorreoContacto = async ({ nombre, email, asunto, contexto }) => {
 
   await resend.emails.send({
     from: "Me Apunto <onboarding@resend.dev>",
-    to: "juanjosehersa@gmail.com",
+    to: process.env.ADMIN_EMAIL || "juanjosehersa@gmail.com",
     subject: `Contacto web: ${asunto}`,
     reply_to: email,
     html,
@@ -263,6 +267,100 @@ const enviarCorreoConfirmacionCambio = async ({ correoNuevo, nombreEmpresa, toke
   console.log(`Correo de confirmacion de cambio enviado a ${correoNuevo}`);
 };
 
+const enviarCorreoConfirmacionSuscripcion = async ({ email, nombreEmpresa }) => {
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background-color: #b79868; padding: 24px; text-align: center; border-radius: 12px 12px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">Me Apunto</h1>
+        <p style="color: white; margin: 8px 0 0 0; font-size: 14px;">Suscripción confirmada</p>
+      </div>
+      <div style="background-color: #f0e8dc; padding: 32px; border-radius: 0 0 12px 12px;">
+        <p style="font-size: 16px; color: #333;">¡Hola!</p>
+        <p style="font-size: 16px; color: #333;">
+          Te has suscrito correctamente a <strong>${escapeHtml(nombreEmpresa)}</strong> en Me Apunto.
+        </p>
+        <div style="background-color: white; border-radius: 8px; padding: 20px; margin: 20px 0;">
+          <p style="margin: 8px 0; color: #333;">✓ Recibirás un aviso cuando <strong>${escapeHtml(nombreEmpresa)}</strong> publique nuevos eventos</p>
+          <p style="margin: 8px 0; color: #333;">✓ Te notificaremos si hay cambios importantes en sus eventos</p>
+        </div>
+        <p style="font-size: 14px; color: #818181; margin-top: 24px;">Si no solicitaste esta suscripción, puedes ignorar este correo.</p>
+      </div>
+    </div>
+  `;
+
+  await resend.emails.send({
+    from: "Me Apunto <onboarding@resend.dev>",
+    to: email,
+    subject: `Suscripción confirmada a ${nombreEmpresa} – Me Apunto`,
+    html,
+  });
+
+  console.log(`Correo de confirmación de suscripción enviado a ${email}`);
+};
+
+const enviarCorreoContactoEmpresa = async ({ correoEmpresa, nombreEmpresa, nombreEvento, nombreRemitente, emailRemitente, mensaje }) => {
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background-color: #b79868; padding: 24px; text-align: center; border-radius: 12px 12px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">Me Apunto</h1>
+        <p style="color: white; margin: 8px 0 0 0; font-size: 14px;">Alguien quiere contactar contigo</p>
+      </div>
+      <div style="background-color: #f0e8dc; padding: 32px; border-radius: 0 0 12px 12px;">
+        <p style="font-size: 16px; color: #333;">Hola <strong>${escapeHtml(nombreEmpresa)}</strong>,</p>
+        <p style="font-size: 16px; color: #333;">Has recibido un mensaje a través de la ficha del evento <strong>"${escapeHtml(nombreEvento)}"</strong> en Me Apunto.</p>
+        <div style="background-color: white; border-radius: 8px; padding: 20px; margin: 20px 0;">
+          <p style="margin: 8px 0; color: #333;"><strong>Nombre:</strong> ${escapeHtml(nombreRemitente)}</p>
+          <p style="margin: 8px 0; color: #333;"><strong>Email:</strong> ${escapeHtml(emailRemitente)}</p>
+          <p style="margin: 16px 0 8px 0; color: #333;"><strong>Mensaje:</strong></p>
+          <p style="margin: 0; color: #444; white-space: pre-wrap; line-height: 1.6;">${escapeHtml(mensaje)}</p>
+        </div>
+        <p style="font-size: 14px; color: #818181; margin-top: 24px;">Puedes responder directamente a este correo para contestar a ${escapeHtml(nombreRemitente)}.</p>
+      </div>
+    </div>
+  `;
+
+  await resend.emails.send({
+    from: "Me Apunto <onboarding@resend.dev>",
+    to: correoEmpresa,
+    reply_to: emailRemitente,
+    subject: `Mensaje sobre tu evento "${nombreEvento}" – Me Apunto`,
+    html,
+  });
+
+  console.log(`Correo de contacto a empresa ${correoEmpresa} enviado desde ${emailRemitente}`);
+};
+
+const enviarCorreoRespuestaMensaje = async ({ emailDestinatario, nombreDestinatario, nombreEmpresa, asuntoOriginal, respuesta }) => {
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background-color: #b79868; padding: 24px; text-align: center; border-radius: 12px 12px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">Me Apunto</h1>
+        <p style="color: white; margin: 8px 0 0 0; font-size: 14px;">Respuesta a tu mensaje</p>
+      </div>
+      <div style="background-color: #f0e8dc; padding: 32px; border-radius: 0 0 12px 12px;">
+        <p style="font-size: 16px; color: #333;">Hola <strong>${escapeHtml(nombreDestinatario)}</strong>,</p>
+        <p style="font-size: 16px; color: #333;"><strong>${escapeHtml(nombreEmpresa)}</strong> ha respondido a tu mensaje sobre <em>"${escapeHtml(asuntoOriginal)}"</em>:</p>
+        <div style="background-color: white; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #b79868;">
+          <p style="margin: 0; color: #333; white-space: pre-wrap; line-height: 1.6;">${escapeHtml(respuesta)}</p>
+        </div>
+        <p style="font-size: 14px; color: #818181; margin-top: 24px;">Este correo ha sido enviado automáticamente por Me Apunto.</p>
+      </div>
+    </div>
+  `;
+
+  await resend.emails.send({
+    from: "Me Apunto <onboarding@resend.dev>",
+    to: emailDestinatario,
+    subject: `Re: ${asuntoOriginal} – Me Apunto`,
+    html,
+  });
+
+  console.log(`Correo de respuesta enviado a ${emailDestinatario}`);
+};
+
 module.exports = {
   enviarCorreoInscripcion,
   enviarCorreoAvisoRenovacion,
@@ -270,4 +368,7 @@ module.exports = {
   enviarCorreoBienvenida,
   enviarCorreoRecuperacion,
   enviarCorreoConfirmacionCambio,
+  enviarCorreoContactoEmpresa,
+  enviarCorreoConfirmacionSuscripcion,
+  enviarCorreoRespuestaMensaje,
 };

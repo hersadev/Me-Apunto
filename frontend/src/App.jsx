@@ -15,6 +15,7 @@ const TermsAndConditions = lazy(() => import("./pages/TermsAndConditions"));
 const Contact = lazy(() => import("./pages/Contact"));
 const CompanyPanel = lazy(() => import("./pages/CompanyPanel"));
 const CookiesPolicy = lazy(() => import("./pages/CookiesPolicy"));
+const ConfirmarCorreo = lazy(() => import("./pages/ConfirmarCorreo"));
 
 function App() {
 
@@ -59,6 +60,9 @@ function App() {
 
             {/* politica de cookies */}
             <Route path="/cookies" element={<CookiesPolicy />} />
+
+            {/* confirmacion de cambio de correo */}
+            <Route path="/confirmar-correo/:token" element={<ConfirmarCorreo />} />
 
           </Routes>
         </Suspense>

@@ -166,8 +166,9 @@ function Hero({ mostrarBuscador = false, compacto = false, onBuscar, onSubmit })
             style={{
               position: "relative",
               width: "100%",
-              maxWidth: esMobil ? "320px" : "500px",
-              padding: "0 16px",
+              maxWidth: esMobil ? "100%" : "500px",
+              padding: esMobil ? "0 20px" : "0 16px",
+              boxSizing: "border-box",
             }}
           >
             {/* fila input + botón */}
@@ -220,8 +221,8 @@ function Hero({ mostrarBuscador = false, compacto = false, onBuscar, onSubmit })
                 style={{
                 position: "absolute",
                 top: "100%",
-                left: "16px",
-                right: "16px",
+                left: esMobil ? "20px" : "16px",
+                right: esMobil ? "20px" : "16px",
                 backgroundColor: "white",
                 borderRadius: "0 0 8px 8px",
                 boxShadow: "0 8px 24px rgba(0,0,0,0.15)",

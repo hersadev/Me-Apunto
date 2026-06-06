@@ -3,6 +3,7 @@
     // patrocinio 10€/mes por evento
     // comision 5% en eventos de pago
 
+    import { useState, useEffect } from "react";
     import { useNavigate } from "react-router-dom";
     import { Helmet } from "react-helmet-async";
     import Navbar from "../components/Navbar";
@@ -13,15 +14,25 @@
 
     const navegar = useNavigate();
 
+    // deteccion de ancho para responsividad movil
+    const [anchoVentana, setAnchoVentana] = useState(window.innerWidth);
+    useEffect(() => {
+        const h = () => setAnchoVentana(window.innerWidth);
+        window.addEventListener("resize", h);
+        return () => window.removeEventListener("resize", h);
+    }, []);
+    const esMobil = anchoVentana < 768;
+
     // componente reutilizable para cada seccion
     const Seccion = ({ numero, titulo, children }) => (
         <div style={{ marginBottom: "28px" }}>
         <h2 style={{
             fontFamily: "'Baloo Bhai 2', Helvetica",
-            fontSize: "20px",
+            fontSize: esMobil ? "18px" : "20px",
             fontWeight: "700",
             color: "#91703d",
-            marginBottom: "10px"
+            marginBottom: "10px",
+            wordBreak: "break-word"
         }}>
             {numero}. {titulo}
         </h2>
@@ -29,7 +40,8 @@
             fontFamily: "'Baloo Bhai 2', Helvetica",
             fontSize: "16px",
             color: "#333333",
-            lineHeight: "1.7"
+            lineHeight: "1.7",
+            wordBreak: "break-word"
         }}>
             {children}
         </div>
@@ -63,16 +75,18 @@
             width: "100%",
             maxWidth: "900px",
             margin: "0 auto",
-            padding: "60px 24px"
+            padding: esMobil ? "32px 16px" : "60px 24px",
+            boxSizing: "border-box"
         }}>
 
             {/* titulo y fecha */}
             <h1 style={{
             fontFamily: "'Baloo Bhai 2', Helvetica",
-            fontSize: "32px",
+            fontSize: esMobil ? "26px" : "32px",
             fontWeight: "700",
             color: "#2c2c2c",
-            marginBottom: "8px"
+            marginBottom: "8px",
+            wordBreak: "break-word"
             }}>
             Términos y Condiciones
             </h1>
@@ -256,9 +270,10 @@
             {/* botones de navegacion */}
             <div style={{
             display: "flex",
-            gap: "16px",
+            gap: "12px",
             flexWrap: "wrap",
-            marginTop: "16px"
+            marginTop: "16px",
+            flexDirection: esMobil ? "column" : "row"
             }}>
 
             {/* volver al registro */}
@@ -271,10 +286,12 @@
                 fontWeight: "700",
                 fontSize: "16px",
                 padding: "12px 32px",
+                minHeight: "44px",
                 borderRadius: "999px",
                 border: "none",
                 cursor: "pointer",
-                transition: "background-color 0.15s ease"
+                transition: "background-color 0.15s ease",
+                width: esMobil ? "100%" : "auto"
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#b79868"}
@@ -292,10 +309,12 @@
                 fontWeight: "700",
                 fontSize: "16px",
                 padding: "12px 32px",
+                minHeight: "44px",
                 borderRadius: "999px",
                 border: "2px solid #91703d",
                 cursor: "pointer",
-                transition: "all 0.15s ease"
+                transition: "all 0.15s ease",
+                width: esMobil ? "100%" : "auto"
                 }}
                 onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = "#91703d";
