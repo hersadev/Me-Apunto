@@ -51,12 +51,14 @@ function Navbar({ mostrarInicio = false, estaLogueado }) {
       paddingBottom: esMobil ? "10px" : "16px",
       paddingLeft: "20px",
       paddingRight: "0px",
+      pointerEvents: "none",
     }}>
 
       <div />
 
       {/* botones derecha */}
       <div style={{
+        pointerEvents: "auto",
         display: "flex",
         flexDirection: "row",
         alignItems: "center",
