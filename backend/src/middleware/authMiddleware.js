@@ -3,7 +3,10 @@ const Empresa = require("../models/Empresa");
 
 const protegerRuta = async (req, res, next) => {
     try {
-        const token = req.cookies?.token;
+        const tokenCookie = req.cookies?.token;
+        const authHeader = req.headers?.authorization;
+        const tokenHeader = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+        const token = tokenCookie || tokenHeader;
 
         if (!token) {
             return res.status(401).json({ mensaje: "No autorizado - token no encontrado" });

@@ -114,7 +114,7 @@ function Hero({ mostrarBuscador = false, compacto = false, onBuscar, onSubmit })
       {/* titulo compacto */}
       {compacto && (
         <div style={{
-          position: "absolute", inset: 0, zIndex: 60,
+          position: "absolute", inset: 0, zIndex: 10,
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
           <h1
