@@ -476,6 +476,99 @@ const enviarCorreoRespuestaMensaje = async ({ emailDestinatario, nombreDestinata
   console.log(`Correo de respuesta enviado a ${emailDestinatario}`);
 };
 
+// correo personalizado enviado por la empresa a uno de sus suscriptores
+const enviarCorreoPersonalizadoSuscriptor = async ({ email, nombreEmpresa, asunto, mensaje, suscripcionId }) => {
+  const mensajeHtml = escapeHtml(mensaje).replace(/\n/g, "<br>");
+  const urlBaja = `${process.env.FRONTEND_URL || "http://localhost:3000"}/baja/${suscripcionId}`;
+
+  await resend.emails.send({
+    from: "Me Apunto <onboarding@resend.dev>",
+    to: email,
+    subject: asunto,
+    html: `
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background-color:#f5f0e8;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f0e8;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+
+        <!-- cabecera Me Apunto -->
+        <tr>
+          <td style="padding-bottom:12px;text-align:center;">
+            <span style="font-size:22px;font-weight:700;color:#91703d;letter-spacing:-0.5px;">Me Apunto</span>
+          </td>
+        </tr>
+
+        <!-- tarjeta principal -->
+        <tr>
+          <td style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.08);">
+
+            <!-- franja superior con nombre empresa -->
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="background-color:#91703d;padding:28px 36px;">
+                  <p style="margin:0;font-size:12px;color:#f0e8dc;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Mensaje de</p>
+                  <h1 style="margin:4px 0 0;font-size:24px;font-weight:700;color:#ffffff;">${escapeHtml(nombreEmpresa)}</h1>
+                </td>
+              </tr>
+            </table>
+
+            <!-- cuerpo del mensaje -->
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="padding:36px 36px 28px;">
+                  <p style="margin:0;font-size:16px;color:#1a1a1a;line-height:1.75;">${mensajeHtml}</p>
+                </td>
+              </tr>
+            </table>
+
+            <!-- separador -->
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="padding:0 36px;">
+                  <div style="border-top:1px solid #f0e8dc;"></div>
+                </td>
+              </tr>
+            </table>
+
+            <!-- footer de la tarjeta -->
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="padding:20px 36px 28px;">
+                  <p style="margin:0;font-size:12px;color:#818181;line-height:1.6;">
+                    Recibiste este mensaje porque estás suscrito a
+                    <strong style="color:#91703d;">${escapeHtml(nombreEmpresa)}</strong>
+                    a través de Me Apunto.
+                    Si no quieres recibir más mensajes de esta empresa,
+                    <a href="${urlBaja}" style="color:#91703d;font-weight:600;text-decoration:underline;">date de baja aquí</a>.
+                  </p>
+                </td>
+              </tr>
+            </table>
+
+          </td>
+        </tr>
+
+        <!-- pie de página -->
+        <tr>
+          <td style="padding-top:20px;text-align:center;">
+            <p style="margin:0;font-size:11px;color:#a0927e;">
+              © Me Apunto · Este correo fue enviado a ${escapeHtml(email)}
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
+    `,
+  });
+};
+
 module.exports = {
   enviarCorreoInscripcion,
   enviarCorreoConfirmacionUsuario,
@@ -488,4 +581,5 @@ module.exports = {
   enviarCorreoContactoEmpresa,
   enviarCorreoConfirmacionSuscripcion,
   enviarCorreoRespuestaMensaje,
+  enviarCorreoPersonalizadoSuscriptor,
 };

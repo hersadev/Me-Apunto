@@ -633,6 +633,87 @@ const obtenerAnaliticasEmpresa = async (req, res) => {
       .slice(0, 5)
       .map((e) => ({ _id: e._id, titulo: e.titulo, vistas: e.vistas || 0, totalInscritos: e.totalInscritos }));
 
+    // tasa de conversión por evento (inscritos / vistas)
+    const tasaConversion = [...eventosConStats]
+      .filter((e) => (e.vistas || 0) > 0)
+      .map((e) => ({
+        _id: e._id,
+        titulo: e.titulo,
+        vistas: e.vistas || 0,
+        inscritos: e.totalInscritos,
+        tasa: parseFloat(((e.totalInscritos / e.vistas) * 100).toFixed(1)),
+      }))
+      .sort((a, b) => b.tasa - a.tasa)
+      .slice(0, 10);
+
+    // tasa de llenado por evento (inscritos / capacidadMaxima)
+    const tasaLlenado = [...eventosConStats]
+      .filter((e) => e.capacidadMaxima != null && e.capacidadMaxima > 0)
+      .map((e) => ({
+        _id: e._id,
+        titulo: e.titulo,
+        inscritos: e.totalInscritos,
+        capacidadMaxima: e.capacidadMaxima,
+        tasa: parseFloat(Math.min(100, (e.totalInscritos / e.capacidadMaxima) * 100).toFixed(1)),
+      }))
+      .sort((a, b) => b.tasa - a.tasa);
+
+    // top ciudades por número de inscritos
+    const ciudadesRaw = await Inscripcion.aggregate([
+      { $match: { evento: { $in: idsEventos } } },
+      { $group: { _id: "$ciudad", inscritos: { $sum: "$numPersonas" } } },
+      { $sort: { inscritos: -1 } },
+      { $limit: 10 },
+    ]);
+    const topCiudades = ciudadesRaw.map(({ _id, inscritos }) => ({ ciudad: _id, inscritos }));
+
+    // evolución de inscripciones por semana (últimas 8 semanas)
+    const haceOchoSemanas = new Date(ahora);
+    haceOchoSemanas.setDate(haceOchoSemanas.getDate() - 56);
+    const evolucionRaw = await Inscripcion.aggregate([
+      { $match: { evento: { $in: idsEventos }, createdAt: { $gte: haceOchoSemanas } } },
+      {
+        $group: {
+          _id: { anio: { $isoWeekYear: "$createdAt" }, semana: { $isoWeek: "$createdAt" } },
+          inscritos: { $sum: "$numPersonas" },
+        },
+      },
+      { $sort: { "_id.anio": 1, "_id.semana": 1 } },
+    ]);
+    const evolucionSemanal = evolucionRaw.map(({ _id, inscritos }) => ({
+      semana: `Sem ${_id.semana}`,
+      inscritos,
+    }));
+
+    // eventos próximos a llenarse (>= 80% y < 100% aforo, solo activos)
+    const proximosALlenarse = eventosActivos
+      .filter((e) => {
+        if (e.capacidadMaxima == null || e.capacidadMaxima === 0) return false;
+        const tasa = e.totalInscritos / e.capacidadMaxima;
+        return tasa >= 0.8 && tasa < 1;
+      })
+      .map((e) => ({
+        _id: e._id,
+        titulo: e.titulo,
+        inscritos: e.totalInscritos,
+        capacidadMaxima: e.capacidadMaxima,
+        fecha: e.fecha,
+        tasa: parseFloat(((e.totalInscritos / e.capacidadMaxima) * 100).toFixed(1)),
+      }))
+      .sort((a, b) => b.tasa - a.tasa);
+
+    // eventos con aforo completo (>= 100%, solo activos)
+    const aforoCompleto = eventosActivos
+      .filter((e) => e.capacidadMaxima != null && e.capacidadMaxima > 0 && e.totalInscritos >= e.capacidadMaxima)
+      .map((e) => ({
+        _id: e._id,
+        titulo: e.titulo,
+        inscritos: e.totalInscritos,
+        capacidadMaxima: e.capacidadMaxima,
+        fecha: e.fecha,
+      }))
+      .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+
     res.json({
       resumen: {
         totalVistas,
@@ -642,6 +723,12 @@ const obtenerAnaliticasEmpresa = async (req, res) => {
       },
       topPorVistas,
       topPorInscritos,
+      tasaConversion,
+      tasaLlenado,
+      topCiudades,
+      evolucionSemanal,
+      proximosALlenarse,
+      aforoCompleto,
       eventos: eventosConStats,
     });
   } catch (error) {

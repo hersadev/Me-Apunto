@@ -13,6 +13,7 @@ import Footer from "../components/Footer";
 import authService from "../services/authService";
 import eventoService from "../services/eventoService";
 import mensajeService from "../services/mensajeService";
+import suscripcionEmpresaService from "../services/suscripcionEmpresaService";
 
 const POR_PAGINA = 8;
 
@@ -114,6 +115,14 @@ function CompanyPanel({ setEstaLogueado }) {
   const [analiticas, setAnaliticas] = useState(null);
   const [cargandoAnaliticas, setCargandoAnaliticas] = useState(false);
 
+  const [suscriptores, setSuscriptores] = useState(null);
+  const [cargandoSuscriptores, setCargandoSuscriptores] = useState(false);
+  const [seleccionados, setSeleccionados] = useState(new Set());
+  const [asuntoCorreo, setAsuntoCorreo] = useState("");
+  const [mensajeCorreo, setMensajeCorreo] = useState("");
+  const [enviandoCorreo, setEnviandoCorreo] = useState(false);
+  const [resultadoCorreo, setResultadoCorreo] = useState(null);
+
   const [formularioAbierto, setFormularioAbierto] = useState(false);
   const [eventosPasadosAbierto, setEventosPasadosAbierto] = useState(false);
   const [papeleraAbierta, setPapeleraAbierta] = useState(false);
@@ -143,7 +152,7 @@ function CompanyPanel({ setEstaLogueado }) {
   const [modalEliminarMensaje, setModalEliminarMensaje] = useState(null);
   const [modalPatrocinio, setModalPatrocinio] = useState(null);
   const [pasoEliminarCuenta, setPasoEliminarCuenta] = useState(0);
-  const SECCIONES_VALIDAS = ["eventos", "mensajes", "analiticas", "notificaciones", "perfil"];
+  const SECCIONES_VALIDAS = ["eventos", "mensajes", "analiticas", "suscriptores", "notificaciones", "perfil"];
 
   const leerHash = () => {
     const h = window.location.hash.slice(1);
@@ -248,6 +257,9 @@ function CompanyPanel({ setEstaLogueado }) {
     if (seccionActiva === "analiticas" && !analiticas) {
       cargarAnaliticas();
     }
+    if (seccionActiva === "suscriptores" && !suscriptores) {
+      cargarSuscriptores();
+    }
   }, [seccionActiva]);
 
   const cargarMensajes = async () => {
@@ -267,13 +279,51 @@ function CompanyPanel({ setEstaLogueado }) {
 
   const cargarAnaliticas = async () => {
     setCargandoAnaliticas(true);
+    setAnaliticas(null);
     try {
       const data = await eventoService.getAnaliticas();
       setAnaliticas(data);
     } catch (err) {
       console.error("Error al cargar analíticas:", err);
+      setAnaliticas(null);
     } finally {
       setCargandoAnaliticas(false);
+    }
+  };
+
+  const cargarSuscriptores = async () => {
+    setCargandoSuscriptores(true);
+    setSuscriptores(null);
+    try {
+      const data = await suscripcionEmpresaService.getSuscriptores();
+      setSuscriptores(data.suscriptores || []);
+    } catch (err) {
+      console.error("Error al cargar suscriptores:", err);
+      setSuscriptores(null);
+    } finally {
+      setCargandoSuscriptores(false);
+    }
+  };
+
+  const handleEnviarCorreoSuscriptores = async () => {
+    if (!asuntoCorreo.trim() || !mensajeCorreo.trim()) return;
+    setEnviandoCorreo(true);
+    setResultadoCorreo(null);
+    try {
+      const emails = seleccionados.size > 0 ? [...seleccionados] : [];
+      const data = await suscripcionEmpresaService.enviarCorreoSuscriptores({
+        asunto: asuntoCorreo,
+        mensaje: mensajeCorreo,
+        emails,
+      });
+      setResultadoCorreo({ ok: true, texto: data.mensaje });
+      setAsuntoCorreo("");
+      setMensajeCorreo("");
+      setSeleccionados(new Set());
+    } catch (err) {
+      setResultadoCorreo({ ok: false, texto: err.response?.data?.mensaje || "Error al enviar" });
+    } finally {
+      setEnviandoCorreo(false);
     }
   };
 
@@ -801,6 +851,7 @@ const abrirFormularioRestaurar = (evento) => {
             { id: "eventos", label: "Gestión de eventos" },
             { id: "mensajes", label: "Mensajes", badge: mensajes.filter((m) => !m.leido).length || 0 },
             { id: "analiticas", label: "Analíticas" },
+            { id: "suscriptores", label: "Suscriptores" },
             { id: "notificaciones", label: "Notificaciones" },
             { id: "perfil", label: "Perfil" },
           ];
@@ -2164,6 +2215,225 @@ const abrirFormularioRestaurar = (evento) => {
                     )}
                   </div>
                 </div>
+
+                {/* tasa de conversión y tasa de llenado */}
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: esMobil ? "1fr" : "1fr 1fr",
+                  gap: "24px",
+                  marginTop: "24px"
+                }}>
+                  {/* tasa de conversión */}
+                  <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px 24px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
+                    <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", marginBottom: "4px" }}>
+                      🔄 Tasa de conversión
+                    </h3>
+                    <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>Inscritos ÷ visitas por evento</p>
+                    {analiticas.tasaConversion.length === 0 ? (
+                      <p style={{ fontSize: "14px", color: "#818181" }}>Sin datos todavía</p>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                        {analiticas.tasaConversion.map((ev) => (
+                          <div key={String(ev._id)}>
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                              <span style={{ fontSize: "13px", color: "#1a1a1a", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginRight: "8px" }}>
+                                {ev.titulo}
+                              </span>
+                              <span style={{ fontSize: "13px", fontWeight: "700", color: "#91703d", flexShrink: 0 }}>
+                                {ev.tasa}%
+                              </span>
+                            </div>
+                            <div style={{ backgroundColor: "#f0e8dc", borderRadius: "4px", height: "6px" }}>
+                              <div style={{ width: `${Math.min(100, ev.tasa)}%`, backgroundColor: "#91703d", borderRadius: "4px", height: "100%" }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* tasa de llenado */}
+                  <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px 24px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
+                    <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", marginBottom: "4px" }}>
+                      📊 Tasa de llenado
+                    </h3>
+                    <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>Inscritos sobre aforo máximo</p>
+                    {analiticas.tasaLlenado.length === 0 ? (
+                      <p style={{ fontSize: "14px", color: "#818181" }}>Sin eventos con aforo definido</p>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                        {analiticas.tasaLlenado.slice(0, 8).map((ev) => (
+                          <div key={String(ev._id)}>
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
+                              <span style={{ fontSize: "13px", color: "#1a1a1a", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginRight: "8px" }}>
+                                {ev.titulo}
+                              </span>
+                              <span style={{ fontSize: "13px", fontWeight: "700", color: ev.tasa >= 80 ? "#c0392b" : "#91703d", flexShrink: 0 }}>
+                                {ev.tasa}%
+                              </span>
+                            </div>
+                            <div style={{ backgroundColor: "#f0e8dc", borderRadius: "4px", height: "6px", marginBottom: "2px" }}>
+                              <div style={{ width: `${ev.tasa}%`, backgroundColor: ev.tasa >= 80 ? "#e74c3c" : "#91703d", borderRadius: "4px", height: "100%" }} />
+                            </div>
+                            <span style={{ fontSize: "11px", color: "#818181" }}>{ev.inscritos}/{ev.capacidadMaxima} personas</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* top ciudades y evolución semanal */}
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: esMobil ? "1fr" : "1fr 1fr",
+                  gap: "24px",
+                  marginTop: "24px"
+                }}>
+                  {/* top ciudades */}
+                  <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px 24px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
+                    <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", marginBottom: "4px" }}>
+                      📍 Top ciudades
+                    </h3>
+                    <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>Por número de inscritos</p>
+                    {analiticas.topCiudades.length === 0 ? (
+                      <p style={{ fontSize: "14px", color: "#818181" }}>Sin datos todavía</p>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                        {(() => {
+                          const maxCiudad = analiticas.topCiudades[0]?.inscritos || 0;
+                          return analiticas.topCiudades.map((c, i) => (
+                            <div key={c.ciudad}>
+                              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                                <span style={{ fontSize: "13px", color: "#1a1a1a", display: "flex", alignItems: "center", gap: "5px" }}>
+                                  {i === 0 && <span>🥇</span>}
+                                  {i === 1 && <span>🥈</span>}
+                                  {i === 2 && <span>🥉</span>}
+                                  {c.ciudad}
+                                </span>
+                                <span style={{ fontSize: "13px", fontWeight: "700", color: "#91703d", flexShrink: 0 }}>
+                                  {c.inscritos.toLocaleString("es-ES")}
+                                </span>
+                              </div>
+                              <div style={{ backgroundColor: "#f0e8dc", borderRadius: "4px", height: "6px" }}>
+                                <div style={{ width: `${(c.inscritos / maxCiudad) * 100}%`, backgroundColor: "#91703d", borderRadius: "4px", height: "100%" }} />
+                              </div>
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* evolución de inscripciones por semana */}
+                  <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px 24px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
+                    <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", marginBottom: "4px" }}>
+                      📈 Evolución de inscripciones
+                    </h3>
+                    <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>Últimas 8 semanas</p>
+                    {analiticas.evolucionSemanal.length === 0 ? (
+                      <p style={{ fontSize: "14px", color: "#818181" }}>Sin datos todavía</p>
+                    ) : (() => {
+                      const maxSem = Math.max(...analiticas.evolucionSemanal.map((s) => s.inscritos));
+                      return (
+                        <div style={{ display: "flex", alignItems: "flex-end", gap: "6px", height: "120px", borderBottom: "1px solid #f0e8dc", paddingBottom: "4px" }}>
+                          {analiticas.evolucionSemanal.map((s) => {
+                            const pct = maxSem > 0 ? (s.inscritos / maxSem) * 100 : 0;
+                            return (
+                              <div key={s.semana} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%", justifyContent: "flex-end" }}>
+                                <span style={{ fontSize: "9px", color: "#91703d", fontWeight: "700", marginBottom: "2px" }}>{s.inscritos}</span>
+                                <div style={{ width: "100%", height: `${pct}%`, backgroundColor: "#91703d", borderRadius: "3px 3px 0 0", minHeight: "4px" }} />
+                                <span style={{ fontSize: "8px", color: "#818181", marginTop: "4px", whiteSpace: "nowrap" }}>{s.semana}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+
+                {/* eventos próximos a llenarse */}
+                {analiticas.proximosALlenarse.length > 0 && (
+                  <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px 24px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)", marginTop: "24px" }}>
+                    <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", marginBottom: "4px" }}>
+                      🚨 Próximos a llenarse
+                    </h3>
+                    <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>Eventos activos con más del 80% del aforo ocupado</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                      {analiticas.proximosALlenarse.map((ev) => (
+                        <div key={String(ev._id)} style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
+                          padding: "12px",
+                          backgroundColor: ev.tasa >= 95 ? "#fff5f5" : "#fffbf5",
+                          borderRadius: "10px",
+                          border: `1px solid ${ev.tasa >= 95 ? "#f5c6c6" : "#f0e8dc"}`
+                        }}>
+                          <div style={{
+                            width: "46px", height: "46px", borderRadius: "50%",
+                            backgroundColor: ev.tasa >= 95 ? "#e74c3c" : "#f39c12",
+                            color: "white", fontSize: "12px", fontWeight: "700",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            flexShrink: 0
+                          }}>
+                            {ev.tasa}%
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", margin: "0 0 2px 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {ev.titulo}
+                            </p>
+                            <p style={{ fontSize: "12px", color: "#818181", margin: 0 }}>
+                              {ev.inscritos}/{ev.capacidadMaxima} personas · {new Date(ev.fecha).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* eventos con aforo completo */}
+                {analiticas.aforoCompleto.length > 0 && (
+                  <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px 24px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)", marginTop: "24px" }}>
+                    <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", marginBottom: "4px" }}>
+                      🔴 Aforo completo
+                    </h3>
+                    <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>Eventos activos que han alcanzado su capacidad máxima</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                      {analiticas.aforoCompleto.map((ev) => (
+                        <div key={String(ev._id)} style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
+                          padding: "12px",
+                          backgroundColor: "#fff5f5",
+                          borderRadius: "10px",
+                          border: "1px solid #f5c6c6"
+                        }}>
+                          <div style={{
+                            width: "46px", height: "46px", borderRadius: "50%",
+                            backgroundColor: "#c0392b",
+                            color: "white", fontSize: "11px", fontWeight: "700",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            flexShrink: 0
+                          }}>
+                            LLENO
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", margin: "0 0 2px 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {ev.titulo}
+                            </p>
+                            <p style={{ fontSize: "12px", color: "#818181", margin: 0 }}>
+                              {ev.inscritos}/{ev.capacidadMaxima} personas · {new Date(ev.fecha).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             )}
 
@@ -2176,6 +2446,152 @@ const abrirFormularioRestaurar = (evento) => {
                 >
                   Reintentar
                 </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* suscriptores */}
+        {seccionActiva === "suscriptores" && (
+          <div style={{ fontFamily: "'Baloo Bhai 2', Helvetica" }}>
+            <h2 style={{ fontSize: "22px", fontWeight: "700", color: "#1a1a1a", marginBottom: "24px" }}>
+              Suscriptores
+            </h2>
+
+            {cargandoSuscriptores && (
+              <div style={{ textAlign: "center", padding: "48px 0", color: "#818181", fontSize: "18px" }}>
+                Cargando suscriptores...
+              </div>
+            )}
+
+            {!cargandoSuscriptores && suscriptores === null && (
+              <div style={{ textAlign: "center", padding: "48px 0", color: "#818181", fontSize: "16px" }}>
+                No se pudieron cargar los suscriptores.{" "}
+                <button
+                  onClick={cargarSuscriptores}
+                  style={{ background: "none", border: "none", color: "#91703d", fontWeight: "700", cursor: "pointer", fontSize: "14px", fontFamily: "'Baloo Bhai 2', Helvetica" }}
+                >
+                  Reintentar
+                </button>
+              </div>
+            )}
+
+            {!cargandoSuscriptores && suscriptores !== null && (
+              <div style={{ display: "grid", gridTemplateColumns: esMobil ? "1fr" : "1fr 1fr", gap: "24px", alignItems: "start" }}>
+
+                {/* lista de suscriptores */}
+                <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px 24px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                    <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", margin: 0 }}>
+                      👥 {suscriptores.length} suscriptor{suscriptores.length !== 1 ? "es" : ""}
+                    </h3>
+                    {suscriptores.length > 0 && (
+                      <button
+                        onClick={() => {
+                          if (seleccionados.size === suscriptores.length) {
+                            setSeleccionados(new Set());
+                          } else {
+                            setSeleccionados(new Set(suscriptores.map((s) => s.email)));
+                          }
+                        }}
+                        style={{ background: "none", border: "none", color: "#91703d", fontWeight: "700", cursor: "pointer", fontSize: "13px", fontFamily: "'Baloo Bhai 2', Helvetica" }}
+                      >
+                        {seleccionados.size === suscriptores.length ? "Deseleccionar todos" : "Seleccionar todos"}
+                      </button>
+                    )}
+                  </div>
+
+                  {!suscriptores || suscriptores.length === 0 ? (
+                    <p style={{ fontSize: "14px", color: "#818181" }}>Aún no tienes suscriptores.</p>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "400px", overflowY: "auto" }}>
+                      {suscriptores.map((s) => (
+                        <label key={s.email} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 10px", borderRadius: "8px", cursor: "pointer", backgroundColor: seleccionados.has(s.email) ? "#f0e8dc" : "transparent", transition: "background 0.15s" }}>
+                          <input
+                            type="checkbox"
+                            checked={seleccionados.has(s.email)}
+                            onChange={() => {
+                              const nuevo = new Set(seleccionados);
+                              if (nuevo.has(s.email)) nuevo.delete(s.email);
+                              else nuevo.add(s.email);
+                              setSeleccionados(nuevo);
+                            }}
+                            style={{ accentColor: "#91703d", width: "16px", height: "16px", flexShrink: 0 }}
+                          />
+                          <span style={{ fontSize: "13px", color: "#1a1a1a", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {s.email}
+                          </span>
+                          <span style={{ fontSize: "11px", color: "#818181", flexShrink: 0 }}>
+                            {new Date(s.createdAt).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* formulario de envío */}
+                <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px 24px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
+                  <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", marginBottom: "4px" }}>
+                    ✉️ Enviar correo
+                  </h3>
+                  <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>
+                    {seleccionados.size > 0
+                      ? `A ${seleccionados.size} suscriptor${seleccionados.size !== 1 ? "es" : ""} seleccionado${seleccionados.size !== 1 ? "s" : ""}`
+                      : suscriptores.length > 0 ? `A todos (${suscriptores.length})` : "Sin suscriptores"}
+                  </p>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <div>
+                      <label style={{ fontSize: "13px", fontWeight: "600", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>Asunto</label>
+                      <input
+                        type="text"
+                        value={asuntoCorreo}
+                        onChange={(e) => setAsuntoCorreo(e.target.value)}
+                        placeholder="Asunto del correo"
+                        maxLength={150}
+                        style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #e0d5c5", fontSize: "13px", fontFamily: "'Baloo Bhai 2', Helvetica", boxSizing: "border-box", outline: "none" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "13px", fontWeight: "600", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>Mensaje</label>
+                      <textarea
+                        value={mensajeCorreo}
+                        onChange={(e) => setMensajeCorreo(e.target.value)}
+                        placeholder="Escribe aquí tu mensaje..."
+                        rows={6}
+                        maxLength={2000}
+                        style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #e0d5c5", fontSize: "13px", fontFamily: "'Baloo Bhai 2', Helvetica", resize: "vertical", boxSizing: "border-box", outline: "none" }}
+                      />
+                      <span style={{ fontSize: "11px", color: "#818181" }}>{mensajeCorreo.length}/2000</span>
+                    </div>
+
+                    {resultadoCorreo && (
+                      <div style={{ padding: "10px 14px", borderRadius: "8px", backgroundColor: resultadoCorreo.ok ? "#f0fff4" : "#fff5f5", border: `1px solid ${resultadoCorreo.ok ? "#a3d9a5" : "#f5c6c6"}`, fontSize: "13px", color: resultadoCorreo.ok ? "#276749" : "#c0392b", fontWeight: "600" }}>
+                        {resultadoCorreo.texto}
+                      </div>
+                    )}
+
+                    <button
+                      onClick={handleEnviarCorreoSuscriptores}
+                      disabled={enviandoCorreo || !asuntoCorreo.trim() || !mensajeCorreo.trim() || !suscriptores || suscriptores.length === 0}
+                      style={{
+                        backgroundColor: "#91703d",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "10px",
+                        padding: "12px",
+                        fontSize: "14px",
+                        fontWeight: "700",
+                        fontFamily: "'Baloo Bhai 2', Helvetica",
+                        cursor: enviandoCorreo || !asuntoCorreo.trim() || !mensajeCorreo.trim() || !suscriptores || suscriptores.length === 0 ? "not-allowed" : "pointer",
+                        opacity: enviandoCorreo || !asuntoCorreo.trim() || !mensajeCorreo.trim() || !suscriptores || suscriptores.length === 0 ? 0.6 : 1,
+                      }}
+                    >
+                      {enviandoCorreo ? "Enviando..." : seleccionados.size > 0 ? `Enviar a ${seleccionados.size} seleccionado${seleccionados.size !== 1 ? "s" : ""}` : `Enviar a todos (${suscriptores.length})`}
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>

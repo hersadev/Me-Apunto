@@ -5,6 +5,21 @@ const suscribirse = async ({ email, empresaId }) => {
   return response.data;
 };
 
-const suscripcionEmpresaService = { suscribirse };
+const getSuscriptores = async () => {
+  const response = await api.get("/suscripciones/empresa");
+  return response.data;
+};
+
+const enviarCorreoSuscriptores = async ({ asunto, mensaje, emails }) => {
+  const response = await api.post("/suscripciones/empresa/correo", { asunto, mensaje, emails });
+  return response.data;
+};
+
+const darDeBaja = async (id) => {
+  const response = await api.patch(`/suscripciones/baja/${id}`);
+  return response.data;
+};
+
+const suscripcionEmpresaService = { suscribirse, getSuscriptores, enviarCorreoSuscriptores, darDeBaja };
 
 export default suscripcionEmpresaService;

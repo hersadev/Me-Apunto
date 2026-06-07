@@ -58,6 +58,15 @@ const suscripcionLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// limita bajas de suscripción a 20 por hora por IP
+const bajaLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 20,
+  message: { mensaje: "Demasiadas peticiones. Inténtalo más tarde." },
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+});
+
 // limita envío de mensajes a empresas a 10 por hora por IP
 const mensajeLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
@@ -76,6 +85,7 @@ app.use("/api/auth", require("./src/routes/authRoutes"));
 app.use("/api/eventos", require("./src/routes/eventoRoutes"));
 app.use("/api/inscripciones", require("./src/routes/inscripcionRoutes"));
 app.use("/api/contacto", require("./src/routes/contactoRoutes"));
+app.use("/api/suscripciones/baja", bajaLimiter);
 app.use("/api/suscripciones", suscripcionLimiter, require("./src/routes/suscripcionEmpresaRoutes"));
 app.use("/api/mensajes", mensajeLimiter, require("./src/routes/mensajeRoutes"));
 

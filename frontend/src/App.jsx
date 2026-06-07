@@ -17,6 +17,7 @@ const CompanyPanel = lazy(() => import("./pages/CompanyPanel"));
 const CookiesPolicy = lazy(() => import("./pages/CookiesPolicy"));
 const ConfirmarCorreo = lazy(() => import("./pages/ConfirmarCorreo"));
 const CancelarInscripcion = lazy(() => import("./pages/CancelarInscripcion"));
+const BajaSuscripcion = lazy(() => import("./pages/BajaSuscripcion"));
 
 function App() {
 
@@ -67,6 +68,9 @@ function App() {
 
             {/* cancelacion de inscripcion por enlace del email */}
             <Route path="/cancelar-inscripcion/:token" element={<CancelarInscripcion />} />
+
+            {/* baja de suscripción a empresa por enlace del email */}
+            <Route path="/baja/:id" element={<BajaSuscripcion />} />
 
           </Routes>
         </Suspense>
