@@ -47,28 +47,35 @@ const obtenerEventos = async (req, res) => {
       filtro.$and = condicionesFecha;
     }
 
-    if (req.query.categoria) {
-      filtro.categoria = req.query.categoria;
+    const CATEGORIAS_VALIDAS = ["taller", "exposicion", "concurso", "concierto", "deporte", "gastronomia", "teatro", "otros"];
+    const q = req.cleanQuery || req.query;
+
+    if (q.categoria) {
+      if (!CATEGORIAS_VALIDAS.includes(q.categoria)) {
+        return res.status(400).json({ mensaje: "Categoría no válida" });
+      }
+      filtro.categoria = q.categoria;
     }
 
-    if (req.query.tipo) {
-      if (req.query.tipo === "gratuito") {
+    if (q.tipo) {
+      if (q.tipo === "gratuito") {
         filtro.precio = 0;
-      } else if (req.query.tipo === "de-pago") {
+      } else if (q.tipo === "de-pago") {
         filtro.precio = { $gt: 0 };
       }
     }
 
-    if (req.query.patrocinado === "true") {
+    if (q.patrocinado === "true") {
       filtro.patrocinado = true;
-    } else if (req.query.patrocinado === "false") {
+    } else if (q.patrocinado === "false") {
       filtro.patrocinado = false;
     }
 
-    if (req.query.busqueda) {
+    if (q.busqueda) {
+      const termino = q.busqueda.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       filtro.$or = [
-        { titulo: { $regex: req.query.busqueda, $options: "i" } },
-        { venue: { $regex: req.query.busqueda, $options: "i" } },
+        { titulo: { $regex: termino, $options: "i" } },
+        { venue: { $regex: termino, $options: "i" } },
       ];
     }
 
@@ -145,17 +152,10 @@ const obtenerEventosEmpresa = async (req, res) => {
   try {
     const ahora = new Date();
 
-    const eventosActivosDocs = await Evento.find({
-      empresa: req.empresa._id,
-      activo: true,
-      fecha: { $gte: ahora }
-    }).sort({ fecha: 1 });
-
-    const eventosPasadosDocs = await Evento.find({
-      empresa: req.empresa._id,
-      activo: true,
-      fecha: { $lt: ahora }
-    }).sort({ fecha: -1 });
+    const [eventosActivosDocs, eventosPasadosDocs] = await Promise.all([
+      Evento.find({ empresa: req.empresa._id, activo: true, fecha: { $gte: ahora } }).sort({ fecha: 1 }),
+      Evento.find({ empresa: req.empresa._id, activo: true, fecha: { $lt: ahora } }).sort({ fecha: -1 }),
+    ]);
 
     const todosIds = [
       ...eventosActivosDocs.map((e) => e._id),

@@ -53,17 +53,17 @@ const registrarEmpresa = async (req, res) => {
       return res.status(400).json({ mensaje: "Todos los campos son obligatorios" });
     }
 
-    const empresaExistente = await Empresa.findOne({ correo });
-    if (empresaExistente) {
-      return res.status(400).json({ mensaje: "Ya existe una cuenta con ese correo" });
-    }
-
     if (!validarCIF(nifCif.trim())) {
       return res.status(400).json({ mensaje: "El CIF no es válido. Formato esperado: B12345678" });
     }
 
-    const nifCifExistente = await Empresa.findOne({ nifCif: nifCif.toUpperCase() });
-    if (nifCifExistente) {
+    const duplicado = await Empresa.findOne({
+      $or: [{ correo }, { nifCif: nifCif.toUpperCase() }],
+    });
+    if (duplicado) {
+      if (duplicado.correo === correo) {
+        return res.status(400).json({ mensaje: "Ya existe una cuenta con ese correo" });
+      }
       return res.status(400).json({ mensaje: "Ya existe una cuenta con ese CIF" });
     }
 

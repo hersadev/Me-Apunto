@@ -9,6 +9,7 @@
     const Inscripcion = require("../models/Inscripcion");
     const { enviarCorreoAvisoRenovacion, enviarCorreoRecordatorioEvento } = require("./emailService");
     const { eliminarImagen } = require("./cloudinaryService");
+    const { cobrarPatrocinio } = require("./stripeService");
 
     // funcion que revisa los patrocinios proximos a renovarse
     // se ejecuta una vez al dia a las 9:00
@@ -103,9 +104,20 @@
             console.log(`Patrocinio expirado (cancelado) para evento ${evento._id}`);
 
             } else if (evento.empresa.stripePaymentMethodId) {
-            // si la empresa tiene tarjeta guardada renovamos el patrocinio
-            // TODO: procesar el cobro de 10€ con stripe
-            // await stripeService.cobrarPatrocinio(evento);
+            // intentamos cobrar 10€ con stripe antes de renovar
+            try {
+                await cobrarPatrocinio(evento);
+            } catch (errCobro) {
+                // si el cobro falla, desactivamos el patrocinio sin renovar
+                console.error(`Cobro fallido para evento ${evento._id}:`, errCobro.message);
+                evento.patrocinado = false;
+                evento.fechaInicioPatrocinio = null;
+                evento.fechaFinPatrocinio = null;
+                evento.avisoPrevioEnviado = false;
+                await evento.save();
+                console.log(`Patrocinio desactivado por cobro fallido para evento ${evento._id}`);
+                continue;
+            }
 
             // calculamos la nueva fecha de fin (un mes desde hoy)
             const nuevaFechaFin = new Date();
@@ -211,12 +223,12 @@
             estadoPago: { $in: ["free", "completed"] },
         });
 
-        for (const inscripcion of inscripciones) {
-            try {
-            const fechaFormateada = new Date(evento.fecha).toLocaleDateString("es-ES", {
-                weekday: "long", day: "numeric", month: "long",
-            });
+        const fechaFormateada = new Date(evento.fecha).toLocaleDateString("es-ES", {
+            weekday: "long", day: "numeric", month: "long",
+        });
 
+        await Promise.all(inscripciones.map(async (inscripcion) => {
+            try {
             await enviarCorreoRecordatorioEvento({
                 correoUsuario: inscripcion.correo,
                 nombreUsuario: inscripcion.nombre,
@@ -226,16 +238,15 @@
                 hora: evento.hora,
                 venue: evento.venue,
                 direccion: evento.direccion,
-                tokenCancelacion: inscripcion.tokenCancelacion,
+                tokenCancelacion: inscripcion.tokenCancelacion || null,
             });
 
             inscripcion.recordatorioEnviado = true;
             await inscripcion.save();
-
             } catch (errCorreo) {
             console.error(`Error al enviar recordatorio a ${inscripcion.correo}:`, errCorreo);
             }
-        }
+        }));
         }
 
     } catch (error) {

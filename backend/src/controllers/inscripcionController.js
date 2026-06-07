@@ -14,13 +14,18 @@ const { enviarCorreoInscripcion, enviarCorreoConfirmacionUsuario } = require("..
 // ruta publica - no requiere token porque los usuarios no tienen cuenta
 const crearInscripcion = async (req, res) => {
   try {
-    const { eventoId, nombre, correo, ciudad, numPersonas } = req.body;
+    const { eventoId, nombre, correo, ciudad } = req.body;
+    const numPersonas = parseInt(req.body.numPersonas, 10);
 
     // comprobamos campos obligatorios
-    if (!eventoId || !nombre || !correo || !ciudad || !numPersonas) {
+    if (!eventoId || !nombre || !correo || !ciudad) {
       return res.status(400).json({
         mensaje: "Todos los campos son obligatorios"
       });
+    }
+
+    if (!Number.isInteger(numPersonas) || numPersonas < 1) {
+      return res.status(400).json({ mensaje: "El número de personas debe ser un entero positivo" });
     }
 
     // buscamos el evento y comprobamos que existe y esta activo

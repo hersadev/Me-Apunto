@@ -1,22 +1,12 @@
-import { useState, useEffect, memo } from "react";
+import { useState, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import calendarioIcon from "../assets/icons/iconoCalendario.svg";
 import relojIcon from "../assets/icons/iconoReloj.svg";
 
-function EventCard({ evento, destacado = false }) {
+function EventCard({ evento, destacado = false, esMobil: esMobilProp }) {
   const navegar = useNavigate();
   const [hovered, setHovered] = useState(false);
-  const [esMobil, setEsMobil] = useState(() => window.innerWidth < 768);
-
-  useEffect(() => {
-    let timer;
-    const handler = () => {
-      clearTimeout(timer);
-      timer = setTimeout(() => setEsMobil(window.innerWidth < 768), 100);
-    };
-    window.addEventListener("resize", handler);
-    return () => { window.removeEventListener("resize", handler); clearTimeout(timer); };
-  }, []);
+  const esMobil = esMobilProp !== undefined ? esMobilProp : window.innerWidth < 768;
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" || e.key === " ") {

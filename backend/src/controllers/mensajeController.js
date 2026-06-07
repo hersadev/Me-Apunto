@@ -69,16 +69,19 @@ const marcarLeido = async (req, res) => {
 // PATCH /api/mensajes/:id/respondido — marcar como respondido (protegido)
 const marcarRespondido = async (req, res) => {
   try {
-    const mensaje = await Mensaje.findOne({ _id: req.params.id, empresa: req.empresa._id, eliminadoEn: null }).lean();
-    if (!mensaje) return res.status(404).json({ mensaje: "Mensaje no encontrado" });
-
-    const nuevoEstado = !mensaje.respondido;
-    await Mensaje.updateOne(
-      { _id: mensaje._id },
-      { $set: { respondido: nuevoEstado, leido: nuevoEstado ? true : mensaje.leido } }
+    // pipeline atómico: toggle sin leer primero, elimina race condition
+    const actualizado = await Mensaje.findOneAndUpdate(
+      { _id: req.params.id, empresa: req.empresa._id, eliminadoEn: null },
+      [{ $set: {
+        respondido: { $not: "$respondido" },
+        leido: { $cond: [{ $eq: ["$respondido", false] }, true, "$leido"] },
+      }}],
+      { new: true },
     );
 
-    res.json({ mensaje: nuevoEstado ? "Marcado como respondido" : "Marcado como no respondido" });
+    if (!actualizado) return res.status(404).json({ mensaje: "Mensaje no encontrado" });
+
+    res.json({ mensaje: actualizado.respondido ? "Marcado como respondido" : "Marcado como no respondido" });
   } catch (err) {
     res.status(500).json({ mensaje: "Error interno del servidor" });
   }

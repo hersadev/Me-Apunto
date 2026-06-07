@@ -92,7 +92,7 @@ const enviarCorreoAvisoRenovacion = async ({
         <p style="font-size: 16px; color: #333;">Hola <strong>${escapeHtml(nombreEmpresa)}</strong>,</p>
         <p style="font-size: 16px; color: #333;">Tu patrocinio de <strong>"${escapeHtml(nombreEvento)}"</strong> se renovará el <strong>${escapeHtml(fechaRenovacion)}</strong> por <strong>10€</strong>.</p>
         <div style="text-align: center; margin: 24px 0;">
-          <a href="${process.env.FRONTEND_URL}/panel" style="background-color: #91703d; color: white; padding: 12px 32px; border-radius: 999px; text-decoration: none; font-weight: bold; font-size: 16px;">
+          <a href="${process.env.FRONTEND_URL || "https://me-apunto.com"}/panel" style="background-color: #91703d; color: white; padding: 12px 32px; border-radius: 999px; text-decoration: none; font-weight: bold; font-size: 16px;">
             Ir a mi panel
           </a>
         </div>
@@ -166,7 +166,7 @@ const enviarCorreoBienvenida = async ({ correoEmpresa, nombreEmpresa }) => {
           <p style="margin: 8px 0; color: #333;">✓ Promocionar tus eventos con patrocinio</p>
         </div>
         <div style="text-align: center; margin: 24px 0;">
-          <a href="${process.env.FRONTEND_URL}/panel" style="background-color: #91703d; color: white; padding: 12px 32px; border-radius: 999px; text-decoration: none; font-weight: bold; font-size: 16px;">
+          <a href="${process.env.FRONTEND_URL || "https://me-apunto.com"}/panel" style="background-color: #91703d; color: white; padding: 12px 32px; border-radius: 999px; text-decoration: none; font-weight: bold; font-size: 16px;">
             Ir a mi panel
           </a>
         </div>
@@ -189,7 +189,7 @@ const enviarCorreoBienvenida = async ({ correoEmpresa, nombreEmpresa }) => {
 
 // correo que se envia para recuperar contraseña
 const enviarCorreoRecuperacion = async ({ correoEmpresa, nombreEmpresa, token }) => {
-  const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+  const resetUrl = `${process.env.FRONTEND_URL || "https://me-apunto.com"}/reset-password/${token}`;
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -229,7 +229,7 @@ const enviarCorreoRecuperacion = async ({ correoEmpresa, nombreEmpresa, token })
 
 // correo de confirmacion de cambio de correo electronico
 const enviarCorreoConfirmacionCambio = async ({ correoNuevo, nombreEmpresa, token }) => {
-  const confirmUrl = `${process.env.FRONTEND_URL}/confirmar-correo/${token}`;
+  const confirmUrl = `${process.env.FRONTEND_URL || "https://me-apunto.com"}/confirmar-correo/${token}`;
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -345,7 +345,7 @@ const enviarCorreoConfirmacionUsuario = async ({
   numPersonas,
   tokenCancelacion,
 }) => {
-  const cancelUrl = `${process.env.FRONTEND_URL}/cancelar-inscripcion/${tokenCancelacion}`;
+  const cancelUrl = `${process.env.FRONTEND_URL || "https://me-apunto.com"}/cancelar-inscripcion/${tokenCancelacion}`;
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -401,7 +401,7 @@ const enviarCorreoRecordatorioEvento = async ({
   tokenCancelacion,
 }) => {
   const cancelUrl = tokenCancelacion
-    ? `${process.env.FRONTEND_URL}/cancelar-inscripcion/${tokenCancelacion}`
+    ? `${process.env.FRONTEND_URL || "https://me-apunto.com"}/cancelar-inscripcion/${tokenCancelacion}`
     : null;
 
   const html = `

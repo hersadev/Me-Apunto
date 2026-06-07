@@ -43,7 +43,7 @@ function CancelarInscripcion() {
   };
 
   const fechaRaw = inscripcion?.evento?.fecha ? new Date(inscripcion.evento.fecha) : null;
-  const fechaFormateada = fechaRaw && !isNaN(fechaRaw)
+  const fechaFormateada = fechaRaw && !isNaN(fechaRaw.getTime())
     ? fechaRaw.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" })
     : "";
 

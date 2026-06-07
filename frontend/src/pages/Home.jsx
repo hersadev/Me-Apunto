@@ -181,7 +181,7 @@ function Home({ estaLogueado }) {
       if (fecha) params.fecha = fecha;
 
       const dataNormales = await eventoService.getEventos({ ...params, patrocinado: "false" });
-      const dataPatrocinados = await eventoService.getEventos({ limite: 100, patrocinado: "true" });
+      const dataPatrocinados = await eventoService.getEventos({ limite: 12, patrocinado: "true" });
 
       setEventos(dataNormales.eventos);
       setTotalPaginas(dataNormales.totalPaginas);
@@ -251,7 +251,7 @@ function Home({ estaLogueado }) {
 
   const eventosIndexados = useMemo(() => {
     const map = {};
-    [...eventos, ...eventosPatrocinados].forEach((e) => {
+    [...(eventos || []), ...(eventosPatrocinados || [])].forEach((e) => {
       const key = new Date(e.fecha).toDateString();
       if (!map[key]) map[key] = [];
       map[key].push(e);
@@ -484,7 +484,7 @@ function Home({ estaLogueado }) {
                           flexShrink: 0,
                           width: anchoTarjeta > 0 ? `${anchoTarjeta}px` : "300px"
                         }}>
-                          <EventCard evento={evento} destacado={true} />
+                          <EventCard evento={evento} destacado={true} esMobil={esMobil} />
                         </div>
                       ))}
                     </div>
@@ -534,7 +534,7 @@ function Home({ estaLogueado }) {
                 marginBottom: esMobil ? "16px" : "40px"
               }}>
                 {filaUno.map((evento) => (
-                  <EventCard key={evento._id} evento={evento} />
+                  <EventCard key={evento._id} evento={evento} esMobil={esMobil} />
                 ))}
               </div>
             )}
@@ -547,7 +547,7 @@ function Home({ estaLogueado }) {
                 marginBottom: esMobil ? "16px" : "32px"
               }}>
                 {filaDos.map((evento) => (
-                  <EventCard key={evento._id} evento={evento} />
+                  <EventCard key={evento._id} evento={evento} esMobil={esMobil} />
                 ))}
               </div>
             )}
