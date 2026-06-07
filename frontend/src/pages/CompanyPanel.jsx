@@ -14,6 +14,46 @@ import authService from "../services/authService";
 import eventoService from "../services/eventoService";
 import mensajeService from "../services/mensajeService";
 
+const POR_PAGINA = 8;
+
+function ControlPagina({ pagina, total, setPagina }) {
+  const totalPaginas = Math.ceil(total / POR_PAGINA);
+  if (totalPaginas <= 1) return null;
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", marginTop: "24px" }}>
+      <button
+        onClick={() => setPagina((p) => Math.max(1, p - 1))}
+        disabled={pagina === 1}
+        aria-label="Página anterior"
+        style={{
+          width: "36px", height: "36px", borderRadius: "50%",
+          border: "1px solid #d4c4a8", backgroundColor: pagina === 1 ? "#f5f0e8" : "white",
+          color: pagina === 1 ? "#c0b090" : "#91703d",
+          cursor: pagina === 1 ? "default" : "pointer",
+          fontSize: "18px", fontWeight: "700",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}
+      >‹</button>
+      <span style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "14px", color: "#4a4a4a" }}>
+        {pagina} / {totalPaginas}
+      </span>
+      <button
+        onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
+        disabled={pagina === totalPaginas}
+        aria-label="Página siguiente"
+        style={{
+          width: "36px", height: "36px", borderRadius: "50%",
+          border: "1px solid #d4c4a8", backgroundColor: pagina === totalPaginas ? "#f5f0e8" : "white",
+          color: pagina === totalPaginas ? "#c0b090" : "#91703d",
+          cursor: pagina === totalPaginas ? "default" : "pointer",
+          fontSize: "18px", fontWeight: "700",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}
+      >›</button>
+    </div>
+  );
+}
+
 function crearImagen(url) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -66,6 +106,10 @@ function CompanyPanel({ setEstaLogueado }) {
   const [enviandoRespuesta, setEnviandoRespuesta] = useState(false);
   const [respuestaExitosa, setRespuestaExitosa] = useState(false);
   const [errorRespuesta, setErrorRespuesta] = useState("");
+
+  const [paginaActivos, setPaginaActivos] = useState(1);
+  const [paginaPasados, setPaginaPasados] = useState(1);
+  const [paginaPapelera, setPaginaPapelera] = useState(1);
 
   const [formularioAbierto, setFormularioAbierto] = useState(false);
   const [eventosPasadosAbierto, setEventosPasadosAbierto] = useState(false);
@@ -219,14 +263,20 @@ function CompanyPanel({ setEstaLogueado }) {
     try {
       await mensajeService.marcarLeido(id);
       setMensajes((prev) => prev.map((m) => m._id === id ? { ...m, leido: true } : m));
-    } catch { /* silencioso */ }
+    } catch (err) {
+      console.error("Error al marcar mensaje como leído:", err);
+      cargarMensajes();
+    }
   };
 
   const handleToggleRespondido = async (id) => {
     try {
       await mensajeService.marcarRespondido(id);
       setMensajes((prev) => prev.map((m) => m._id === id ? { ...m, respondido: !m.respondido, leido: true } : m));
-    } catch { /* silencioso */ }
+    } catch (err) {
+      console.error("Error al actualizar estado del mensaje:", err);
+      cargarMensajes();
+    }
   };
 
   const handleEliminarMensaje = async (id) => {
@@ -261,13 +311,30 @@ function CompanyPanel({ setEstaLogueado }) {
   const cargarEventos = async () => {
     try {
       setCargando(true);
-      const [data, papelera] = await Promise.all([
+      const [resEventos, resPapelera] = await Promise.allSettled([
         eventoService.getMisEventos(),
         eventoService.getPapelera(),
       ]);
-      setEventosActivos(data.eventosActivos);
-      setEventosPasados(data.eventosPasados);
-      setEventosPapelera(papelera.eventos || []);
+
+      if (resEventos.status === "fulfilled") {
+        const activos = resEventos.value.eventosActivos;
+        const pasados = resEventos.value.eventosPasados;
+        setEventosActivos(activos);
+        setEventosPasados(pasados);
+        setPaginaActivos((p) => Math.min(p, Math.max(1, Math.ceil(activos.length / POR_PAGINA))));
+        setPaginaPasados((p) => Math.min(p, Math.max(1, Math.ceil(pasados.length / POR_PAGINA))));
+      } else {
+        setError("Error al cargar los eventos");
+        console.error(resEventos.reason);
+      }
+
+      if (resPapelera.status === "fulfilled") {
+        const papel = resPapelera.value.eventos || [];
+        setEventosPapelera(papel);
+        setPaginaPapelera((p) => Math.min(p, Math.max(1, Math.ceil(papel.length / POR_PAGINA))));
+      } else {
+        console.error("Error al cargar la papelera:", resPapelera.reason);
+      }
     } catch (err) {
       setError("Error al cargar los eventos");
       console.error(err);
@@ -339,9 +406,9 @@ function CompanyPanel({ setEstaLogueado }) {
     });
     setImagenFile(null);
     setFormularioAbierto(true);
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       document.getElementById("formulario-evento")?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
+    });
   };
 
 const abrirFormularioEditar = (evento) => {
@@ -425,11 +492,16 @@ const abrirFormularioRestaurar = (evento) => {
   const diasRestantesPapelera = (fechaEliminacion) => {
     if (!fechaEliminacion) return 30;
     const eliminado = new Date(fechaEliminacion);
+    if (isNaN(eliminado.getTime())) return 30;
     const expira = new Date(eliminado);
     expira.setDate(expira.getDate() + 30);
     const diff = Math.ceil((expira - new Date()) / (1000 * 60 * 60 * 24));
     return Math.max(diff, 0);
   };
+
+  const activosPagina = eventosActivos.slice((paginaActivos - 1) * POR_PAGINA, paginaActivos * POR_PAGINA);
+  const pasadosPagina = eventosPasados.slice((paginaPasados - 1) * POR_PAGINA, paginaPasados * POR_PAGINA);
+  const papeleraPagina = eventosPapelera.slice((paginaPapelera - 1) * POR_PAGINA, paginaPapelera * POR_PAGINA);
 
   const eliminarEvento = async () => {
     try {
@@ -494,6 +566,11 @@ const abrirFormularioRestaurar = (evento) => {
     setPerfilExito("");
     setPerfilGuardando(true);
     try {
+      if (!formPerfil.contrasena.trim()) {
+        setPerfilError("Debes introducir tu contraseña actual para guardar cambios.");
+        setPerfilGuardando(false);
+        return;
+      }
       const datos = { contrasena: formPerfil.contrasena };
       if (formPerfil.nombre !== empresa?.nombre) datos.nombre = formPerfil.nombre;
       if (formPerfil.correo !== empresa?.correo) datos.correo = formPerfil.correo;
@@ -697,7 +774,7 @@ const abrirFormularioRestaurar = (evento) => {
           margin: 0,
           marginBottom: "24px"
         }}>
-          Hola, {empresa?.nombre || "empresa"}
+          Hola, {empresa?.nombre || "…"}
         </h1>
 
         {/* tabs de navegación */}
@@ -936,7 +1013,63 @@ const abrirFormularioRestaurar = (evento) => {
 
               {/* precio */}
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <label style={estiloLabel} htmlFor="precio">Precio (€)</label>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <label style={estiloLabel} htmlFor="precio">Precio (€)</label>
+                  <div
+                    tabIndex={0}
+                    role="img"
+                    aria-label="Me Apunto se lleva el 5% de comisión sobre el precio del ticket"
+                    onMouseEnter={(e) => { const t = e.currentTarget.querySelector("[data-tooltip]"); if (t) t.style.display = "block"; }}
+                    onMouseLeave={(e) => { const t = e.currentTarget.querySelector("[data-tooltip]"); if (t) t.style.display = "none"; }}
+                    onFocus={(e) => { const t = e.currentTarget.querySelector("[data-tooltip]"); if (t) t.style.display = "block"; }}
+                    onBlur={(e) => { const t = e.currentTarget.querySelector("[data-tooltip]"); if (t) t.style.display = "none"; }}
+                    style={{
+                      position: "relative",
+                      width: "16px", height: "16px",
+                      borderRadius: "50%",
+                      backgroundColor: "#b79868",
+                      color: "white",
+                      fontSize: "11px", fontWeight: "700",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      cursor: "default",
+                      fontFamily: "'Baloo Bhai 2', Helvetica",
+                      flexShrink: 0,
+                    }}
+                  >
+                    ?
+                    <div
+                      data-tooltip
+                      style={{
+                        display: "none",
+                        position: "absolute",
+                        bottom: "calc(100% + 6px)",
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        backgroundColor: "#3a2e1e",
+                        color: "white",
+                        fontSize: "12px",
+                        fontFamily: "'Baloo Bhai 2', Helvetica",
+                        padding: "6px 10px",
+                        borderRadius: "8px",
+                        whiteSpace: "nowrap",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+                        pointerEvents: "none",
+                        zIndex: 10,
+                      }}
+                    >
+                      Me Apunto se lleva el 5% de comisión
+                      <div style={{
+                        position: "absolute",
+                        top: "100%", left: "50%",
+                        transform: "translateX(-50%)",
+                        width: 0, height: 0,
+                        borderLeft: "5px solid transparent",
+                        borderRight: "5px solid transparent",
+                        borderTop: "5px solid #3a2e1e",
+                      }} />
+                    </div>
+                  </div>
+                </div>
                 <input
                   id="precio"
                   type="number"
@@ -1183,12 +1316,13 @@ const abrirFormularioRestaurar = (evento) => {
           )}
 
           {!cargando && eventosActivos.length > 0 && (
+            <>
             <div style={{
               display: "grid",
               gridTemplateColumns: esMobil ? "1fr" : "repeat(auto-fill, minmax(240px, 1fr))",
               gap: "24px"
             }}>
-              {eventosActivos.map((evento) => (
+              {activosPagina.map((evento) => (
                 <div
                   key={evento._id}
                   style={{
@@ -1236,7 +1370,7 @@ const abrirFormularioRestaurar = (evento) => {
                       fontSize: "13px",
                       color: "#4a4a4a"
                     }}>
-                      {new Date(evento.fecha).toLocaleDateString("es-ES")} — {evento.hora}
+                      {evento.fecha ? new Date(evento.fecha).toLocaleDateString("es-ES") : "Sin fecha"} — {evento.hora}
                     </div>
 
                     {/* categoria badge */}
@@ -1261,9 +1395,9 @@ const abrirFormularioRestaurar = (evento) => {
                       fontFamily: "'Baloo Bhai 2', Helvetica",
                       fontSize: "13px",
                       fontWeight: "600",
-                      color: evento.precio === 0 ? "#2e7d32" : "#91703d"
+                      color: (evento.precio ?? 0) === 0 ? "#2e7d32" : "#91703d"
                     }}>
-                      {evento.precio === 0 ? "Gratuito" : `${evento.precio}€`}
+                      {(evento.precio ?? 0) === 0 ? "Gratuito" : `${evento.precio}€`}
                     </div>
 
                     {evento.capacidadMaxima && (
@@ -1354,6 +1488,8 @@ const abrirFormularioRestaurar = (evento) => {
                 </div>
               ))}
             </div>
+            <ControlPagina pagina={paginaActivos} total={eventosActivos.length} setPagina={setPaginaActivos} />
+            </>
           )}
 
           {/* Eventos pasados */}
@@ -1395,87 +1531,90 @@ const abrirFormularioRestaurar = (evento) => {
               </button>
 
               {eventosPasadosAbierto && (
-              <div
-                id="lista-eventos-pasados"
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: esMobil ? "1fr" : "repeat(auto-fill, minmax(240px, 1fr))",
-                  gap: "24px",
-                  opacity: 0.75
-                }}
-              >
-                {eventosPasados.map((evento) => (
+                <>
                   <div
-                    key={evento._id}
+                    id="lista-eventos-pasados"
                     style={{
-                      backgroundColor: "#f5f5f5",
-                      borderRadius: "16px",
-                      overflow: "hidden",
-                      boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
-                      display: "flex",
-                      flexDirection: "column"
+                      display: "grid",
+                      gridTemplateColumns: esMobil ? "1fr" : "repeat(auto-fill, minmax(240px, 1fr))",
+                      gap: "24px",
+                      opacity: 0.75
                     }}
                   >
-                    <div style={{ width: "100%", height: "160px", overflow: "hidden" }}>
-                      <img
-                        src={evento.imagen
-                          ? evento.imagen
-                          : `https://picsum.photos/seed/${evento._id}/400/300`
-                        }
-                        alt={evento.titulo}
-                        style={{ width: "100%", height: "100%", objectFit: "cover", filter: "grayscale(30%)" }}
-                      />
-                    </div>
+                    {pasadosPagina.map((evento) => (
+                      <div
+                        key={evento._id}
+                        style={{
+                          backgroundColor: "#f5f5f5",
+                          borderRadius: "16px",
+                          overflow: "hidden",
+                          boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+                          display: "flex",
+                          flexDirection: "column"
+                        }}
+                      >
+                        <div style={{ width: "100%", height: "160px", overflow: "hidden" }}>
+                          <img
+                            src={evento.imagen
+                              ? evento.imagen
+                              : `https://picsum.photos/seed/${evento._id}/400/300`
+                            }
+                            alt={evento.titulo}
+                            style={{ width: "100%", height: "100%", objectFit: "cover", filter: "grayscale(30%)" }}
+                          />
+                        </div>
 
-                    <div style={{ padding: "16px", flex: 1, display: "flex", flexDirection: "column", gap: "8px" }}>
-                      <div style={{
-                        fontFamily: "'Baloo Bhai 2', Helvetica",
-                        fontSize: "15px",
-                        fontWeight: "700",
-                        color: "#1a1a1a",
-                        lineHeight: "1.3"
-                      }}>
-                        {evento.titulo}
-                      </div>
+                        <div style={{ padding: "16px", flex: 1, display: "flex", flexDirection: "column", gap: "8px" }}>
+                          <div style={{
+                            fontFamily: "'Baloo Bhai 2', Helvetica",
+                            fontSize: "15px",
+                            fontWeight: "700",
+                            color: "#1a1a1a",
+                            lineHeight: "1.3"
+                          }}>
+                            {evento.titulo}
+                          </div>
 
-                      <div style={{
-                        fontFamily: "'Baloo Bhai 2', Helvetica",
-                        fontSize: "13px",
-                        color: "#818181"
-                      }}>
-                        📅 {new Date(evento.fecha).toLocaleDateString("es-ES")}
-                        {evento.hora && ` · ${evento.hora.slice(0, 5)}`}
-                      </div>
+                          <div style={{
+                            fontFamily: "'Baloo Bhai 2', Helvetica",
+                            fontSize: "13px",
+                            color: "#818181"
+                          }}>
+                            📅 {evento.fecha ? new Date(evento.fecha).toLocaleDateString("es-ES") : "Sin fecha"}
+                            {evento.hora && ` · ${evento.hora.slice(0, 5)}`}
+                          </div>
 
-                      <div style={{
-                        fontFamily: "'Baloo Bhai 2', Helvetica",
-                        fontSize: "13px",
-                        color: "#818181"
-                      }}>
-                        📍 {evento.venue}
-                      </div>
+                          <div style={{
+                            fontFamily: "'Baloo Bhai 2', Helvetica",
+                            fontSize: "13px",
+                            color: "#818181"
+                          }}>
+                            📍 {evento.venue}
+                          </div>
 
-                      <div style={{
-                        fontFamily: "'Baloo Bhai 2', Helvetica",
-                        fontSize: "13px",
-                        color: "#818181"
-                      }}>
-                        👥 {evento.totalInscritos || 0} inscritos
-                        {evento.capacidadMaxima && ` / ${evento.capacidadMaxima}`}
-                      </div>
+                          <div style={{
+                            fontFamily: "'Baloo Bhai 2', Helvetica",
+                            fontSize: "13px",
+                            color: "#818181"
+                          }}>
+                            👥 {evento.totalInscritos || 0} inscritos
+                            {evento.capacidadMaxima && ` / ${evento.capacidadMaxima}`}
+                          </div>
 
-                      <div style={{
-                        fontFamily: "'Baloo Bhai 2', Helvetica",
-                        fontSize: "12px",
-                        color: "#a0a0a0",
-                        fontStyle: "italic"
-                      }}>
-                        Este evento ha finalizado
+                          <div style={{
+                            fontFamily: "'Baloo Bhai 2', Helvetica",
+                            fontSize: "12px",
+                            color: "#a0a0a0",
+                            fontStyle: "italic"
+                          }}>
+                            Este evento ha finalizado
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                  <ControlPagina pagina={paginaPasados} total={eventosPasados.length} setPagina={setPaginaPasados} />
+                </>
               )}
             </>
           )}
@@ -1528,6 +1667,7 @@ const abrirFormularioRestaurar = (evento) => {
               </p>
 
               {papeleraAbierta && (
+                <>
                 <div
                   id="lista-papelera"
                   style={{
@@ -1536,7 +1676,7 @@ const abrirFormularioRestaurar = (evento) => {
                     gap: "24px"
                   }}
                 >
-                  {eventosPapelera.map((evento) => {
+                  {papeleraPagina.map((evento) => {
                     const dias = diasRestantesPapelera(evento.fechaEliminacion);
                     return (
                       <div
@@ -1578,7 +1718,7 @@ const abrirFormularioRestaurar = (evento) => {
                             fontSize: "13px",
                             color: "#818181"
                           }}>
-                            📅 {new Date(evento.fecha).toLocaleDateString("es-ES")}
+                            📅 {evento.fecha ? new Date(evento.fecha).toLocaleDateString("es-ES") : "Sin fecha"}
                             {evento.hora && ` · ${evento.hora.slice(0, 5)}`}
                           </div>
 
@@ -1636,6 +1776,8 @@ const abrirFormularioRestaurar = (evento) => {
                     );
                   })}
                 </div>
+                <ControlPagina pagina={paginaPapelera} total={eventosPapelera.length} setPagina={setPaginaPapelera} />
+                </>
               )}
             </>
           )}
@@ -1968,6 +2110,7 @@ const abrirFormularioRestaurar = (evento) => {
                 const bloqueadaHasta = empresa?.descripcionCambiadaEn
                   ? (() => {
                       const d = new Date(empresa.descripcionCambiadaEn);
+                      if (isNaN(d.getTime())) return null;
                       d.setMonth(d.getMonth() + 2);
                       return new Date() < d ? d : null;
                     })()
