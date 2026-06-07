@@ -556,14 +556,30 @@ function Home({ estaLogueado }) {
             {totalPaginas > 1 && (
               <div style={{
                 display: "flex", justifyContent: "center",
-                alignItems: "center", gap: "16px", margin: "32px 0"
+                alignItems: "center", gap: "8px", margin: "32px 0"
               }}>
                 <button
+                  aria-label="Primera página"
+                  onClick={() => setPaginaActual(1)}
+                  disabled={paginaActual === 1}
+                  style={{
+                    fontSize: "22px", color: "#b79868", fontWeight: "bold",
+                    cursor: paginaActual === 1 ? "default" : "pointer",
+                    background: "none", border: "none",
+                    opacity: paginaActual === 1 ? 0.3 : 1,
+                    fontFamily: "'Baloo Bhai 2', Helvetica", lineHeight: 1,
+                  }}
+                >
+                  &laquo;
+                </button>
+                <button
+                  aria-label="Página anterior"
                   onClick={() => setPaginaActual((p) => Math.max(p - 1, 1))}
                   disabled={paginaActual === 1}
                   style={{
                     fontSize: "28px", color: "#b79868", fontWeight: "bold",
-                    cursor: "pointer", background: "none", border: "none",
+                    cursor: paginaActual === 1 ? "default" : "pointer",
+                    background: "none", border: "none",
                     opacity: paginaActual === 1 ? 0.3 : 1,
                     fontFamily: "'Baloo Bhai 2', Helvetica"
                   }}
@@ -572,21 +588,37 @@ function Home({ estaLogueado }) {
                 </button>
                 <span style={{
                   fontSize: "22px", color: "#818181", fontWeight: "bold",
-                  fontFamily: "'Baloo Bhai 2', Helvetica"
+                  fontFamily: "'Baloo Bhai 2', Helvetica", minWidth: "64px", textAlign: "center"
                 }}>
                   {paginaActual} / {totalPaginas}
                 </span>
                 <button
+                  aria-label="Página siguiente"
                   onClick={() => setPaginaActual((p) => Math.min(p + 1, totalPaginas))}
                   disabled={paginaActual === totalPaginas}
                   style={{
                     fontSize: "28px", color: "#b79868", fontWeight: "bold",
-                    cursor: "pointer", background: "none", border: "none",
+                    cursor: paginaActual === totalPaginas ? "default" : "pointer",
+                    background: "none", border: "none",
                     opacity: paginaActual === totalPaginas ? 0.3 : 1,
                     fontFamily: "'Baloo Bhai 2', Helvetica"
                   }}
                 >
                   &gt;
+                </button>
+                <button
+                  aria-label="Última página"
+                  onClick={() => setPaginaActual(totalPaginas)}
+                  disabled={paginaActual === totalPaginas}
+                  style={{
+                    fontSize: "22px", color: "#b79868", fontWeight: "bold",
+                    cursor: paginaActual === totalPaginas ? "default" : "pointer",
+                    background: "none", border: "none",
+                    opacity: paginaActual === totalPaginas ? 0.3 : 1,
+                    fontFamily: "'Baloo Bhai 2', Helvetica", lineHeight: 1,
+                  }}
+                >
+                  &raquo;
                 </button>
               </div>
             )}
