@@ -7,7 +7,7 @@ import authService from "../services/authService";
 
 const colorBoton = "#b79868";
 
-function Navbar({ mostrarInicio = false, estaLogueado }) {
+function Navbar({ mostrarInicio = false, estaLogueado, enPanel = false }) {
   const navegar = useNavigate();
   const [esMobil, setEsMobil] = useState(() => window.innerWidth < 768);
 
@@ -78,14 +78,16 @@ function Navbar({ mostrarInicio = false, estaLogueado }) {
                 Inicio
               </button>
             )}
-            <button
-              onClick={() => navegar("/panel")}
-              style={estiloBoton}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colorBoton}
-            >
-              Mi panel
-            </button>
+            {!enPanel && (
+              <button
+                onClick={() => navegar("/panel")}
+                style={estiloBoton}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colorBoton}
+              >
+                Mi panel
+              </button>
+            )}
 
             <button
             onClick={async () => {

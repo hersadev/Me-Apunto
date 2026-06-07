@@ -1,7 +1,7 @@
 // panel de empresa - pagina privada para gestionar eventos
 // conectado con el backend usando eventoService y authService
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import Cropper from "react-easy-crop";
@@ -93,9 +93,28 @@ function CompanyPanel({ setEstaLogueado }) {
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [modalEliminar, setModalEliminar] = useState(null);
+  const [modalEliminarMensaje, setModalEliminarMensaje] = useState(null);
   const [modalPatrocinio, setModalPatrocinio] = useState(null);
   const [pasoEliminarCuenta, setPasoEliminarCuenta] = useState(0);
-  const [seccionActiva, setSeccionActiva] = useState("eventos");
+  const SECCIONES_VALIDAS = ["eventos", "mensajes", "analiticas", "notificaciones", "perfil"];
+
+  const leerHash = () => {
+    const h = window.location.hash.slice(1);
+    return SECCIONES_VALIDAS.includes(h) ? h : "eventos";
+  };
+
+  const [seccionActiva, setSeccionActiva] = useState(leerHash);
+
+  useEffect(() => {
+    const onHashChange = () => setSeccionActiva(leerHash());
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const cambiarSeccion = (id) => {
+    window.location.hash = id;
+  };
   const [formPerfil, setFormPerfil] = useState({ nombre: "", correo: "", descripcion: "", contrasena: "" });
   const [perfilGuardando, setPerfilGuardando] = useState(false);
   const [perfilExito, setPerfilExito] = useState("");
@@ -215,7 +234,9 @@ function CompanyPanel({ setEstaLogueado }) {
       await mensajeService.eliminarMensaje(id);
       setMensajes((prev) => prev.filter((m) => m._id !== id));
       if (mensajeSeleccionado?._id === id) setMensajeSeleccionado(null);
-    } catch { /* silencioso */ }
+    } catch {
+      setErrorMensajes("No se pudo eliminar el mensaje. Inténtalo de nuevo.");
+    }
   };
 
   const handleResponder = async (id) => {
@@ -225,7 +246,7 @@ function CompanyPanel({ setEstaLogueado }) {
     try {
       await mensajeService.responderMensaje(id, textoRespuesta);
       setMensajes((prev) => prev.map((m) => m._id === id ? { ...m, respondido: true, leido: true } : m));
-      setMensajeSeleccionado((prev) => prev ? { ...prev, respondido: true, leido: true } : null);
+      setMensajeSeleccionado((prev) => prev?._id === id ? { ...prev, respondido: true, leido: true } : prev);
       setTextoRespuesta("");
       setRespuestaExitosa(true);
       clearTimeout(respuestaTimerRef.current);
@@ -595,7 +616,7 @@ const abrirFormularioRestaurar = (evento) => {
       </Helmet>
 
       <div style={{ position: "relative" }}>
-        <Navbar mostrarInicio={true} estaLogueado={true} />
+        <Navbar mostrarInicio={true} estaLogueado={true} enPanel={true} />
         <Hero mostrarBuscador={false} compacto={true} />
       </div>
 
@@ -630,7 +651,7 @@ const abrirFormularioRestaurar = (evento) => {
               Tu empresa no tiene descripción. Complétala para poder publicar eventos.
             </span>
             <button
-              onClick={() => setSeccionActiva("perfil")}
+              onClick={() => cambiarSeccion("perfil")}
               style={{
                 backgroundColor: "#91703d",
                 color: "white",
@@ -707,7 +728,7 @@ const abrirFormularioRestaurar = (evento) => {
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setSeccionActiva(tab.id)}
+                  onClick={() => cambiarSeccion(tab.id)}
                   style={{
                     fontFamily: "'Baloo Bhai 2', Helvetica",
                     fontWeight: "700",
@@ -1646,11 +1667,8 @@ const abrirFormularioRestaurar = (evento) => {
                 No tienes mensajes todavía
               </div>
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: esMobil ? "1fr" : mensajeSeleccionado ? "1fr 420px" : "1fr", gap: "20px", alignItems: "start" }}>
-
-                {/* tabla */}
-                <div style={{ backgroundColor: "white", borderRadius: "16px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)", overflow: "hidden" }}>
-                  <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+              <div style={{ backgroundColor: "white", borderRadius: "16px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)", overflow: "hidden" }}>
+                <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
                   <table style={{ width: "100%", minWidth: esMobil ? "600px" : "auto", borderCollapse: "collapse" }}>
                     <thead>
                       <tr style={{ backgroundColor: "#f7f0e8", borderBottom: "1px solid #e8ddd0" }}>
@@ -1664,260 +1682,197 @@ const abrirFormularioRestaurar = (evento) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {mensajes.map((m, i) => (
-                        <tr
-                          key={m._id}
-                          onClick={() => {
-                            setMensajeSeleccionado(m._id === mensajeSeleccionado?._id ? null : m);
-                            setTextoRespuesta("");
-                            setErrorRespuesta("");
-                            setRespuestaExitosa(false);
-                            if (!m.leido) { handleMarcarLeido(m._id); }
-                          }}
-                          style={{
-                            borderBottom: i < mensajes.length - 1 ? "1px solid #f0e8dc" : "none",
-                            backgroundColor: mensajeSeleccionado?._id === m._id ? "#fdf5eb" : "white",
-                            cursor: "pointer",
-                            transition: "background-color 0.1s ease"
-                          }}
-                          onMouseEnter={(e) => { if (mensajeSeleccionado?._id !== m._id) e.currentTarget.style.backgroundColor = "#fafafa"; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = mensajeSeleccionado?._id === m._id ? "#fdf5eb" : "white"; }}
-                        >
-                          {/* punto no leído */}
-                          <td style={{ padding: "14px 8px 14px 16px" }}>
-                            {!m.leido && (
-                              <span style={{
-                                display: "inline-block", width: "8px", height: "8px",
-                                borderRadius: "50%", backgroundColor: "#3182ce"
-                              }} />
+                      {mensajes.map((m, i) => {
+                        const expandido = mensajeSeleccionado?._id === m._id;
+                        return (
+                          <React.Fragment key={m._id}>
+                            <tr
+                              onClick={() => {
+                                setMensajeSeleccionado(expandido ? null : m);
+                                setTextoRespuesta("");
+                                setErrorRespuesta("");
+                                setRespuestaExitosa(false);
+                                if (!m.leido) handleMarcarLeido(m._id);
+                              }}
+                              style={{
+                                borderBottom: expandido ? "none" : (i < mensajes.length - 1 ? "1px solid #f0e8dc" : "none"),
+                                backgroundColor: expandido ? "#fdf5eb" : "white",
+                                cursor: "pointer",
+                                transition: "background-color 0.1s ease",
+                              }}
+                              onMouseEnter={(e) => { if (!expandido) e.currentTarget.style.backgroundColor = "#fafafa"; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = expandido ? "#fdf5eb" : "white"; }}
+                            >
+                              {/* punto no leído */}
+                              <td style={{ padding: "14px 8px 14px 16px" }}>
+                                {!m.leido && (
+                                  <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "#3182ce" }} />
+                                )}
+                              </td>
+
+                              {/* remitente */}
+                              <td style={{ padding: "14px 12px" }}>
+                                <span style={{ fontSize: "14px", fontWeight: m.leido ? "400" : "700", color: "#1a1a1a", display: "block" }}>
+                                  {m.nombre}
+                                </span>
+                                <span style={{ fontSize: "12px", color: "#818181" }}>{m.de}</span>
+                              </td>
+
+                              {/* asunto */}
+                              <td style={{ padding: "14px 12px", maxWidth: "180px" }}>
+                                <span style={{ fontSize: "14px", fontWeight: m.leido ? "400" : "700", color: "#1a1a1a", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                  {m.asunto}
+                                </span>
+                              </td>
+
+                              {/* evento */}
+                              <td style={{ padding: "14px 12px", maxWidth: "160px" }}>
+                                {m.evento?.titulo ? (
+                                  <span style={{ fontSize: "13px", color: "#91703d", fontWeight: "600", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                    {m.evento.titulo}
+                                  </span>
+                                ) : (
+                                  <span style={{ fontSize: "13px", color: "#ccc" }}>—</span>
+                                )}
+                              </td>
+
+                              {/* estado */}
+                              <td style={{ padding: "14px 12px" }}>
+                                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                                  {!m.leido && (
+                                    <span style={{ fontSize: "11px", fontWeight: "700", padding: "2px 8px", borderRadius: "999px", backgroundColor: "#ebf4ff", color: "#2b6cb0" }}>
+                                      Sin leer
+                                    </span>
+                                  )}
+                                  {!m.respondido && (
+                                    <span style={{ fontSize: "11px", fontWeight: "700", padding: "2px 8px", borderRadius: "999px", backgroundColor: "#fff5f5", color: "#c53030" }}>
+                                      Sin responder
+                                    </span>
+                                  )}
+                                  {m.respondido && (
+                                    <span style={{ fontSize: "11px", fontWeight: "700", padding: "2px 8px", borderRadius: "999px", backgroundColor: "#f0fff4", color: "#276749" }}>
+                                      Respondido
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+
+                              {/* fecha */}
+                              <td style={{ padding: "14px 16px 14px 12px", whiteSpace: "nowrap" }}>
+                                <span style={{ fontSize: "13px", color: "#818181" }}>
+                                  {new Date(m.createdAt).toLocaleDateString("es-ES", { day: "2-digit", month: "short" })}
+                                </span>
+                              </td>
+
+                              {/* acciones */}
+                              <td style={{ padding: "14px 16px", textAlign: "right" }} onClick={(e) => e.stopPropagation()}>
+                                <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+                                  {!m.leido && (
+                                    <button
+                                      title="Marcar como leído"
+                                      onClick={() => handleMarcarLeido(m._id)}
+                                      style={{ background: "none", border: "1px solid #d4b896", borderRadius: "6px", padding: "4px 8px", fontSize: "13px", cursor: "pointer", color: "#818181" }}
+                                    >
+                                      ✓ Leído
+                                    </button>
+                                  )}
+                                  <button
+                                    title={m.respondido ? "Marcar como no respondido" : "Marcar como respondido"}
+                                    onClick={() => handleToggleRespondido(m._id)}
+                                    style={{ background: "none", border: `1px solid ${m.respondido ? "#c6f6d5" : "#d4b896"}`, borderRadius: "6px", padding: "4px 8px", fontSize: "13px", cursor: "pointer", color: m.respondido ? "#276749" : "#818181" }}
+                                  >
+                                    {m.respondido ? "↩ Desmarcar" : "↩ Respondido"}
+                                  </button>
+                                  <button
+                                    title="Eliminar"
+                                    onClick={() => setModalEliminarMensaje(m._id)}
+                                    style={{ background: "none", border: "1px solid #fed7d7", borderRadius: "6px", padding: "4px 8px", fontSize: "13px", cursor: "pointer", color: "#c53030" }}
+                                  >
+                                    🗑
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+
+                            {/* fila expandida */}
+                            {expandido && (
+                              <tr style={{ backgroundColor: "#fdf5eb", borderBottom: i < mensajes.length - 1 ? "1px solid #f0e8dc" : "none" }}>
+                                <td colSpan={7} style={{ padding: "0 20px 20px" }}>
+                                  <div style={{ borderTop: "1px solid #ecdcc8", paddingTop: "16px" }}>
+
+                                    {/* meta */}
+                                    <div style={{ marginBottom: "16px", paddingBottom: "16px", borderBottom: "1px solid #ecdcc8" }}>
+                                      <p style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", margin: "0 0 2px" }}>
+                                        {m.nombre}
+                                      </p>
+                                      <p style={{ fontSize: "13px", color: "#818181", margin: "0 0 4px" }}>
+                                        {m.de}
+                                      </p>
+                                      {m.evento?.titulo && (
+                                        <p style={{ fontSize: "13px", color: "#91703d", margin: "0 0 4px", fontWeight: "600" }}>
+                                          📅 Desde el evento: {m.evento.titulo}
+                                        </p>
+                                      )}
+                                      <p style={{ fontSize: "12px", color: "#aaa", margin: 0 }}>
+                                        {new Date(m.createdAt).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                      </p>
+                                    </div>
+
+                                    {/* cuerpo */}
+                                    <p style={{ fontSize: "14px", color: "#1a1a1a", lineHeight: "1.6", whiteSpace: "pre-wrap", margin: "0 0 20px" }}>
+                                      {m.cuerpo}
+                                    </p>
+
+                                    {/* formulario respuesta */}
+                                    <div style={{ borderTop: "1px solid #ecdcc8", paddingTop: "16px" }}>
+                                      <label style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "13px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "8px" }}>
+                                        Responder a {m.nombre}
+                                      </label>
+                                      <textarea
+                                        value={textoRespuesta}
+                                        onChange={(e) => setTextoRespuesta(e.target.value)}
+                                        placeholder="Escribe tu respuesta..."
+                                        rows={4}
+                                        maxLength={2000}
+                                        style={{ width: "100%", backgroundColor: "#f8f8f8", padding: "10px 12px", fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "14px", color: "#1a1a1a", border: "1px solid #d4b896", borderRadius: "8px", outline: "none", resize: "vertical", boxSizing: "border-box", marginBottom: "8px" }}
+                                      />
+                                      {errorRespuesta && (
+                                        <p style={{ fontSize: "13px", color: "#c53030", margin: "0 0 8px", fontFamily: "'Baloo Bhai 2', Helvetica" }}>
+                                          {errorRespuesta}
+                                        </p>
+                                      )}
+                                      {respuestaExitosa && (
+                                        <p style={{ fontSize: "13px", color: "#276749", margin: "0 0 8px", fontFamily: "'Baloo Bhai 2', Helvetica" }}>
+                                          ✓ Respuesta enviada correctamente
+                                        </p>
+                                      )}
+                                      <div style={{ display: "flex", gap: "8px" }}>
+                                        <button
+                                          onClick={() => handleResponder(m._id)}
+                                          disabled={enviandoRespuesta || !textoRespuesta.trim()}
+                                          style={{ flex: 1, padding: "10px 0", backgroundColor: enviandoRespuesta || !textoRespuesta.trim() ? "#ccc" : "#91703d", color: "white", border: "none", borderRadius: "999px", fontFamily: "'Baloo Bhai 2', Helvetica", fontWeight: "700", fontSize: "14px", cursor: enviandoRespuesta || !textoRespuesta.trim() ? "not-allowed" : "pointer" }}
+                                        >
+                                          {enviandoRespuesta ? "Enviando..." : "↩ Responder"}
+                                        </button>
+                                        <button
+                                          onClick={() => setModalEliminarMensaje(m._id)}
+                                          style={{ padding: "10px 14px", backgroundColor: "#fff5f5", color: "#c53030", border: "1px solid #fed7d7", borderRadius: "999px", fontFamily: "'Baloo Bhai 2', Helvetica", fontWeight: "700", fontSize: "14px", cursor: "pointer" }}
+                                        >
+                                          🗑
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                  </div>
+                                </td>
+                              </tr>
                             )}
-                          </td>
-
-                          {/* remitente */}
-                          <td style={{ padding: "14px 12px" }}>
-                            <span style={{ fontSize: "14px", fontWeight: m.leido ? "400" : "700", color: "#1a1a1a", display: "block" }}>
-                              {m.nombre}
-                            </span>
-                            <span style={{ fontSize: "12px", color: "#818181" }}>{m.de}</span>
-                          </td>
-
-                          {/* asunto */}
-                          <td style={{ padding: "14px 12px", maxWidth: "180px" }}>
-                            <span style={{
-                              fontSize: "14px", fontWeight: m.leido ? "400" : "700", color: "#1a1a1a",
-                              display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"
-                            }}>
-                              {m.asunto}
-                            </span>
-                          </td>
-
-                          {/* evento */}
-                          <td style={{ padding: "14px 12px", maxWidth: "160px" }}>
-                            {m.evento?.titulo ? (
-                              <span style={{
-                                fontSize: "13px", color: "#91703d", fontWeight: "600",
-                                display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"
-                              }}>
-                                {m.evento.titulo}
-                              </span>
-                            ) : (
-                              <span style={{ fontSize: "13px", color: "#ccc" }}>—</span>
-                            )}
-                          </td>
-
-                          {/* estado */}
-                          <td style={{ padding: "14px 12px" }}>
-                            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                              {!m.leido && (
-                                <span style={{
-                                  fontSize: "11px", fontWeight: "700", padding: "2px 8px",
-                                  borderRadius: "999px", backgroundColor: "#ebf4ff", color: "#2b6cb0"
-                                }}>
-                                  Sin leer
-                                </span>
-                              )}
-                              {!m.respondido && (
-                                <span style={{
-                                  fontSize: "11px", fontWeight: "700", padding: "2px 8px",
-                                  borderRadius: "999px", backgroundColor: "#fff5f5", color: "#c53030"
-                                }}>
-                                  Sin responder
-                                </span>
-                              )}
-                              {m.respondido && (
-                                <span style={{
-                                  fontSize: "11px", fontWeight: "700", padding: "2px 8px",
-                                  borderRadius: "999px", backgroundColor: "#f0fff4", color: "#276749"
-                                }}>
-                                  Respondido
-                                </span>
-                              )}
-                            </div>
-                          </td>
-
-                          {/* fecha */}
-                          <td style={{ padding: "14px 16px 14px 12px", whiteSpace: "nowrap" }}>
-                            <span style={{ fontSize: "13px", color: "#818181" }}>
-                              {new Date(m.createdAt).toLocaleDateString("es-ES", { day: "2-digit", month: "short" })}
-                            </span>
-                          </td>
-
-                          {/* acciones */}
-                          <td style={{ padding: "14px 16px", textAlign: "right" }} onClick={(e) => e.stopPropagation()}>
-                            <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
-                              {!m.leido && (
-                                <button
-                                  title="Marcar como leído"
-                                  onClick={() => handleMarcarLeido(m._id)}
-                                  style={{
-                                    background: "none", border: "1px solid #d4b896",
-                                    borderRadius: "6px", padding: "4px 8px",
-                                    fontSize: "13px", cursor: "pointer", color: "#818181"
-                                  }}
-                                >
-                                  ✓ Leído
-                                </button>
-                              )}
-                              <button
-                                title={m.respondido ? "Marcar como no respondido" : "Marcar como respondido"}
-                                onClick={() => handleToggleRespondido(m._id)}
-                                style={{
-                                  background: "none",
-                                  border: `1px solid ${m.respondido ? "#c6f6d5" : "#d4b896"}`,
-                                  borderRadius: "6px", padding: "4px 8px",
-                                  fontSize: "13px", cursor: "pointer",
-                                  color: m.respondido ? "#276749" : "#818181"
-                                }}
-                              >
-                                {m.respondido ? "↩ Desmarcar" : "↩ Respondido"}
-                              </button>
-                              <button
-                                title="Eliminar"
-                                onClick={() => handleEliminarMensaje(m._id)}
-                                style={{
-                                  background: "none", border: "1px solid #fed7d7",
-                                  borderRadius: "6px", padding: "4px 8px",
-                                  fontSize: "13px", cursor: "pointer", color: "#c53030"
-                                }}
-                              >
-                                🗑
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                          </React.Fragment>
+                        );
+                      })}
                     </tbody>
                   </table>
-                  </div>
                 </div>
-
-                {/* panel de detalle */}
-                {mensajeSeleccionado && (
-                  <div style={{
-                    backgroundColor: "white", borderRadius: "16px",
-                    boxShadow: "0 2px 12px rgba(0,0,0,0.08)", padding: esMobil ? "16px" : "24px",
-                    position: esMobil ? "static" : "sticky", top: "20px"
-                  }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-                      <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", margin: 0, flex: 1, paddingRight: "8px" }}>
-                        {mensajeSeleccionado.asunto}
-                      </h3>
-                      <button
-                        onClick={() => setMensajeSeleccionado(null)}
-                        style={{ background: "none", border: "none", fontSize: "22px", cursor: "pointer", color: "#818181", lineHeight: 1, flexShrink: 0 }}
-                      >
-                        ×
-                      </button>
-                    </div>
-
-                    <div style={{ marginBottom: "16px", paddingBottom: "16px", borderBottom: "1px solid #f0e8dc" }}>
-                      <p style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", margin: "0 0 2px" }}>
-                        {mensajeSeleccionado.nombre}
-                      </p>
-                      <p style={{ fontSize: "13px", color: "#818181", margin: "0 0 4px" }}>
-                        {mensajeSeleccionado.de}
-                      </p>
-                      {mensajeSeleccionado.evento?.titulo && (
-                        <p style={{ fontSize: "13px", color: "#91703d", margin: "0 0 4px", fontWeight: "600" }}>
-                          📅 Desde el evento: {mensajeSeleccionado.evento.titulo}
-                        </p>
-                      )}
-                      <p style={{ fontSize: "12px", color: "#aaa", margin: 0 }}>
-                        {new Date(mensajeSeleccionado.createdAt).toLocaleDateString("es-ES", {
-                          day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit"
-                        })}
-                      </p>
-                    </div>
-
-                    <p style={{ fontSize: "14px", color: "#1a1a1a", lineHeight: "1.6", whiteSpace: "pre-wrap", margin: "0 0 20px" }}>
-                      {mensajeSeleccionado.cuerpo}
-                    </p>
-
-                    {/* formulario de respuesta */}
-                    <div style={{ borderTop: "1px solid #f0e8dc", paddingTop: "16px" }}>
-                      <label style={{
-                        fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "13px",
-                        fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "8px"
-                      }}>
-                        Responder a {mensajeSeleccionado.nombre}
-                      </label>
-                      <textarea
-                        value={textoRespuesta}
-                        onChange={(e) => setTextoRespuesta(e.target.value)}
-                        placeholder="Escribe tu respuesta..."
-                        rows={4}
-                        maxLength={2000}
-                        style={{
-                          width: "100%", backgroundColor: "#f8f8f8", padding: "10px 12px",
-                          fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "14px", color: "#1a1a1a",
-                          border: "1px solid #d4b896", borderRadius: "8px", outline: "none",
-                          resize: "vertical", boxSizing: "border-box", marginBottom: "8px"
-                        }}
-                      />
-
-                      {errorRespuesta && (
-                        <p style={{ fontSize: "13px", color: "#c53030", margin: "0 0 8px", fontFamily: "'Baloo Bhai 2', Helvetica" }}>
-                          {errorRespuesta}
-                        </p>
-                      )}
-                      {respuestaExitosa && (
-                        <p style={{ fontSize: "13px", color: "#276749", margin: "0 0 8px", fontFamily: "'Baloo Bhai 2', Helvetica" }}>
-                          ✓ Respuesta enviada correctamente
-                        </p>
-                      )}
-
-                      <div style={{ display: "flex", gap: "8px" }}>
-                        <button
-                          onClick={() => handleResponder(mensajeSeleccionado._id)}
-                          disabled={enviandoRespuesta || !textoRespuesta.trim()}
-                          style={{
-                            flex: 1, padding: "10px 0",
-                            backgroundColor: enviandoRespuesta || !textoRespuesta.trim() ? "#ccc" : "#91703d",
-                            color: "white", border: "none",
-                            borderRadius: "999px", fontFamily: "'Baloo Bhai 2', Helvetica",
-                            fontWeight: "700", fontSize: "14px",
-                            cursor: enviandoRespuesta || !textoRespuesta.trim() ? "not-allowed" : "pointer"
-                          }}
-                        >
-                          {enviandoRespuesta ? "Enviando..." : "↩ Responder"}
-                        </button>
-                        <button
-                          onClick={() => handleEliminarMensaje(mensajeSeleccionado._id)}
-                          style={{
-                            padding: "10px 14px",
-                            backgroundColor: "#fff5f5", color: "#c53030",
-                            border: "1px solid #fed7d7", borderRadius: "999px",
-                            fontFamily: "'Baloo Bhai 2', Helvetica",
-                            fontWeight: "700", fontSize: "14px", cursor: "pointer"
-                          }}
-                        >
-                          🗑
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
               </div>
             )}
           </div>
@@ -2436,6 +2391,68 @@ const abrirFormularioRestaurar = (evento) => {
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#922b21"}
               >
                 Sí, eliminar para siempre
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* modal confirmar eliminar mensaje */}
+      {modalEliminarMensaje !== null && (
+        <div
+          onClick={() => setModalEliminarMensaje(null)}
+          style={{
+            position: "fixed", inset: 0,
+            backgroundColor: "rgba(0,0,0,0.65)",
+            zIndex: 100, display: "flex",
+            alignItems: "center", justifyContent: "center", padding: "16px"
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-eliminar-mensaje-titulo"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => { if (e.key === "Escape") setModalEliminarMensaje(null); }}
+            style={{
+              backgroundColor: "#f0e8dc", borderRadius: "20px",
+              padding: esMobil ? "24px 16px" : "36px",
+              maxWidth: esMobil ? "calc(100vw - 32px)" : "420px",
+              width: "100%",
+              textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
+            }}
+          >
+            <div aria-hidden="true" style={{ fontSize: "48px", marginBottom: "16px" }}>🗑️</div>
+            <h3 id="modal-eliminar-mensaje-titulo" style={{
+              fontFamily: "'Baloo Bhai 2', Helvetica",
+              fontSize: "20px", fontWeight: "700",
+              color: "#1a1a1a", marginBottom: "12px"
+            }}>
+              ¿Eliminar este mensaje?
+            </h3>
+            <p style={{
+              fontFamily: "'Baloo Bhai 2', Helvetica",
+              fontSize: "15px", color: "#4a4a4a",
+              marginBottom: "24px", lineHeight: "1.5"
+            }}>
+              Esta acción no se puede deshacer.
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center" }}>
+              <button
+                onClick={() => setModalEliminarMensaje(null)}
+                style={{ ...estiloBotonPrimario, backgroundColor: "#818181", minHeight: "44px" }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#5a5a5a"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#818181"}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => { handleEliminarMensaje(modalEliminarMensaje); setModalEliminarMensaje(null); }}
+                style={{ ...estiloBotonPrimario, backgroundColor: "#c0392b", minHeight: "44px" }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#922b21"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#c0392b"}
+              >
+                Sí, eliminar
               </button>
             </div>
           </div>
