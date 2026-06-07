@@ -23,6 +23,52 @@ const nombresMeses = [
 
 const nombresDias = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
+const COLORES_CATEGORIA = {
+  taller: "#e67e22",
+  exposicion: "#9b59b6",
+  concurso: "#e74c3c",
+  concierto: "#3498db",
+  deporte: "#27ae60",
+  gastronomia: "#f39c12",
+  teatro: "#d35400",
+  otros: "#b79868",
+};
+
+function CirculoEvento({ evento, navegar, size = 10 }) {
+  const color = COLORES_CATEGORIA[evento.categoria] ?? "#b79868";
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label={`Ver evento: ${evento.titulo}`}
+      onClick={(e) => { e.stopPropagation(); navegar(`/evento/${evento._id}`); }}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navegar(`/evento/${evento._id}`); } }}
+      onMouseEnter={(e) => { const t = e.currentTarget.querySelector("[data-tooltip]"); if (t) t.style.display = "block"; }}
+      onMouseLeave={(e) => { const t = e.currentTarget.querySelector("[data-tooltip]"); if (t) t.style.display = "none"; }}
+      style={{ position: "relative", display: "inline-flex", cursor: "pointer", flexShrink: 0 }}
+    >
+      <div style={{ width: `${size}px`, height: `${size}px`, backgroundColor: color, borderRadius: "999px" }} />
+      <div data-tooltip style={{
+        display: "none", position: "absolute",
+        bottom: "calc(100% + 4px)", left: "50%", transform: "translateX(-50%)",
+        backgroundColor: "#3a2e1e", color: "white",
+        fontSize: "11px", fontFamily: "'Baloo Bhai 2', Helvetica",
+        padding: "4px 8px", borderRadius: "6px",
+        whiteSpace: "nowrap", boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
+        pointerEvents: "none", zIndex: 20,
+      }}>
+        {evento.hora} · {evento.titulo}
+        <div style={{
+          position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)",
+          width: 0, height: 0,
+          borderLeft: "4px solid transparent", borderRight: "4px solid transparent",
+          borderTop: "4px solid #3a2e1e",
+        }} />
+      </div>
+    </div>
+  );
+}
+
 function Home({ estaLogueado }) {
 
   const navegar = useNavigate();
@@ -233,10 +279,6 @@ function Home({ estaLogueado }) {
     }
   }, [diasDeLaSemana]);
 
-  const handleClickEvento = (evento) => {
-    navegar(`/evento/${evento._id}`);
-  };
-
   const handleClickDia = (eventosDelDiaArr) => {
     if (eventosDelDiaArr.length > 0) {
       navegar(`/evento/${eventosDelDiaArr[0]._id}`);
@@ -246,20 +288,6 @@ function Home({ estaLogueado }) {
   const filaUno = eventos.slice(0, 4);
   const filaDos = eventos.slice(4, 8);
 
-  const estiloEvento = {
-    fontSize: "11px",
-    backgroundColor: "#b79868",
-    color: "white",
-    borderRadius: "4px",
-    padding: "4px 6px",
-    marginTop: "4px",
-    cursor: "pointer",
-    fontFamily: "'Baloo Bhai 2', Helvetica",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-    transition: "background-color 0.15s ease"
-  };
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#f0e8dc", display: "flex", flexDirection: "column" }}>
@@ -732,22 +760,12 @@ function Home({ estaLogueado }) {
                           fontWeight: esHoy ? "700" : "400", fontFamily: "'Baloo Bhai 2', Helvetica"
                         }}>{dia}</span>
 
-                        {esMobil ? (
-                          tieneEventos && (
-                            <div style={{
-                              width: "6px", height: "6px", backgroundColor: "#b79868",
-                              borderRadius: "999px", margin: "2px auto"
-                            }} />
-                          )
-                        ) : (
-                          evsDia.map((ev) => (
-                            <div key={ev._id} style={estiloEvento}
-                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
-                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#b79868"}
-                            >
-                              {ev.hora} {ev.titulo}
-                            </div>
-                          ))
+                        {tieneEventos && (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "2px", marginTop: "2px" }}>
+                            {evsDia.map((ev) => (
+                              <CirculoEvento key={ev._id} evento={ev} navegar={navegar} size={esMobil ? 6 : 10} />
+                            ))}
+                          </div>
                         )}
                       </div>
                     );
@@ -813,43 +831,11 @@ function Home({ estaLogueado }) {
                         {evsDia.length === 0 ? (
                           <div style={{ height: "100%" }} />
                         ) : (
-                          esMobil ? (
-                            /* en móvil: solo puntos para no desbordarse en 7 columnas */
-                            evsDia.map((ev) => (
-                              <div key={ev._id}
-                                role="button"
-                                tabIndex={0}
-                                aria-label={`Ver evento: ${ev.titulo}, ${ev.hora}`}
-                                onClick={() => handleClickEvento(ev)}
-                                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClickEvento(ev); } }}
-                                style={{
-                                  width: "8px", height: "8px",
-                                  backgroundColor: "#b79868",
-                                  borderRadius: "999px",
-                                  margin: "3px auto",
-                                  cursor: "pointer"
-                                }}
-                              />
-                            ))
-                          ) : (
-                            evsDia.map((ev) => (
-                              <div key={ev._id}
-                                role="button"
-                                tabIndex={0}
-                                aria-label={`Ver evento: ${ev.titulo}, ${ev.hora}`}
-                                onClick={() => handleClickEvento(ev)}
-                                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClickEvento(ev); } }}
-                                style={{ ...estiloEvento, whiteSpace: "normal", lineHeight: "1.3" }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#b79868"}
-                              >
-                                <div style={{ fontWeight: "700" }}>{ev.hora}</div>
-                                <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                  {ev.titulo}
-                                </div>
-                              </div>
-                            ))
-                          )
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "3px", padding: "2px" }}>
+                            {evsDia.map((ev) => (
+                              <CirculoEvento key={ev._id} evento={ev} navegar={navegar} size={esMobil ? 8 : 12} />
+                            ))}
+                          </div>
                         )}
                       </div>
                     );
