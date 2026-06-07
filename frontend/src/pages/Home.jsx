@@ -659,8 +659,26 @@ function Home({ estaLogueado }) {
           </>
         )}
 
+        {/* leyenda de colores del calendario */}
+        <div style={{
+          width: "100%", maxWidth: "700px", margin: "0 auto",
+          marginTop: esMobil ? "24px" : "40px",
+          display: "flex", flexWrap: "wrap", gap: esMobil ? "6px 12px" : "6px 16px",
+          justifyContent: "center", paddingBottom: "10px",
+        }}>
+          {Object.entries(COLORES_CATEGORIA).map(([cat, color]) => (
+            <div key={cat} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+              <div style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: color, flexShrink: 0 }} />
+              <span style={{
+                fontSize: "11px", color: "#6b7280",
+                fontFamily: "'Baloo Bhai 2', Helvetica", textTransform: "capitalize",
+              }}>{cat}</span>
+            </div>
+          ))}
+        </div>
+
         {/* calendario */}
-        <div style={{ marginTop: esMobil ? "24px" : "40px", marginBottom: "16px" }}>
+        <div style={{ marginBottom: "16px" }}>
           <div translate="no" style={{
             width: "100%", maxWidth: "700px", margin: "0 auto",
             backgroundColor: "white", borderRadius: "12px",
