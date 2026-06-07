@@ -181,7 +181,7 @@ function Home({ estaLogueado }) {
       if (fecha) params.fecha = fecha;
 
       const dataNormales = await eventoService.getEventos({ ...params, patrocinado: "false" });
-      const dataPatrocinados = await eventoService.getEventos({ limite: 12, patrocinado: "true" });
+      const dataPatrocinados = await eventoService.getEventos({ limite: 50, patrocinado: "true" });
 
       setEventos(dataNormales.eventos);
       setTotalPaginas(dataNormales.totalPaginas);
