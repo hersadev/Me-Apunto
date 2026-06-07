@@ -6,7 +6,8 @@
     const cron = require("node-cron");
     const Evento = require("../models/Evento");
     const Empresa = require("../models/Empresa");
-    const { enviarCorreoAvisoRenovacion } = require("./emailService");
+    const Inscripcion = require("../models/Inscripcion");
+    const { enviarCorreoAvisoRenovacion, enviarCorreoRecordatorioEvento } = require("./emailService");
     const { eliminarImagen } = require("./cloudinaryService");
 
     // funcion que revisa los patrocinios proximos a renovarse
@@ -183,6 +184,65 @@
     }
     };
 
+    // envia un correo de recordatorio a todos los inscritos
+    // en eventos que celebran manana
+    // se ejecuta una vez al dia a las 10:00
+    const enviarRecordatorios = async () => {
+    try {
+        console.log("Enviando recordatorios de eventos de mañana...");
+
+        const manana = new Date();
+        manana.setDate(manana.getDate() + 1);
+        const inicioDia = new Date(manana.getFullYear(), manana.getMonth(), manana.getDate(), 0, 0, 0);
+        const finDia   = new Date(manana.getFullYear(), manana.getMonth(), manana.getDate(), 23, 59, 59);
+
+        const eventosManana = await Evento.find({
+        activo: true,
+        fechaEliminacion: null,
+        fecha: { $gte: inicioDia, $lte: finDia },
+        }).populate("empresa", "nombre");
+
+        console.log(`Encontrados ${eventosManana.length} eventos para mañana`);
+
+        for (const evento of eventosManana) {
+        const inscripciones = await Inscripcion.find({
+            evento: evento._id,
+            recordatorioEnviado: false,
+            estadoPago: { $in: ["free", "completed"] },
+        });
+
+        for (const inscripcion of inscripciones) {
+            try {
+            const fechaFormateada = new Date(evento.fecha).toLocaleDateString("es-ES", {
+                weekday: "long", day: "numeric", month: "long",
+            });
+
+            await enviarCorreoRecordatorioEvento({
+                correoUsuario: inscripcion.correo,
+                nombreUsuario: inscripcion.nombre,
+                nombreEvento: evento.titulo,
+                nombreEmpresa: evento.empresa?.nombre || "la empresa organizadora",
+                fecha: fechaFormateada,
+                hora: evento.hora,
+                venue: evento.venue,
+                direccion: evento.direccion,
+                tokenCancelacion: inscripcion.tokenCancelacion,
+            });
+
+            inscripcion.recordatorioEnviado = true;
+            await inscripcion.save();
+
+            } catch (errCorreo) {
+            console.error(`Error al enviar recordatorio a ${inscripcion.correo}:`, errCorreo);
+            }
+        }
+        }
+
+    } catch (error) {
+        console.error("Error en envío de recordatorios:", error);
+    }
+    };
+
     // iniciamos las tareas programadas
     const iniciarCron = () => {
     // tarea 1: revisar patrocinios proximos a renovarse
@@ -204,6 +264,13 @@
     cron.schedule("0 3 * * *", () => {
         console.log("Cron: purgando papelera...");
         purgarPapelera();
+    });
+
+    // tarea 4: enviar recordatorios del dia anterior a los inscritos
+    // se ejecuta todos los dias a las 10:00
+    cron.schedule("0 10 * * *", () => {
+        console.log("Cron: enviando recordatorios de eventos de mañana...");
+        enviarRecordatorios();
     });
 
     console.log("Tareas programadas iniciadas correctamente");

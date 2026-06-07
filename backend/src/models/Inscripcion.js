@@ -75,6 +75,13 @@ const inscripcionSchema = new mongoose.Schema(
         type: Date,
         default: null,
     },
+
+    // indica si ya se envio el recordatorio del dia anterior al evento
+    // evita enviar duplicados si el cron se ejecuta varias veces
+    recordatorioEnviado: {
+        type: Boolean,
+        default: false,
+    },
 },
     {
     timestamps: true,
