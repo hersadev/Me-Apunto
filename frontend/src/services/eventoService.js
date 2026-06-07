@@ -116,6 +116,23 @@ const togglePatrocinio = async (id) => {
   return response.data;
 };
 
+// registrar una visita al detalle del evento
+// ruta publica - fire and forget
+const registrarVista = async (id) => {
+  try {
+    await api.patch(`/eventos/${id}/vista`);
+  } catch {
+    // ignorar fallos - no es critico
+  }
+};
+
+// obtener analiticas de los eventos de la empresa logueada
+// ruta protegida
+const getAnaliticas = async () => {
+  const response = await api.get("/eventos/empresa/analiticas");
+  return response.data;
+};
+
 const eventoService = {
   getEventos,
   getEventoPorId,
@@ -127,6 +144,8 @@ const eventoService = {
   restaurarEvento,
   eliminarEventoDefinitivo,
   togglePatrocinio,
+  registrarVista,
+  getAnaliticas,
 };
 
 export default eventoService;

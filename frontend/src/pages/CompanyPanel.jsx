@@ -111,6 +111,9 @@ function CompanyPanel({ setEstaLogueado }) {
   const [paginaPasados, setPaginaPasados] = useState(1);
   const [paginaPapelera, setPaginaPapelera] = useState(1);
 
+  const [analiticas, setAnaliticas] = useState(null);
+  const [cargandoAnaliticas, setCargandoAnaliticas] = useState(false);
+
   const [formularioAbierto, setFormularioAbierto] = useState(false);
   const [eventosPasadosAbierto, setEventosPasadosAbierto] = useState(false);
   const [papeleraAbierta, setPapeleraAbierta] = useState(false);
@@ -242,6 +245,9 @@ function CompanyPanel({ setEstaLogueado }) {
     if (seccionActiva === "mensajes") {
       cargarMensajes();
     }
+    if (seccionActiva === "analiticas" && !analiticas) {
+      cargarAnaliticas();
+    }
   }, [seccionActiva]);
 
   const cargarMensajes = async () => {
@@ -256,6 +262,18 @@ function CompanyPanel({ setEstaLogueado }) {
       }
     } finally {
       setCargandoMensajes(false);
+    }
+  };
+
+  const cargarAnaliticas = async () => {
+    setCargandoAnaliticas(true);
+    try {
+      const data = await eventoService.getAnaliticas();
+      setAnaliticas(data);
+    } catch (err) {
+      console.error("Error al cargar analíticas:", err);
+    } finally {
+      setCargandoAnaliticas(false);
     }
   };
 
@@ -2022,15 +2040,144 @@ const abrirFormularioRestaurar = (evento) => {
 
         {/* analíticas */}
         {seccionActiva === "analiticas" && (
-          <div style={{
-            textAlign: "center",
-            padding: "80px 0",
-            color: "#818181",
-            fontFamily: "'Baloo Bhai 2', Helvetica",
-            fontSize: "18px"
-          }}>
-            <div style={{ fontSize: "48px", marginBottom: "16px" }}>📊</div>
-            Analíticas próximamente
+          <div style={{ fontFamily: "'Baloo Bhai 2', Helvetica" }}>
+            <h2 style={{ fontSize: "22px", fontWeight: "700", color: "#1a1a1a", marginBottom: "24px" }}>
+              Analíticas
+            </h2>
+
+            {cargandoAnaliticas && (
+              <div style={{ textAlign: "center", padding: "48px 0", color: "#818181", fontSize: "18px" }}>
+                Cargando analíticas...
+              </div>
+            )}
+
+            {!cargandoAnaliticas && analiticas && (
+              <>
+                {/* tarjetas KPI */}
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: esMobil ? "1fr 1fr" : "repeat(4, 1fr)",
+                  gap: "16px",
+                  marginBottom: "36px"
+                }}>
+                  {[
+                    { label: "Visitas totales", valor: analiticas.resumen.totalVistas, icono: "👁️" },
+                    { label: "Inscripciones totales", valor: analiticas.resumen.totalInscritos, icono: "✅" },
+                    { label: "Eventos activos", valor: analiticas.resumen.totalEventosPublicados, icono: "📅" },
+                    { label: "Eventos pasados", valor: analiticas.resumen.totalEventosPasados, icono: "🏁" },
+                  ].map((kpi) => (
+                    <div key={kpi.label} style={{
+                      backgroundColor: "white",
+                      borderRadius: "16px",
+                      padding: "20px",
+                      boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "6px"
+                    }}>
+                      <span style={{ fontSize: "28px" }}>{kpi.icono}</span>
+                      <span style={{ fontSize: "32px", fontWeight: "700", color: "#91703d", lineHeight: 1 }}>
+                        {kpi.valor.toLocaleString("es-ES")}
+                      </span>
+                      <span style={{ fontSize: "13px", color: "#818181", fontWeight: "600" }}>
+                        {kpi.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* top eventos */}
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: esMobil ? "1fr" : "1fr 1fr",
+                  gap: "24px"
+                }}>
+                  {/* top por vistas */}
+                  <div style={{
+                    backgroundColor: "white",
+                    borderRadius: "16px",
+                    padding: "20px 24px",
+                    boxShadow: "0 2px 12px rgba(0,0,0,0.08)"
+                  }}>
+                    <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", marginBottom: "16px" }}>
+                      👁️ Top eventos por visitas
+                    </h3>
+                    {analiticas.topPorVistas.length === 0 ? (
+                      <p style={{ fontSize: "14px", color: "#818181" }}>Sin datos todavía</p>
+                    ) : (
+                      <ol style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "10px" }}>
+                        {analiticas.topPorVistas.map((ev, i) => (
+                          <li key={ev._id} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <span style={{
+                              width: "24px", height: "24px", borderRadius: "50%",
+                              backgroundColor: i === 0 ? "#91703d" : "#f0e8dc",
+                              color: i === 0 ? "white" : "#91703d",
+                              fontSize: "12px", fontWeight: "700",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              flexShrink: 0
+                            }}>{i + 1}</span>
+                            <span style={{ flex: 1, fontSize: "14px", color: "#1a1a1a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {ev.titulo}
+                            </span>
+                            <span style={{ fontSize: "14px", fontWeight: "700", color: "#91703d", flexShrink: 0 }}>
+                              {ev.vistas.toLocaleString("es-ES")}
+                            </span>
+                          </li>
+                        ))}
+                      </ol>
+                    )}
+                  </div>
+
+                  {/* top por inscritos */}
+                  <div style={{
+                    backgroundColor: "white",
+                    borderRadius: "16px",
+                    padding: "20px 24px",
+                    boxShadow: "0 2px 12px rgba(0,0,0,0.08)"
+                  }}>
+                    <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", marginBottom: "16px" }}>
+                      ✅ Top eventos por inscripciones
+                    </h3>
+                    {analiticas.topPorInscritos.length === 0 ? (
+                      <p style={{ fontSize: "14px", color: "#818181" }}>Sin datos todavía</p>
+                    ) : (
+                      <ol style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "10px" }}>
+                        {analiticas.topPorInscritos.map((ev, i) => (
+                          <li key={ev._id} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <span style={{
+                              width: "24px", height: "24px", borderRadius: "50%",
+                              backgroundColor: i === 0 ? "#91703d" : "#f0e8dc",
+                              color: i === 0 ? "white" : "#91703d",
+                              fontSize: "12px", fontWeight: "700",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              flexShrink: 0
+                            }}>{i + 1}</span>
+                            <span style={{ flex: 1, fontSize: "14px", color: "#1a1a1a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {ev.titulo}
+                            </span>
+                            <span style={{ fontSize: "14px", fontWeight: "700", color: "#91703d", flexShrink: 0 }}>
+                              {ev.totalInscritos.toLocaleString("es-ES")}
+                            </span>
+                          </li>
+                        ))}
+                      </ol>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {!cargandoAnaliticas && !analiticas && (
+              <div style={{ textAlign: "center", padding: "48px 0", color: "#818181", fontSize: "16px" }}>
+                No se pudieron cargar las analíticas.{" "}
+                <button
+                  onClick={cargarAnaliticas}
+                  style={{ background: "none", border: "none", color: "#91703d", fontWeight: "700", cursor: "pointer", fontSize: "14px", fontFamily: "'Baloo Bhai 2', Helvetica" }}
+                >
+                  Reintentar
+                </button>
+              </div>
+            )}
           </div>
         )}
 

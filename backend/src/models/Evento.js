@@ -134,6 +134,13 @@ const eventoSchema = new mongoose.Schema(
         max: [100000, "La capacidad máxima no puede superar 100.000"],
     },
 
+    // numero de veces que se ha abierto la pagina de detalle del evento
+    vistas: {
+        type: Number,
+        default: 0,
+        min: 0,
+    },
+
     // indica si el evento esta activo o ha sido eliminado
     activo: {
         type: Boolean,

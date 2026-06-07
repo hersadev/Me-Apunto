@@ -12,6 +12,8 @@ const {
   restaurarEvento,
   eliminarEventoDefinitivo,
   togglePatrocinio,
+  registrarVista,
+  obtenerAnaliticasEmpresa,
 } = require("../controllers/eventoController");
 const { protegerRuta } = require("../middleware/authMiddleware");
 const { upload } = require("../services/cloudinaryService");
@@ -25,6 +27,7 @@ router.get("/", obtenerEventos);
 // rutas especificas antes que /:id
 router.get("/empresa/mis-eventos", protegerRuta, obtenerEventosEmpresa);
 router.get("/empresa/papelera", protegerRuta, obtenerPapelera);
+router.get("/empresa/analiticas", protegerRuta, obtenerAnaliticasEmpresa);
 
 // POST /api/eventos - crear evento con imagen opcional
 // upload.single("imagen") procesa el archivo antes del controlador
@@ -45,6 +48,9 @@ router.delete("/:id/permanente", protegerRuta, eliminarEventoDefinitivo);
 
 // PATCH /api/eventos/:id/patrocinio - activar o desactivar patrocinio
 router.patch("/:id/patrocinio", protegerRuta, togglePatrocinio);
+
+// PATCH /api/eventos/:id/vista - registrar visita al detalle del evento (publico)
+router.patch("/:id/vista", registrarVista);
 
 // GET /api/eventos/:id - al final porque captura cualquier string
 router.get("/:id", obtenerEventoPorId);

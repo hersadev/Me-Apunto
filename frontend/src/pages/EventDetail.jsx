@@ -106,6 +106,7 @@ function EventDetail({ estaLogueado }) {
       const data = await eventoService.getEventoPorId(id);
       setEvento(data.evento);
       setTotalInscritos(data.evento.totalInscritos || 0);
+      eventoService.registrarVista(id);
     } catch (err) {
       setError("Evento no encontrado");
       console.error(err);

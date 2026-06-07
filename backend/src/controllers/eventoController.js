@@ -566,6 +566,90 @@ const togglePatrocinio = async (req, res) => {
   }
 };
 
+// PATCH /api/eventos/:id/vista
+// ruta publica - incrementa el contador de vistas del evento
+const registrarVista = async (req, res) => {
+  try {
+    const evento = await Evento.findOne({ _id: req.params.id, activo: true, fechaEliminacion: null });
+    if (!evento) return res.status(404).json({ mensaje: "Evento no encontrado" });
+    await Evento.updateOne({ _id: evento._id }, { $inc: { vistas: 1 } });
+    res.json({ ok: true });
+  } catch (error) {
+    console.error("Error al registrar vista:", error);
+    res.status(500).json({ mensaje: "Error interno del servidor" });
+  }
+};
+
+// GET /api/eventos/empresa/analiticas
+// ruta protegida - devuelve estadisticas agregadas de los eventos de la empresa
+// usa la misma logica que obtenerEventosEmpresa:
+//   activos = activo:true + fecha >= ahora
+//   pasados = activo:true + fecha < ahora
+//   papelera (activo:false) excluida completamente
+const obtenerAnaliticasEmpresa = async (req, res) => {
+  try {
+    const empresaId = req.empresa._id;
+    const ahora = new Date();
+
+    // solo eventos no eliminados (activo:true excluye papelera)
+    const eventos = await Evento.find({ empresa: empresaId, activo: true }).select(
+      "titulo fecha vistas capacidadMaxima precio categoria createdAt"
+    ).lean();
+
+    const idsEventos = eventos.map((e) => e._id);
+
+    // conteo de inscripciones por evento
+    const inscripcionesRaw = await Inscripcion.aggregate([
+      { $match: { evento: { $in: idsEventos } } },
+      { $group: { _id: "$evento", inscritos: { $sum: "$numPersonas" } } },
+    ]);
+    const inscripcionesMap = {};
+    inscripcionesRaw.forEach(({ _id, inscritos }) => {
+      inscripcionesMap[_id.toString()] = inscritos;
+    });
+
+    const eventosConStats = eventos.map((e) => ({
+      ...e,
+      totalInscritos: inscripcionesMap[e._id.toString()] || 0,
+    }));
+
+    // misma logica que obtenerEventosEmpresa
+    const eventosActivos = eventosConStats.filter((e) => new Date(e.fecha) >= ahora);
+    const eventosPasados = eventosConStats.filter((e) => new Date(e.fecha) < ahora);
+
+    const totalVistas = eventosConStats.reduce((acc, e) => acc + (e.vistas || 0), 0);
+    const totalInscritos = eventosConStats.reduce((acc, e) => acc + e.totalInscritos, 0);
+    const totalEventosPublicados = eventosActivos.length;
+
+    // top 5 eventos por vistas
+    const topPorVistas = [...eventosConStats]
+      .sort((a, b) => (b.vistas || 0) - (a.vistas || 0))
+      .slice(0, 5)
+      .map((e) => ({ _id: e._id, titulo: e.titulo, vistas: e.vistas || 0, totalInscritos: e.totalInscritos }));
+
+    // top 5 eventos por inscritos
+    const topPorInscritos = [...eventosConStats]
+      .sort((a, b) => b.totalInscritos - a.totalInscritos)
+      .slice(0, 5)
+      .map((e) => ({ _id: e._id, titulo: e.titulo, vistas: e.vistas || 0, totalInscritos: e.totalInscritos }));
+
+    res.json({
+      resumen: {
+        totalVistas,
+        totalInscritos,
+        totalEventosPublicados,
+        totalEventosPasados: eventosPasados.length,
+      },
+      topPorVistas,
+      topPorInscritos,
+      eventos: eventosConStats,
+    });
+  } catch (error) {
+    console.error("Error al obtener analíticas:", error);
+    res.status(500).json({ mensaje: "Error interno del servidor" });
+  }
+};
+
 module.exports = {
   obtenerEventos,
   obtenerEventoPorId,
@@ -577,4 +661,6 @@ module.exports = {
   restaurarEvento,
   eliminarEventoDefinitivo,
   togglePatrocinio,
+  registrarVista,
+  obtenerAnaliticasEmpresa,
 };
