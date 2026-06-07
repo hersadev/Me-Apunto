@@ -84,6 +84,7 @@ function Home({ estaLogueado }) {
 
   const [eventos, setEventos] = useState([]);
   const [eventosPatrocinados, setEventosPatrocinados] = useState([]);
+  const [eventosCalendario, setEventosCalendario] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
   const [busqueda, setBusqueda] = useState("");
@@ -160,6 +161,28 @@ function Home({ estaLogueado }) {
     cargarEventos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paginaActual, tipo]);
+
+  // carga todos los eventos del mes visible en el calendario
+  // independiente de la paginación y los filtros de búsqueda
+  const cargarEventosCalendario = async (mes, anio) => {
+    try {
+      const ini = new Date(anio, mes, 1);
+      const fin = new Date(anio, mes + 1, 0, 23, 59, 59);
+      const data = await eventoService.getEventos({
+        fechaInicio: ini.toISOString(),
+        fechaFin: fin.toISOString(),
+        limite: 500,
+      });
+      setEventosCalendario(data.eventos || []);
+    } catch (err) {
+      console.error("Error al cargar eventos del calendario:", err);
+    }
+  };
+
+  useEffect(() => {
+    cargarEventosCalendario(mesCalendario, anioCalendario);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mesCalendario, anioCalendario]);
 
   // recarga cuando se limpian todos los filtros
   useEffect(() => {
@@ -241,23 +264,25 @@ function Home({ estaLogueado }) {
     const nuevaFecha = new Date(lunesSemana);
     nuevaFecha.setDate(lunesSemana.getDate() - 7);
     setLunesSemana(nuevaFecha);
+    cargarEventosCalendario(nuevaFecha.getMonth(), nuevaFecha.getFullYear());
   };
 
   const semanaSiguiente = () => {
     const nuevaFecha = new Date(lunesSemana);
     nuevaFecha.setDate(lunesSemana.getDate() + 7);
     setLunesSemana(nuevaFecha);
+    cargarEventosCalendario(nuevaFecha.getMonth(), nuevaFecha.getFullYear());
   };
 
   const eventosIndexados = useMemo(() => {
     const map = {};
-    [...(eventos || []), ...(eventosPatrocinados || [])].forEach((e) => {
+    [...(eventosCalendario || []), ...(eventosPatrocinados || [])].forEach((e) => {
       const key = new Date(e.fecha).toDateString();
       if (!map[key]) map[key] = [];
       map[key].push(e);
     });
     return map;
-  }, [eventos, eventosPatrocinados]);
+  }, [eventosCalendario, eventosPatrocinados]);
 
   const eventosDelDia = (fecha) => eventosIndexados[fecha.toDateString()] || [];
 

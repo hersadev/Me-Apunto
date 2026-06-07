@@ -11,35 +11,43 @@ const Inscripcion = require("../models/Inscripcion");
 // ruta publica - no requiere token
 const obtenerEventos = async (req, res) => {
   try {
+    // si se pasa rango de fechas para el calendario, el limite puede ser mas alto
+    const tieneRango = req.query.fechaInicio && req.query.fechaFin;
+    const limiteMax = tieneRango ? 500 : 50;
     const pagina = Math.max(1, parseInt(req.query.pagina, 10) || 1);
-    const limite = Math.min(50, Math.max(1, parseInt(req.query.limite, 10) || 8));
+    const limite = Math.min(limiteMax, Math.max(1, parseInt(req.query.limite, 10) || 8));
     const saltar = (pagina - 1) * limite;
 
     const filtro = { activo: true };
     const condicionesFecha = [];
 
-    // filtrar eventos que no hayan pasado todavia
-    const ahora = new Date();
-    condicionesFecha.push({ fecha: { $gte: ahora } });
+    if (tieneRango) {
+      // rango explicito para el calendario: muestra eventos de ese mes completo
+      const ini = new Date(req.query.fechaInicio);
+      const fin = new Date(req.query.fechaFin);
+      if (!isNaN(ini.getTime()) && !isNaN(fin.getTime())) {
+        condicionesFecha.push({ fecha: { $gte: ini, $lte: fin } });
+      }
+    } else {
+      // por defecto: solo eventos futuros
+      const ahora = new Date();
+      condicionesFecha.push({ fecha: { $gte: ahora } });
 
-    // filtro por fecha
-    if (req.query.fecha) {
-      const hoy = new Date();
-
-      if (req.query.fecha === "hoy") {
-        const manana = new Date(hoy);
-        manana.setDate(hoy.getDate() + 1);
-        condicionesFecha.push({ fecha: { $gte: ahora, $lt: manana } });
-
-      } else if (req.query.fecha === "semana") {
-        const finSemana = new Date(hoy);
-        finSemana.setDate(hoy.getDate() + 7);
-        condicionesFecha.push({ fecha: { $gte: ahora, $lt: finSemana } });
-
-      } else if (req.query.fecha === "mes") {
-        const finMes = new Date(hoy);
-        finMes.setMonth(hoy.getMonth() + 1);
-        condicionesFecha.push({ fecha: { $gte: ahora, $lt: finMes } });
+      if (req.query.fecha) {
+        const hoy = new Date();
+        if (req.query.fecha === "hoy") {
+          const manana = new Date(hoy);
+          manana.setDate(hoy.getDate() + 1);
+          condicionesFecha.push({ fecha: { $gte: ahora, $lt: manana } });
+        } else if (req.query.fecha === "semana") {
+          const finSemana = new Date(hoy);
+          finSemana.setDate(hoy.getDate() + 7);
+          condicionesFecha.push({ fecha: { $gte: ahora, $lt: finSemana } });
+        } else if (req.query.fecha === "mes") {
+          const finMes = new Date(hoy);
+          finMes.setMonth(hoy.getMonth() + 1);
+          condicionesFecha.push({ fecha: { $gte: ahora, $lt: finMes } });
+        }
       }
     }
 
