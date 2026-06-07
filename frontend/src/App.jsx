@@ -16,6 +16,7 @@ const Contact = lazy(() => import("./pages/Contact"));
 const CompanyPanel = lazy(() => import("./pages/CompanyPanel"));
 const CookiesPolicy = lazy(() => import("./pages/CookiesPolicy"));
 const ConfirmarCorreo = lazy(() => import("./pages/ConfirmarCorreo"));
+const CancelarInscripcion = lazy(() => import("./pages/CancelarInscripcion"));
 
 function App() {
 
@@ -63,6 +64,9 @@ function App() {
 
             {/* confirmacion de cambio de correo */}
             <Route path="/confirmar-correo/:token" element={<ConfirmarCorreo />} />
+
+            {/* cancelacion de inscripcion por enlace del email */}
+            <Route path="/cancelar-inscripcion/:token" element={<CancelarInscripcion />} />
 
           </Routes>
         </Suspense>

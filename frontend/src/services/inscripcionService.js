@@ -18,9 +18,23 @@ const getInscripcionesEvento = async (eventoId) => {
   return response.data;
 };
 
+// obtener datos de una inscripcion por token de cancelacion
+const getInscripcionPorToken = async (token) => {
+  const response = await api.get(`/inscripciones/cancelar/${token}`);
+  return response.data;
+};
+
+// cancelar una inscripcion por token
+const cancelarInscripcion = async (token) => {
+  const response = await api.delete(`/inscripciones/cancelar/${token}`);
+  return response.data;
+};
+
 const inscripcionService = {
   crearInscripcion,
   getInscripcionesEvento,
+  getInscripcionPorToken,
+  cancelarInscripcion,
 };
 
 export default inscripcionService;

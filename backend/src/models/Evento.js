@@ -121,6 +121,17 @@ const eventoSchema = new mongoose.Schema(
     maxPersonasPorInscripcion: {
         type: Number,
         default: null,
+        min: [1, "El límite debe ser al menos 1"],
+        max: [1000, "El límite por inscripción no puede superar 1.000"],
+    },
+
+    // capacidad maxima total del evento (numero total de personas)
+    // null significa sin limite
+    capacidadMaxima: {
+        type: Number,
+        default: null,
+        min: [1, "La capacidad máxima debe ser al menos 1"],
+        max: [100000, "La capacidad máxima no puede superar 100.000"],
     },
 
     // indica si el evento esta activo o ha sido eliminado

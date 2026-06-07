@@ -4,14 +4,15 @@
 
 const { eliminarImagen } = require("../services/cloudinaryService");
 const Evento = require("../models/Evento");
+const Inscripcion = require("../models/Inscripcion");
 
 // GET /api/eventos
 // devuelve todos los eventos activos para la pagina principal
 // ruta publica - no requiere token
 const obtenerEventos = async (req, res) => {
   try {
-    const pagina = parseInt(req.query.pagina) || 1;
-    const limite = parseInt(req.query.limite) || 8;
+    const pagina = Math.max(1, parseInt(req.query.pagina, 10) || 1);
+    const limite = Math.min(50, Math.max(1, parseInt(req.query.limite, 10) || 8));
     const saltar = (pagina - 1) * limite;
 
     const filtro = { activo: true };
@@ -71,13 +72,32 @@ const obtenerEventos = async (req, res) => {
       ];
     }
 
-    const eventos = await Evento.find(filtro)
+    const eventosDocs = await Evento.find(filtro)
       .populate("empresa", "nombre correo")
       .sort({ patrocinado: -1, fechaInicioPatrocinio: 1, fecha: 1 })
       .skip(saltar)
       .limit(limite);
 
     const total = await Evento.countDocuments(filtro);
+
+    // solo agregamos totalInscritos si algun evento tiene capacidadMaxima
+    // para no lanzar una query de agregacion innecesaria en paginas sin aforo
+    const hayCapacidad = eventosDocs.some((e) => e.capacidadMaxima !== null);
+    const conteosMap = {};
+    if (hayCapacidad) {
+      const eventoIds = eventosDocs.map((e) => e._id);
+      const conteosRaw = await Inscripcion.aggregate([
+        { $match: { evento: { $in: eventoIds } } },
+        { $group: { _id: "$evento", totalInscritos: { $sum: "$numPersonas" } } },
+      ]);
+      conteosRaw.forEach(({ _id, totalInscritos }) => {
+        conteosMap[_id.toString()] = totalInscritos;
+      });
+    }
+    const eventos = eventosDocs.map((e) => ({
+      ...e.toObject(),
+      totalInscritos: conteosMap[e._id.toString()] || 0,
+    }));
 
     res.json({
       eventos,
@@ -104,7 +124,13 @@ const obtenerEventoPorId = async (req, res) => {
       return res.status(404).json({ mensaje: "Evento no encontrado" });
     }
 
-    res.json({ evento });
+    const conteoRaw = await Inscripcion.aggregate([
+      { $match: { evento: evento._id } },
+      { $group: { _id: null, total: { $sum: "$numPersonas" } } },
+    ]);
+    const totalInscritos = conteoRaw[0]?.total || 0;
+
+    res.json({ evento: { ...evento.toObject(), totalInscritos } });
 
   } catch (error) {
     console.error("Error al obtener evento:", error);
@@ -119,17 +145,39 @@ const obtenerEventosEmpresa = async (req, res) => {
   try {
     const ahora = new Date();
 
-    const eventosActivos = await Evento.find({
+    const eventosActivosDocs = await Evento.find({
       empresa: req.empresa._id,
       activo: true,
       fecha: { $gte: ahora }
     }).sort({ fecha: 1 });
 
-    const eventosPasados = await Evento.find({
+    const eventosPasadosDocs = await Evento.find({
       empresa: req.empresa._id,
       activo: true,
       fecha: { $lt: ahora }
     }).sort({ fecha: -1 });
+
+    const todosIds = [
+      ...eventosActivosDocs.map((e) => e._id),
+      ...eventosPasadosDocs.map((e) => e._id),
+    ];
+    const conteosRaw = await Inscripcion.aggregate([
+      { $match: { evento: { $in: todosIds } } },
+      { $group: { _id: "$evento", totalInscritos: { $sum: "$numPersonas" } } },
+    ]);
+    const conteosMap = {};
+    conteosRaw.forEach(({ _id, totalInscritos }) => {
+      conteosMap[_id.toString()] = totalInscritos;
+    });
+
+    const eventosActivos = eventosActivosDocs.map((e) => ({
+      ...e.toObject(),
+      totalInscritos: conteosMap[e._id.toString()] || 0,
+    }));
+    const eventosPasados = eventosPasadosDocs.map((e) => ({
+      ...e.toObject(),
+      totalInscritos: conteosMap[e._id.toString()] || 0,
+    }));
 
     res.json({ eventosActivos, eventosPasados });
 
@@ -153,6 +201,7 @@ const crearEvento = async (req, res) => {
       hora,
       precio,
       maxPersonasPorInscripcion,
+      capacidadMaxima,
       categoria,
     } = req.body;
 
@@ -176,6 +225,7 @@ const crearEvento = async (req, res) => {
       precio: precio || 0,
       imagen: imagenUrl,
       maxPersonasPorInscripcion: maxPersonasPorInscripcion || null,
+      capacidadMaxima: capacidadMaxima || null,
       empresa: req.empresa._id,
       categoria,
     });
@@ -215,6 +265,7 @@ const editarEvento = async (req, res) => {
       hora,
       precio,
       maxPersonasPorInscripcion,
+      capacidadMaxima,
       categoria,
     } = req.body;
 
@@ -230,6 +281,12 @@ const editarEvento = async (req, res) => {
         maxPersonasPorInscripcion === "" || maxPersonasPorInscripcion === null
           ? null
           : parseInt(maxPersonasPorInscripcion, 10);
+    }
+    if (capacidadMaxima !== undefined) {
+      evento.capacidadMaxima =
+        capacidadMaxima === "" || capacidadMaxima === null
+          ? null
+          : (Number.isNaN(parseInt(capacidadMaxima, 10)) ? null : parseInt(capacidadMaxima, 10));
     }
     if (categoria !== undefined) {
       if (!categoria) {
@@ -351,6 +408,7 @@ const restaurarEvento = async (req, res) => {
       hora,
       precio,
       maxPersonasPorInscripcion,
+      capacidadMaxima,
       categoria,
     } = req.body;
 
@@ -366,6 +424,12 @@ const restaurarEvento = async (req, res) => {
         maxPersonasPorInscripcion === "" || maxPersonasPorInscripcion === null
           ? null
           : parseInt(maxPersonasPorInscripcion, 10);
+    }
+    if (capacidadMaxima !== undefined) {
+      evento.capacidadMaxima =
+        capacidadMaxima === "" || capacidadMaxima === null
+          ? null
+          : (Number.isNaN(parseInt(capacidadMaxima, 10)) ? null : parseInt(capacidadMaxima, 10));
     }
     if (categoria !== undefined) {
       if (!categoria) {

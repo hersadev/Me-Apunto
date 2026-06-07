@@ -22,6 +22,7 @@ function EventDetail({ estaLogueado }) {
 
   // estado del evento cargado del backend
   const [evento, setEvento] = useState(null);
+  const [totalInscritos, setTotalInscritos] = useState(0);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
 
@@ -104,6 +105,7 @@ function EventDetail({ estaLogueado }) {
       setError("");
       const data = await eventoService.getEventoPorId(id);
       setEvento(data.evento);
+      setTotalInscritos(data.evento.totalInscritos || 0);
     } catch (err) {
       setError("Evento no encontrado");
       console.error(err);
@@ -130,11 +132,12 @@ function EventDetail({ estaLogueado }) {
         nombre: formInscripcion.nombre,
         correo: formInscripcion.correo,
         ciudad: formInscripcion.ciudad,
-        numPersonas: parseInt(formInscripcion.numPersonas),
+        numPersonas: parseInt(formInscripcion.numPersonas, 10),
       });
 
       // inscripcion exitosa
       setInscripcionExitosa(true);
+      setTotalInscritos((prev) => prev + parseInt(formInscripcion.numPersonas, 10));
       setFormInscripcion({ nombre: "", correo: "", ciudad: "", numPersonas: 1 });
 
       // cerramos el modal despues de 2 segundos
@@ -348,6 +351,13 @@ function EventDetail({ estaLogueado }) {
                   label: "💰 Precio",
                   value: evento.precio === 0 ? "Gratuito" : `${evento.precio}€`,
                   valueColor: evento.precio === 0 ? "#2e7d32" : "#91703d"
+                },
+                evento.capacidadMaxima && {
+                  label: "👥 Aforo",
+                  value: totalInscritos >= evento.capacidadMaxima
+                    ? `${totalInscritos}/${evento.capacidadMaxima} — Completo`
+                    : `${totalInscritos}/${evento.capacidadMaxima}`,
+                  valueColor: totalInscritos >= evento.capacidadMaxima ? "#c0392b" : "#1a1a1a"
                 },
                 evento.categoria && {
                   label: "🏷️ Categoría",
@@ -885,9 +895,10 @@ function EventDetail({ estaLogueado }) {
         zIndex: 50
       }}>
         <button
-          onClick={() => setModalAbierto(true)}
+          onClick={() => { if (!evento?.capacidadMaxima || totalInscritos < evento.capacidadMaxima) setModalAbierto(true); }}
+          disabled={!!(evento?.capacidadMaxima && totalInscritos >= evento.capacidadMaxima)}
           style={{
-            backgroundColor: "#b79868",
+            backgroundColor: evento?.capacidadMaxima && totalInscritos >= evento.capacidadMaxima ? "#9e9e9e" : "#b79868",
             color: "white",
             fontFamily: "'Baloo Bhai 2', Helvetica",
             fontWeight: "700",
@@ -895,15 +906,15 @@ function EventDetail({ estaLogueado }) {
             padding: esMobil ? "12px 32px" : "14px 48px",
             borderRadius: "999px",
             border: "none",
-            cursor: "pointer",
+            cursor: evento?.capacidadMaxima && totalInscritos >= evento.capacidadMaxima ? "not-allowed" : "pointer",
             boxShadow: "0 8px 28px rgba(145,112,61,0.45)",
             whiteSpace: "nowrap",
             transition: "background-color 0.15s ease"
           }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#b79868"}
+          onMouseEnter={(e) => { if (!(evento?.capacidadMaxima && totalInscritos >= evento.capacidadMaxima)) e.currentTarget.style.backgroundColor = "#91703d"; }}
+          onMouseLeave={(e) => { if (!(evento?.capacidadMaxima && totalInscritos >= evento.capacidadMaxima)) e.currentTarget.style.backgroundColor = "#b79868"; }}
         >
-          ¡Me apunto!
+          {evento?.capacidadMaxima && totalInscritos >= evento.capacidadMaxima ? "Aforo completo" : "¡Me apunto!"}
         </button>
       </div>
 

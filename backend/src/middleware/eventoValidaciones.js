@@ -18,6 +18,8 @@ const validarCrearEvento = [
   body("categoria").isIn(CATEGORIAS).withMessage("La categoría no es válida"),
   body("maxPersonasPorInscripcion").optional({ checkFalsy: true })
     .isInt({ min: 1 }).withMessage("El límite debe ser un número entero mayor que 0"),
+  body("capacidadMaxima").optional({ checkFalsy: true })
+    .isInt({ min: 1, max: 100000 }).withMessage("La capacidad máxima debe ser un entero entre 1 y 100.000"),
   validarCampos,
 ];
 
@@ -36,6 +38,8 @@ const validarEditarEvento = [
   body("categoria").optional().isIn(CATEGORIAS).withMessage("La categoría no es válida"),
   body("maxPersonasPorInscripcion").optional({ checkFalsy: true })
     .isInt({ min: 1 }).withMessage("El límite debe ser un número entero mayor que 0"),
+  body("capacidadMaxima").optional({ checkFalsy: true })
+    .isInt({ min: 1, max: 100000 }).withMessage("La capacidad máxima debe ser un entero entre 1 y 100.000"),
   validarCampos,
 ];
 

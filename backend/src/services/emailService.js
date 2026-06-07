@@ -332,6 +332,63 @@ const enviarCorreoContactoEmpresa = async ({ correoEmpresa, nombreEmpresa, nombr
   console.log(`Correo de contacto a empresa ${correoEmpresa} enviado desde ${emailRemitente}`);
 };
 
+// correo de confirmacion de inscripcion que se envia al usuario
+// incluye enlace de cancelacion con token unico
+const enviarCorreoConfirmacionUsuario = async ({
+  correoUsuario,
+  nombreUsuario,
+  nombreEvento,
+  nombreEmpresa,
+  fecha,
+  hora,
+  venue,
+  numPersonas,
+  tokenCancelacion,
+}) => {
+  const cancelUrl = `${process.env.FRONTEND_URL}/cancelar-inscripcion/${tokenCancelacion}`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background-color: #b79868; padding: 24px; text-align: center; border-radius: 12px 12px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">Me Apunto</h1>
+        <p style="color: white; margin: 8px 0 0 0; font-size: 14px;">¡Tu inscripción está confirmada!</p>
+      </div>
+      <div style="background-color: #f0e8dc; padding: 32px; border-radius: 0 0 12px 12px;">
+        <p style="font-size: 16px; color: #333;">Hola <strong>${escapeHtml(nombreUsuario)}</strong>,</p>
+        <p style="font-size: 16px; color: #333;">
+          Te has inscrito correctamente en <strong>"${escapeHtml(nombreEvento)}"</strong> organizado por <strong>${escapeHtml(nombreEmpresa)}</strong>.
+        </p>
+        <div style="background-color: white; border-radius: 8px; padding: 20px; margin: 20px 0;">
+          <h3 style="color: #91703d; margin: 0 0 16px 0;">Detalles de tu inscripción</h3>
+          <p style="margin: 8px 0; color: #333;">📅 <strong>Fecha:</strong> ${escapeHtml(fecha)} a las ${escapeHtml(hora)}</p>
+          <p style="margin: 8px 0; color: #333;">📍 <strong>Lugar:</strong> ${escapeHtml(venue)}</p>
+          <p style="margin: 8px 0; color: #333;">👥 <strong>Personas:</strong> ${numPersonas}</p>
+        </div>
+        <div style="background-color: #fff3e0; border-radius: 8px; padding: 16px; margin: 20px 0; border-left: 4px solid #b79868;">
+          <p style="margin: 0 0 12px 0; color: #333; font-size: 14px;">
+            Si no puedes asistir, usa el siguiente enlace para cancelar tu inscripción y liberar tu plaza:
+          </p>
+          <div style="text-align: center;">
+            <a href="${cancelUrl}" style="background-color: #c0392b; color: white; padding: 10px 28px; border-radius: 999px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block;">
+              Cancelar mi inscripción
+            </a>
+          </div>
+        </div>
+        <p style="font-size: 12px; color: #818181; margin-top: 24px;">Este correo ha sido enviado automáticamente por Me Apunto. Si no realizaste esta inscripción, ignora este mensaje.</p>
+      </div>
+    </div>
+  `;
+
+  await resend.emails.send({
+    from: "Me Apunto <onboarding@resend.dev>",
+    to: correoUsuario,
+    subject: `¡Inscripción confirmada en "${nombreEvento}"! – Me Apunto`,
+    html,
+  });
+
+  console.log(`Correo de confirmacion de inscripcion enviado a ${correoUsuario}`);
+};
+
 const enviarCorreoRespuestaMensaje = async ({ emailDestinatario, nombreDestinatario, nombreEmpresa, asuntoOriginal, respuesta }) => {
 
   const html = `
@@ -363,6 +420,7 @@ const enviarCorreoRespuestaMensaje = async ({ emailDestinatario, nombreDestinata
 
 module.exports = {
   enviarCorreoInscripcion,
+  enviarCorreoConfirmacionUsuario,
   enviarCorreoAvisoRenovacion,
   enviarCorreoContacto,
   enviarCorreoBienvenida,

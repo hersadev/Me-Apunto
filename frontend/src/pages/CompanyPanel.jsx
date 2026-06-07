@@ -83,6 +83,7 @@ function CompanyPanel({ setEstaLogueado }) {
     precio: 0,
     categoria: "",
     maxPersonasPorInscripcion: "",
+    capacidadMaxima: "",
   });
 
   const [imagenFile, setImagenFile] = useState(null);
@@ -313,6 +314,7 @@ function CompanyPanel({ setEstaLogueado }) {
       precio: 0,
       categoria: "",
       maxPersonasPorInscripcion: "",
+      capacidadMaxima: "",
     });
     setImagenFile(null);
     setFormularioAbierto(true);
@@ -334,6 +336,7 @@ const abrirFormularioEditar = (evento) => {
     precio: evento.precio,
     categoria: evento.categoria || "",
     maxPersonasPorInscripcion: evento.maxPersonasPorInscripcion || "",
+    capacidadMaxima: evento.capacidadMaxima || "",
   });
   setImagenFile(null);
   setFormularioAbierto(true);
@@ -355,6 +358,7 @@ const abrirFormularioRestaurar = (evento) => {
     precio: evento.precio,
     categoria: evento.categoria || "",
     maxPersonasPorInscripcion: evento.maxPersonasPorInscripcion || "",
+    capacidadMaxima: evento.capacidadMaxima || "",
   });
   setImagenFile(null);
   setFormularioAbierto(true);
@@ -949,15 +953,32 @@ const abrirFormularioRestaurar = (evento) => {
               </div>
 
               {/* limite de personas por inscripcion */}
-              <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: "4px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                 <label style={estiloLabel} htmlFor="maxPersonasPorInscripcion">
-                  Límite de personas por inscripción
+                  Límite por inscripción
                 </label>
                 <input
                   id="maxPersonasPorInscripcion"
                   type="number"
                   name="maxPersonasPorInscripcion"
                   value={formEvento.maxPersonasPorInscripcion}
+                  onChange={handleFormChange}
+                  min="1"
+                  placeholder="Sin límite"
+                  style={estiloInput}
+                />
+              </div>
+
+              {/* capacidad maxima total del evento */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <label style={estiloLabel} htmlFor="capacidadMaxima">
+                  Capacidad máxima total
+                </label>
+                <input
+                  id="capacidadMaxima"
+                  type="number"
+                  name="capacidadMaxima"
+                  value={formEvento.capacidadMaxima}
                   onChange={handleFormChange}
                   min="1"
                   placeholder="Sin límite"
@@ -1224,6 +1245,18 @@ const abrirFormularioRestaurar = (evento) => {
                       {evento.precio === 0 ? "Gratuito" : `${evento.precio}€`}
                     </div>
 
+                    {evento.capacidadMaxima && (
+                      <div style={{
+                        fontFamily: "'Baloo Bhai 2', Helvetica",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        color: (evento.totalInscritos || 0) >= evento.capacidadMaxima ? "#c0392b" : "#4a4a4a"
+                      }}>
+                        👥 {evento.totalInscritos || 0}/{evento.capacidadMaxima} inscritos
+                        {(evento.totalInscritos || 0) >= evento.capacidadMaxima && " · Completo"}
+                      </div>
+                    )}
+
                     {evento.patrocinado && (
                       <div style={{
                         backgroundColor: evento.cancelacionPatrocinio ? "#818181" : "#b79868",
@@ -1401,15 +1434,14 @@ const abrirFormularioRestaurar = (evento) => {
                         📍 {evento.venue}
                       </div>
 
-                      {evento.inscripciones && (
-                        <div style={{
-                          fontFamily: "'Baloo Bhai 2', Helvetica",
-                          fontSize: "13px",
-                          color: "#818181"
-                        }}>
-                          👥 {evento.inscripciones.length} inscripciones
-                        </div>
-                      )}
+                      <div style={{
+                        fontFamily: "'Baloo Bhai 2', Helvetica",
+                        fontSize: "13px",
+                        color: "#818181"
+                      }}>
+                        👥 {evento.totalInscritos || 0} inscritos
+                        {evento.capacidadMaxima && ` / ${evento.capacidadMaxima}`}
+                      </div>
 
                       <div style={{
                         fontFamily: "'Baloo Bhai 2', Helvetica",

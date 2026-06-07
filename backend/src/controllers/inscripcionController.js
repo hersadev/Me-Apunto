@@ -3,10 +3,11 @@
 // cuando el evento es de pago se aplica la comision del 5% para Me Apunto
 // los datos de inscripcion se envian por correo a la empresa organizadora
 
+const crypto = require("crypto");
 const Inscripcion = require("../models/Inscripcion");
 const Evento = require("../models/Evento");
 const Empresa = require("../models/Empresa");
-const { enviarCorreoInscripcion } = require("../services/emailService");
+const { enviarCorreoInscripcion, enviarCorreoConfirmacionUsuario } = require("../services/emailService");
 
 // POST /api/inscripciones
 // crea una nueva inscripcion a un evento
@@ -43,6 +44,24 @@ const crearInscripcion = async (req, res) => {
       });
     }
 
+    // comprobamos la capacidad maxima total del evento si la tiene
+    if (evento.capacidadMaxima !== null) {
+      const conteoRaw = await Inscripcion.aggregate([
+        { $match: { evento: evento._id } },
+        { $group: { _id: null, total: { $sum: "$numPersonas" } } },
+      ]);
+      const actuales = conteoRaw[0]?.total || 0;
+      const disponibles = evento.capacidadMaxima - actuales;
+      if (disponibles <= 0) {
+        return res.status(400).json({ mensaje: "El evento ha alcanzado su capacidad máxima" });
+      }
+      if (numPersonas > disponibles) {
+        return res.status(400).json({
+          mensaje: `Solo quedan ${disponibles} plaza${disponibles === 1 ? "" : "s"} disponible${disponibles === 1 ? "" : "s"}`
+        });
+      }
+    }
+
     // calculamos el importe total y la comision
     const importeTotal = evento.precio * numPersonas;
 
@@ -60,6 +79,9 @@ const crearInscripcion = async (req, res) => {
       });
     }
 
+    const tokenCancelacion = crypto.randomBytes(32).toString("hex");
+    const tokenExpiraEn = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 días
+
     // creamos la inscripcion en la base de datos
     const inscripcion = await Inscripcion.create({
       evento: eventoId,
@@ -71,7 +93,23 @@ const crearInscripcion = async (req, res) => {
       // si es de pago sera completed cuando el pago se procese
       estadoPago: evento.precio === 0 ? "free" : "pending",
       importePagado: importeTotal,
+      tokenCancelacion,
+      tokenExpiraEn,
     });
+
+    // re-verificamos la capacidad tras el insert para cubrir la ventana de concurrencia
+    // si dos requests pasaron el check al mismo tiempo, el que llegue segundo hace rollback
+    if (evento.capacidadMaxima !== null) {
+      const recheckRaw = await Inscripcion.aggregate([
+        { $match: { evento: evento._id } },
+        { $group: { _id: null, total: { $sum: "$numPersonas" } } },
+      ]);
+      const totalActual = recheckRaw[0]?.total || 0;
+      if (totalActual > evento.capacidadMaxima) {
+        await inscripcion.deleteOne();
+        return res.status(400).json({ mensaje: "El evento ha alcanzado su capacidad máxima. Inténtalo de nuevo." });
+      }
+    }
 
     // enviamos correo a la empresa con los datos de la inscripcion
     // si falla el correo no interrumpimos la inscripcion
@@ -93,6 +131,27 @@ const crearInscripcion = async (req, res) => {
     } catch (errorCorreo) {
       // el correo fallo pero la inscripcion se guardo correctamente
       console.error("Error al enviar correo de inscripcion:", errorCorreo.message);
+    }
+
+    // enviamos correo de confirmacion al usuario con el enlace de cancelacion
+    // solo para eventos gratuitos - los de pago tienen su propio flujo de cancelacion
+    if (evento.precio === 0) try {
+      const fechaFormateada = new Date(evento.fecha).toLocaleDateString("es-ES", {
+        day: "2-digit", month: "2-digit", year: "numeric"
+      });
+      await enviarCorreoConfirmacionUsuario({
+        correoUsuario: correo,
+        nombreUsuario: nombre,
+        nombreEvento: evento.titulo,
+        nombreEmpresa: evento.empresa?.nombre || "",
+        fecha: fechaFormateada,
+        hora: evento.hora,
+        venue: evento.venue,
+        numPersonas,
+        tokenCancelacion,
+      });
+    } catch (errorCorreoUsuario) {
+      console.error("Error al enviar correo de confirmacion al usuario:", errorCorreoUsuario.message);
     }
 
     res.status(201).json({
@@ -175,7 +234,69 @@ const obtenerInscripcionesEvento = async (req, res) => {
   }
 };
 
+// GET /api/inscripciones/cancelar/:token
+// devuelve los datos de la inscripcion para que el usuario confirme antes de cancelar
+// ruta publica - el token actua como autenticacion
+const obtenerInscripcionPorToken = async (req, res) => {
+  try {
+    const inscripcion = await Inscripcion.findOne({ tokenCancelacion: req.params.token })
+      .populate("evento", "titulo fecha hora venue");
+
+    if (!inscripcion) {
+      return res.status(404).json({ mensaje: "Inscripción no encontrada o ya cancelada" });
+    }
+
+    if (inscripcion.tokenExpiraEn && inscripcion.tokenExpiraEn < new Date()) {
+      return res.status(410).json({ mensaje: "El enlace de cancelación ha expirado" });
+    }
+
+    res.json({
+      inscripcion: {
+        id: inscripcion._id,
+        nombre: inscripcion.nombre,
+        numPersonas: inscripcion.numPersonas,
+        evento: {
+          titulo: inscripcion.evento?.titulo,
+          fecha: inscripcion.evento?.fecha,
+          hora: inscripcion.evento?.hora,
+          venue: inscripcion.evento?.venue,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error al obtener inscripcion por token:", error);
+    res.status(500).json({ mensaje: "Error interno del servidor" });
+  }
+};
+
+// DELETE /api/inscripciones/cancelar/:token
+// cancela (elimina) la inscripcion usando el token unico del usuario
+// ruta publica - el token actua como autenticacion
+const cancelarInscripcion = async (req, res) => {
+  try {
+    const inscripcion = await Inscripcion.findOne({ tokenCancelacion: req.params.token })
+      .populate("evento", "titulo");
+
+    if (!inscripcion) {
+      return res.status(404).json({ mensaje: "Inscripción no encontrada o ya cancelada" });
+    }
+
+    if (inscripcion.tokenExpiraEn && inscripcion.tokenExpiraEn < new Date()) {
+      return res.status(410).json({ mensaje: "El enlace de cancelación ha expirado" });
+    }
+
+    await inscripcion.deleteOne();
+
+    res.json({ mensaje: "Inscripción cancelada correctamente" });
+  } catch (error) {
+    console.error("Error al cancelar inscripcion:", error);
+    res.status(500).json({ mensaje: "Error interno del servidor" });
+  }
+};
+
 module.exports = {
   crearInscripcion,
   obtenerInscripcionesEvento,
+  obtenerInscripcionPorToken,
+  cancelarInscripcion,
 };

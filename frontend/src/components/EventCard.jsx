@@ -9,9 +9,13 @@ function EventCard({ evento, destacado = false }) {
   const [esMobil, setEsMobil] = useState(() => window.innerWidth < 768);
 
   useEffect(() => {
-    const handler = () => setEsMobil(window.innerWidth < 768);
+    let timer;
+    const handler = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => setEsMobil(window.innerWidth < 768), 100);
+    };
     window.addEventListener("resize", handler);
-    return () => window.removeEventListener("resize", handler);
+    return () => { window.removeEventListener("resize", handler); clearTimeout(timer); };
   }, []);
 
   const handleKeyDown = (e) => {
@@ -85,6 +89,26 @@ function EventCard({ evento, destacado = false }) {
         }}>
           {evento.precio === 0 ? "Gratis" : `${evento.precio}€`}
         </div>
+
+        {/* badge aforo */}
+        {evento.capacidadMaxima && (
+          <div style={{
+            position: "absolute", bottom: "10px", left: "10px",
+            backgroundColor: (evento.totalInscritos || 0) >= evento.capacidadMaxima
+              ? "rgba(180,30,30,0.9)"
+              : "rgba(0,0,0,0.55)",
+            color: "white",
+            fontFamily: "'Baloo Bhai 2', Helvetica",
+            fontSize: "11px", fontWeight: "700",
+            padding: "3px 8px", borderRadius: "999px",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.2)"
+          }}>
+            {(evento.totalInscritos || 0) >= evento.capacidadMaxima
+              ? "Completo"
+              : `${evento.totalInscritos || 0}/${evento.capacidadMaxima}`
+            }
+          </div>
+        )}
       </div>
 
       {/* titulo */}

@@ -62,6 +62,19 @@ const inscripcionSchema = new mongoose.Schema(
         type: Number,
         default: 0,
     },
+
+    // token unico para que el usuario pueda cancelar su inscripcion sin cuenta
+    tokenCancelacion: {
+        type: String,
+        unique: true,
+        sparse: true,
+    },
+
+    // fecha de expiracion del token de cancelacion (30 dias)
+    tokenExpiraEn: {
+        type: Date,
+        default: null,
+    },
 },
     {
     timestamps: true,
