@@ -14,6 +14,7 @@ function CancelarInscripcion() {
   const [error, setError] = useState("");
   const [cancelando, setCancelando] = useState(false);
   const [cancelada, setCancelada] = useState(false);
+  const [motivoCancelacion, setMotivoCancelacion] = useState("");
 
   useEffect(() => {
     const cargar = async () => {
@@ -33,7 +34,7 @@ function CancelarInscripcion() {
   const handleCancelar = async () => {
     setCancelando(true);
     try {
-      await inscripcionService.cancelarInscripcion(token);
+      await inscripcionService.cancelarInscripcion(token, motivoCancelacion.trim() || null);
       setCancelada(true);
     } catch (err) {
       setError(err.response?.data?.mensaje || "Error al cancelar la inscripción");
@@ -213,6 +214,41 @@ function CancelarInscripcion() {
                 }}>
                   👤 {inscripcion.nombre} · {inscripcion.numPersonas} persona{inscripcion.numPersonas !== 1 ? "s" : ""}
                 </p>
+              </div>
+
+              <div style={{ marginBottom: "20px", textAlign: "left" }}>
+                <label style={{
+                  fontFamily: "'Baloo Bhai 2', Helvetica",
+                  fontSize: "14px", fontWeight: "600", color: "#4a4a4a",
+                  display: "block", marginBottom: "6px"
+                }}>
+                  ¿Quieres decirnos el motivo? <span style={{ fontWeight: "400", color: "#818181" }}>(opcional)</span>
+                </label>
+                <textarea
+                  value={motivoCancelacion}
+                  onChange={(e) => setMotivoCancelacion(e.target.value)}
+                  maxLength={500}
+                  rows={3}
+                  placeholder="Cuéntanos si quieres, nos ayuda a mejorar..."
+                  style={{
+                    width: "100%",
+                    backgroundColor: "#f8f8f8",
+                    border: "1px solid #d4b896",
+                    borderRadius: "10px",
+                    padding: "10px 12px",
+                    fontFamily: "'Baloo Bhai 2', Helvetica",
+                    fontSize: "14px",
+                    color: "#1a1a1a",
+                    resize: "vertical",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+                {motivoCancelacion.length > 0 && (
+                  <p style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "11px", color: "#a0a0a0", margin: "4px 0 0 0", textAlign: "right" }}>
+                    {motivoCancelacion.length}/500
+                  </p>
+                )}
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>

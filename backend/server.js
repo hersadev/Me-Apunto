@@ -88,6 +88,7 @@ app.use("/api/contacto", require("./src/routes/contactoRoutes"));
 app.use("/api/suscripciones/baja", bajaLimiter);
 app.use("/api/suscripciones", suscripcionLimiter, require("./src/routes/suscripcionEmpresaRoutes"));
 app.use("/api/mensajes", mensajeLimiter, require("./src/routes/mensajeRoutes"));
+app.use("/api/notificaciones", require("./src/routes/notificacionRoutes"));
 
 app.get("/", (req, res) => {
     res.json({ mensaje: "API de Me Apunto funcionando correctamente" });

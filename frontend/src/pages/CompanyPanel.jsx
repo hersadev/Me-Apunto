@@ -2,6 +2,8 @@
 // conectado con el backend usando eventoService y authService
 
 import React, { useState, useEffect, useRef } from "react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import Cropper from "react-easy-crop";
@@ -14,6 +16,8 @@ import authService from "../services/authService";
 import eventoService from "../services/eventoService";
 import mensajeService from "../services/mensajeService";
 import suscripcionEmpresaService from "../services/suscripcionEmpresaService";
+import notificacionService from "../services/notificacionService";
+import inscripcionService from "../services/inscripcionService";
 
 const POR_PAGINA = 8;
 
@@ -122,6 +126,15 @@ function CompanyPanel({ setEstaLogueado }) {
   const [mensajeCorreo, setMensajeCorreo] = useState("");
   const [enviandoCorreo, setEnviandoCorreo] = useState(false);
   const [resultadoCorreo, setResultadoCorreo] = useState(null);
+
+  const [notificaciones, setNotificaciones] = useState([]);
+  const [cargandoNotificaciones, setCargandoNotificaciones] = useState(false);
+  const [notificacionesNoLeidas, setNotificacionesNoLeidas] = useState(0);
+  const [filtroNotificaciones, setFiltroNotificaciones] = useState("todas");
+
+  const [modalDetalleEvento, setModalDetalleEvento] = useState(null);
+  const [inscripcionesDetalle, setInscripcionesDetalle] = useState([]);
+  const [cargandoDetalle, setCargandoDetalle] = useState(false);
 
   const [formularioAbierto, setFormularioAbierto] = useState(false);
   const [eventosPasadosAbierto, setEventosPasadosAbierto] = useState(false);
@@ -235,6 +248,7 @@ function CompanyPanel({ setEstaLogueado }) {
 
   useEffect(() => {
     cargarEventos();
+    cargarNotificaciones();
     return () => clearTimeout(respuestaTimerRef.current);
   }, []);
 
@@ -259,6 +273,9 @@ function CompanyPanel({ setEstaLogueado }) {
     }
     if (seccionActiva === "suscriptores" && !suscriptores) {
       cargarSuscriptores();
+    }
+    if (seccionActiva === "notificaciones") {
+      cargarNotificaciones();
     }
   }, [seccionActiva]);
 
@@ -302,6 +319,41 @@ function CompanyPanel({ setEstaLogueado }) {
       setSuscriptores(null);
     } finally {
       setCargandoSuscriptores(false);
+    }
+  };
+
+  const cargarNotificaciones = async () => {
+    setCargandoNotificaciones(true);
+    try {
+      const data = await notificacionService.getNotificaciones();
+      setNotificaciones(data.notificaciones || []);
+      setNotificacionesNoLeidas(data.noLeidas || 0);
+    } catch (err) {
+      if (err.response?.status !== 401) {
+        console.error("Error al cargar notificaciones:", err);
+      }
+    } finally {
+      setCargandoNotificaciones(false);
+    }
+  };
+
+  const handleMarcarNotificacionLeida = async (id) => {
+    try {
+      await notificacionService.marcarLeida(id);
+      setNotificaciones((prev) => prev.map((n) => n._id === id ? { ...n, leida: true } : n));
+      setNotificacionesNoLeidas((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error("Error al marcar notificación:", err);
+    }
+  };
+
+  const handleMarcarTodasLeidas = async () => {
+    try {
+      await notificacionService.marcarTodasLeidas();
+      setNotificaciones((prev) => prev.map((n) => ({ ...n, leida: true })));
+      setNotificacionesNoLeidas(0);
+    } catch (err) {
+      console.error("Error al marcar todas las notificaciones:", err);
     }
   };
 
@@ -659,6 +711,97 @@ const abrirFormularioRestaurar = (evento) => {
     }
   };
 
+  const descargarCSV = (filas, nombre) => {
+    const csv = filas
+      .map((fila) => fila.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = nombre;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const descargarPDF = async (titulo, cabeceras, filas, subtitulo) => {
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+
+    try {
+      const fontBuffer = await fetch(`${process.env.PUBLIC_URL}/fonts/Butterpop.ttf`).then((r) => r.arrayBuffer());
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(fontBuffer)));
+      doc.addFileToVFS("Butterpop.ttf", base64);
+      doc.addFont("Butterpop.ttf", "Butterpop", "normal");
+    } catch { /* usa helvetica si no carga la fuente */ }
+
+    const usaButterpop = doc.getFontList()["Butterpop"];
+
+    const fechaDescarga = new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
+    const nombreEmpresa = empresa?.nombre || "";
+    const anchoPage = doc.internal.pageSize.getWidth();
+
+    // cabecera: "ME APUNTO" en dorado + empresa y fecha a la derecha
+    doc.setFont(usaButterpop ? "Butterpop" : "helvetica", "normal");
+    doc.setFontSize(20);
+    doc.setTextColor(145, 112, 61);
+    doc.text("ME APUNTO", 14, 16);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(80, 80, 80);
+    if (nombreEmpresa) {
+      doc.text(nombreEmpresa, anchoPage - 14, 12, { align: "right" });
+    }
+    doc.text(`Descargado el ${fechaDescarga}`, anchoPage - 14, nombreEmpresa ? 18 : 14, { align: "right" });
+
+    // línea separadora
+    doc.setDrawColor(210, 190, 160);
+    doc.setLineWidth(0.3);
+    doc.line(14, 21, anchoPage - 14, 21);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(30, 30, 30);
+    doc.text(titulo, 14, 28);
+
+    if (subtitulo) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text(subtitulo, 14, 34);
+    }
+
+    autoTable(doc, {
+      head: [cabeceras],
+      body: filas.map((f) => f.map((c) => String(c ?? ""))),
+      startY: subtitulo ? 39 : 33,
+      styles: { font: "helvetica", fontSize: 10, cellPadding: 4 },
+      headStyles: { fillColor: [145, 112, 61], textColor: 255, fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [250, 246, 240] },
+      margin: { left: 14, right: 14 },
+    });
+
+    const nombreFichero = titulo
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "") + ".pdf";
+    doc.save(nombreFichero);
+  };
+
+  const abrirDetalleEvento = async (evento) => {
+    setModalDetalleEvento(evento);
+    setCargandoDetalle(true);
+    setInscripcionesDetalle([]);
+    try {
+      const data = await inscripcionService.getInscripcionesEvento(evento._id);
+      setInscripcionesDetalle(data.inscripciones || []);
+    } catch (err) {
+      console.error("Error al cargar inscripciones:", err);
+    } finally {
+      setCargandoDetalle(false);
+    }
+  };
+
   const cerrarSesion = async () => {
     await authService.logout();
     setEstaLogueado(false);
@@ -852,7 +995,7 @@ const abrirFormularioRestaurar = (evento) => {
             { id: "mensajes", label: "Mensajes", badge: mensajes.filter((m) => !m.leido).length || 0 },
             { id: "analiticas", label: "Analíticas" },
             { id: "suscriptores", label: "Suscriptores" },
-            { id: "notificaciones", label: "Notificaciones" },
+            { id: "notificaciones", label: "Notificaciones", badge: notificacionesNoLeidas },
             { id: "perfil", label: "Perfil" },
           ];
           return (
@@ -2107,13 +2250,14 @@ const abrirFormularioRestaurar = (evento) => {
                 {/* tarjetas KPI */}
                 <div style={{
                   display: "grid",
-                  gridTemplateColumns: esMobil ? "1fr 1fr" : "repeat(4, 1fr)",
+                  gridTemplateColumns: esMobil ? "1fr 1fr" : "repeat(5, 1fr)",
                   gap: "16px",
                   marginBottom: "36px"
                 }}>
                   {[
                     { label: "Visitas totales", valor: analiticas.resumen.totalVistas, icono: "👁️" },
                     { label: "Inscripciones totales", valor: analiticas.resumen.totalInscritos, icono: "✅" },
+                    { label: "Suscriptores", valor: analiticas.resumen.totalSuscriptores ?? 0, icono: "🔔" },
                     { label: "Eventos activos", valor: analiticas.resumen.totalEventosPublicados, icono: "📅" },
                     { label: "Eventos pasados", valor: analiticas.resumen.totalEventosPasados, icono: "🏁" },
                   ].map((kpi) => (
@@ -2394,6 +2538,91 @@ const abrirFormularioRestaurar = (evento) => {
                   </div>
                 )}
 
+                {/* suscriptores: evolución semanal */}
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: esMobil ? "1fr" : "1fr 1fr",
+                  gap: "24px",
+                  marginTop: "24px"
+                }}>
+                  <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px 24px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
+                    <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", marginBottom: "4px" }}>
+                      🔔 Nuevos suscriptores
+                    </h3>
+                    <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>Últimas 8 semanas</p>
+                    {(!analiticas.evolucionSuscriptores || analiticas.evolucionSuscriptores.length === 0) ? (
+                      <p style={{ fontSize: "14px", color: "#818181" }}>Sin datos todavía</p>
+                    ) : (() => {
+                      const maxSem = Math.max(...analiticas.evolucionSuscriptores.map((s) => s.nuevos));
+                      return (
+                        <div style={{ display: "flex", alignItems: "flex-end", gap: "6px", height: "120px", borderBottom: "1px solid #f0e8dc", paddingBottom: "4px" }}>
+                          {analiticas.evolucionSuscriptores.map((s) => {
+                            const pct = maxSem > 0 ? (s.nuevos / maxSem) * 100 : 0;
+                            return (
+                              <div key={s.semana} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%", justifyContent: "flex-end" }}>
+                                <span style={{ fontSize: "9px", color: "#b79868", fontWeight: "700", marginBottom: "2px" }}>{s.nuevos}</span>
+                                <div style={{ width: "100%", height: `${pct}%`, backgroundColor: "#b79868", borderRadius: "3px 3px 0 0", minHeight: "4px" }} />
+                                <span style={{ fontSize: "8px", color: "#818181", marginTop: "4px", whiteSpace: "nowrap" }}>{s.semana}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* inscripciones por evento — tabla completa */}
+                  <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px 24px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
+                    <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", marginBottom: "4px" }}>
+                      ✅ Inscritos por evento
+                    </h3>
+                    <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>Todos los eventos, ordenados por inscritos</p>
+                    {(!analiticas.inscripcionesPorEvento || analiticas.inscripcionesPorEvento.length === 0) ? (
+                      <p style={{ fontSize: "14px", color: "#818181" }}>Sin eventos todavía</p>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "300px", overflowY: "auto" }}>
+                        {analiticas.inscripcionesPorEvento.map((ev, i) => (
+                          <div key={String(ev._id)} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <span style={{
+                              width: "22px", height: "22px", borderRadius: "50%", flexShrink: 0,
+                              backgroundColor: i === 0 ? "#91703d" : "#f0e8dc",
+                              color: i === 0 ? "white" : "#91703d",
+                              fontSize: "11px", fontWeight: "700",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                            }}>{i + 1}</span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ fontSize: "13px", color: "#1a1a1a", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {ev.titulo}
+                              </p>
+                              <p style={{ fontSize: "11px", color: "#a0a0a0", margin: 0 }}>
+                                {ev.activo ? "Activo" : "Pasado"} · {new Date(ev.fecha).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })}
+                              </p>
+                            </div>
+                            <span style={{ fontSize: "14px", fontWeight: "700", color: "#91703d", flexShrink: 0 }}>
+                              {ev.totalInscritos}
+                              {ev.capacidadMaxima ? <span style={{ fontSize: "11px", color: "#a0a0a0", fontWeight: "400" }}>/{ev.capacidadMaxima}</span> : ""}
+                            </span>
+                            <button
+                              onClick={() => abrirDetalleEvento(ev)}
+                              title="Ver lista de inscritos"
+                              style={{
+                                backgroundColor: "#f0e8dc", color: "#91703d",
+                                border: "none", borderRadius: "8px",
+                                fontSize: "11px", fontWeight: "700",
+                                padding: "4px 8px", cursor: "pointer",
+                                fontFamily: "'Baloo Bhai 2', Helvetica",
+                                flexShrink: 0,
+                              }}
+                            >
+                              Ver lista
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* eventos con aforo completo */}
                 {analiticas.aforoCompleto.length > 0 && (
                   <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px 24px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)", marginTop: "24px" }}>
@@ -2481,23 +2710,53 @@ const abrirFormularioRestaurar = (evento) => {
 
                 {/* lista de suscriptores */}
                 <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px 24px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "8px" }}>
                     <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", margin: 0 }}>
                       👥 {suscriptores.length} suscriptor{suscriptores.length !== 1 ? "es" : ""}
                     </h3>
                     {suscriptores.length > 0 && (
-                      <button
-                        onClick={() => {
-                          if (seleccionados.size === suscriptores.length) {
-                            setSeleccionados(new Set());
-                          } else {
-                            setSeleccionados(new Set(suscriptores.map((s) => s.email)));
-                          }
-                        }}
-                        style={{ background: "none", border: "none", color: "#91703d", fontWeight: "700", cursor: "pointer", fontSize: "13px", fontFamily: "'Baloo Bhai 2', Helvetica" }}
-                      >
-                        {seleccionados.size === suscriptores.length ? "Deseleccionar todos" : "Seleccionar todos"}
-                      </button>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                        <button
+                          onClick={() => {
+                            if (seleccionados.size === suscriptores.length) {
+                              setSeleccionados(new Set());
+                            } else {
+                              setSeleccionados(new Set(suscriptores.map((s) => s.email)));
+                            }
+                          }}
+                          style={{ background: "none", border: "none", color: "#91703d", fontWeight: "700", cursor: "pointer", fontSize: "13px", fontFamily: "'Baloo Bhai 2', Helvetica" }}
+                        >
+                          {seleccionados.size === suscriptores.length ? "Deseleccionar todos" : "Seleccionar todos"}
+                        </button>
+                        <button
+                          onClick={() => {
+                            const filas = [
+                              ["Email", "Fecha de suscripción"],
+                              ...suscriptores.map((s) => [
+                                s.email,
+                                new Date(s.createdAt).toLocaleDateString("es-ES"),
+                              ]),
+                            ];
+                            descargarCSV(filas, `suscriptores-${empresa?.nombre || "empresa"}.csv`);
+                          }}
+                          style={{ backgroundColor: "#f0e8dc", color: "#91703d", border: "none", borderRadius: "8px", fontSize: "12px", fontWeight: "700", padding: "5px 10px", cursor: "pointer", fontFamily: "'Baloo Bhai 2', Helvetica" }}
+                        >
+                          ↓ CSV
+                        </button>
+                        <button
+                          onClick={() => {
+                            descargarPDF(
+                              `Suscriptores — ${empresa?.nombre || ""}`,
+                              ["Email", "Fecha de suscripción"],
+                              suscriptores.map((s) => [s.email, new Date(s.createdAt).toLocaleDateString("es-ES")]),
+                              `Total: ${suscriptores.length} suscriptor${suscriptores.length !== 1 ? "es" : ""}`
+                            );
+                          }}
+                          style={{ backgroundColor: "#91703d", color: "white", border: "none", borderRadius: "8px", fontSize: "12px", fontWeight: "700", padding: "5px 10px", cursor: "pointer", fontFamily: "'Baloo Bhai 2', Helvetica" }}
+                        >
+                          ↓ PDF
+                        </button>
+                      </div>
                     )}
                   </div>
 
@@ -2599,15 +2858,189 @@ const abrirFormularioRestaurar = (evento) => {
 
         {/* notificaciones */}
         {seccionActiva === "notificaciones" && (
-          <div style={{
-            textAlign: "center",
-            padding: "80px 0",
-            color: "#818181",
-            fontFamily: "'Baloo Bhai 2', Helvetica",
-            fontSize: "18px"
-          }}>
-            <div style={{ fontSize: "48px", marginBottom: "16px" }}>🔔</div>
-            Notificaciones próximamente
+          <div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", marginBottom: "16px" }}>
+              <h2 style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "22px", fontWeight: "700", color: "#1a1a1a", margin: 0 }}>
+                Notificaciones {notificacionesNoLeidas > 0 && (
+                  <span style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "14px", fontWeight: "700", backgroundColor: "#e53e3e", color: "white", borderRadius: "999px", padding: "2px 10px", marginLeft: "8px", verticalAlign: "middle" }}>
+                    {notificacionesNoLeidas} nueva{notificacionesNoLeidas !== 1 ? "s" : ""}
+                  </span>
+                )}
+              </h2>
+              {notificacionesNoLeidas > 0 && (
+                <button
+                  onClick={handleMarcarTodasLeidas}
+                  style={{ ...estiloBotonSecundario, fontSize: "13px" }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#b79868"}
+                >
+                  Marcar todas como leídas
+                </button>
+              )}
+            </div>
+
+            {/* filtros */}
+            {!cargandoNotificaciones && notificaciones.length > 0 && (() => {
+              const filtros = [
+                { id: "todas", label: "Todas" },
+                { id: "no_leidas", label: "No leídas" },
+                { id: "inscripcion", label: "✅ Inscripciones" },
+                { id: "cancelacion_inscripcion", label: "❌ Cancelaciones" },
+                { id: "suscripcion", label: "🔔 Suscripciones" },
+                { id: "mensaje", label: "✉️ Mensajes" },
+              ];
+              return (
+                <div style={{
+                  display: "flex",
+                  gap: "6px",
+                  flexWrap: "wrap",
+                  marginBottom: "20px",
+                }}>
+                  {filtros.map((f) => (
+                    <button
+                      key={f.id}
+                      onClick={() => setFiltroNotificaciones(f.id)}
+                      style={{
+                        fontFamily: "'Baloo Bhai 2', Helvetica",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        padding: "6px 14px",
+                        borderRadius: "999px",
+                        border: filtroNotificaciones === f.id ? "none" : "1px solid #d4c4a8",
+                        backgroundColor: filtroNotificaciones === f.id ? "#91703d" : "white",
+                        color: filtroNotificaciones === f.id ? "white" : "#4a4a4a",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                        minHeight: "36px",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
+
+            {cargandoNotificaciones && (
+              <div style={{ textAlign: "center", padding: "48px 0", color: "#818181", fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "16px" }}>
+                Cargando notificaciones...
+              </div>
+            )}
+
+            {!cargandoNotificaciones && notificaciones.length === 0 && (
+              <div style={{ textAlign: "center", padding: "80px 0" }}>
+                <div style={{ fontSize: "48px", marginBottom: "16px" }}>🔔</div>
+                <p style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "16px", color: "#818181" }}>
+                  Sin notificaciones por ahora.<br />
+                  Aquí verás las inscripciones, suscripciones y mensajes nuevos.
+                </p>
+              </div>
+            )}
+
+            {!cargandoNotificaciones && notificaciones.length > 0 && (() => {
+              const notifFiltradas = notificaciones.filter((n) => {
+                if (filtroNotificaciones === "todas") return true;
+                if (filtroNotificaciones === "no_leidas") return !n.leida;
+                return n.tipo === filtroNotificaciones;
+              });
+              return (
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {notifFiltradas.length === 0 && (
+                  <div style={{ textAlign: "center", padding: "48px 0", color: "#818181", fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "15px" }}>
+                    No hay notificaciones en este filtro.
+                  </div>
+                )}
+                {notifFiltradas.map((n) => {
+                  const icono = n.tipo === "inscripcion" ? "✅" : n.tipo === "cancelacion_inscripcion" ? "❌" : n.tipo === "suscripcion" ? "🔔" : "✉️";
+                  const textoTipo = n.tipo === "inscripcion"
+                    ? "Nueva inscripción"
+                    : n.tipo === "cancelacion_inscripcion"
+                    ? "Cancelación de inscripción"
+                    : n.tipo === "suscripcion"
+                    ? "Nueva suscripción"
+                    : "Nuevo mensaje";
+
+                  const fechaFormateada = new Date(n.createdAt).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+                  return (
+                    <div
+                      key={n._id}
+                      onClick={() => !n.leida && handleMarcarNotificacionLeida(n._id)}
+                      style={{
+                        backgroundColor: n.leida ? "white" : "#fffbf2",
+                        border: n.leida ? "1px solid #e8e0d4" : "1px solid #f0c060",
+                        borderRadius: "12px",
+                        padding: esMobil ? "14px" : "16px 20px",
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: "14px",
+                        cursor: n.leida ? "default" : "pointer",
+                        transition: "background-color 0.15s ease",
+                        boxShadow: n.leida ? "none" : "0 2px 8px rgba(240,192,96,0.15)",
+                      }}
+                    >
+                      <div style={{ fontSize: "24px", flexShrink: 0, lineHeight: 1, paddingTop: "2px" }}>{icono}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "4px" }}>
+                          <span style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "14px", fontWeight: "700", color: "#1a1a1a" }}>
+                            {textoTipo}
+                          </span>
+                          {!n.leida && (
+                            <span style={{ backgroundColor: "#e53e3e", color: "white", borderRadius: "999px", fontSize: "10px", fontWeight: "700", padding: "1px 7px", fontFamily: "'Baloo Bhai 2', Helvetica" }}>
+                              NUEVA
+                            </span>
+                          )}
+                        </div>
+
+                        {(n.tipo === "inscripcion" || n.tipo === "cancelacion_inscripcion") && (
+                          <>
+                            <p style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "13px", color: "#4a4a4a", margin: "0 0 2px 0" }}>
+                              <strong>{n.datos.nombre}</strong> ({n.datos.correo})
+                              {n.datos.numPersonas > 1 && ` · ${n.datos.numPersonas} personas`}
+                              {n.datos.eventoTitulo && <> · <em>{n.datos.eventoTitulo}</em></>}
+                            </p>
+                            {n.tipo === "cancelacion_inscripcion" && n.datos.motivoCancelacion && (
+                              <p style={{
+                                fontFamily: "'Baloo Bhai 2', Helvetica",
+                                fontSize: "12px",
+                                color: "#5a5a5a",
+                                backgroundColor: "#f5f0e8",
+                                borderRadius: "8px",
+                                padding: "6px 10px",
+                                margin: "4px 0 2px 0",
+                                borderLeft: "3px solid #b79868",
+                                fontStyle: "italic",
+                              }}>
+                                "{n.datos.motivoCancelacion}"
+                              </p>
+                            )}
+                          </>
+                        )}
+
+                        {n.tipo === "suscripcion" && (
+                          <p style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "13px", color: "#4a4a4a", margin: "0 0 2px 0" }}>
+                            {n.datos.correo} se ha suscrito a tu empresa.
+                          </p>
+                        )}
+
+                        {n.tipo === "mensaje" && (
+                          <p style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "13px", color: "#4a4a4a", margin: "0 0 2px 0" }}>
+                            <strong>{n.datos.nombre}</strong> ({n.datos.correo}) te ha enviado un mensaje.
+                          </p>
+                        )}
+
+                        <p style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "11px", color: "#a0a0a0", margin: 0 }}>
+                          {fechaFormateada}
+                          {!n.leida && <span style={{ marginLeft: "8px", color: "#b79868" }}>· Clic para marcar como leída</span>}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              );
+            })()}
           </div>
         )}
 
@@ -3451,6 +3884,122 @@ const abrirFormularioRestaurar = (evento) => {
             >
               {fotoSubiendo ? "Subiendo..." : "Usar este encuadre"}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* modal detalle inscripciones por evento */}
+      {modalDetalleEvento && (
+        <div
+          onClick={() => setModalDetalleEvento(null)}
+          style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.6)", zIndex: 1200, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => { if (e.key === "Escape") setModalDetalleEvento(null); }}
+            role="dialog"
+            aria-modal="true"
+            style={{
+              backgroundColor: "white", borderRadius: "20px",
+              padding: esMobil ? "20px 16px" : "28px 32px",
+              width: "100%", maxWidth: "760px",
+              maxHeight: "90vh", overflowY: "auto",
+              boxShadow: "0 8px 40px rgba(0,0,0,0.25)",
+              position: "relative",
+            }}
+          >
+            <button
+              onClick={() => setModalDetalleEvento(null)}
+              style={{ position: "absolute", top: "16px", right: "20px", background: "none", border: "none", fontSize: "22px", cursor: "pointer", color: "#4a4a4a", lineHeight: 1 }}
+              aria-label="Cerrar"
+            >✕</button>
+
+            <h2 style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "18px", fontWeight: "700", color: "#1a1a1a", marginBottom: "4px", paddingRight: "32px" }}>
+              Inscritos — {modalDetalleEvento.titulo}
+            </h2>
+            <p style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "13px", color: "#818181", marginBottom: "20px", marginTop: 0 }}>
+              {new Date(modalDetalleEvento.fecha).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })}
+            </p>
+
+            {cargandoDetalle && (
+              <p style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "15px", color: "#818181", textAlign: "center", padding: "32px 0" }}>
+                Cargando inscripciones...
+              </p>
+            )}
+
+            {!cargandoDetalle && inscripcionesDetalle.length === 0 && (
+              <p style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "15px", color: "#818181", textAlign: "center", padding: "32px 0" }}>
+                Ninguna inscripción todavía.
+              </p>
+            )}
+
+            {!cargandoDetalle && inscripcionesDetalle.length > 0 && (
+              <>
+                <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap", alignItems: "center" }}>
+                  <span style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "13px", color: "#4a4a4a" }}>
+                    {inscripcionesDetalle.length} inscripcion{inscripcionesDetalle.length !== 1 ? "es" : ""} · {inscripcionesDetalle.reduce((a, i) => a + i.numPersonas, 0)} persona{inscripcionesDetalle.reduce((a, i) => a + i.numPersonas, 0) !== 1 ? "s" : ""}
+                  </span>
+                  <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
+                    <button
+                      onClick={() => {
+                        const filas = [
+                          ["Nombre", "Correo", "Ciudad", "Personas", "Fecha inscripción"],
+                          ...inscripcionesDetalle.map((i) => [
+                            i.nombre, i.correo, i.ciudad, i.numPersonas,
+                            new Date(i.createdAt).toLocaleDateString("es-ES"),
+                          ]),
+                        ];
+                        descargarCSV(filas, `inscritos-${modalDetalleEvento.titulo.slice(0, 30)}.csv`);
+                      }}
+                      style={{ backgroundColor: "#f0e8dc", color: "#91703d", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: "700", padding: "6px 12px", cursor: "pointer", fontFamily: "'Baloo Bhai 2', Helvetica" }}
+                    >
+                      ↓ CSV
+                    </button>
+                    <button
+                      onClick={() => {
+                        descargarPDF(
+                          `Inscritos — ${modalDetalleEvento.titulo}`,
+                          ["Nombre", "Correo", "Ciudad", "Personas", "Fecha"],
+                          inscripcionesDetalle.map((i) => [
+                            i.nombre, i.correo, i.ciudad, i.numPersonas,
+                            new Date(i.createdAt).toLocaleDateString("es-ES"),
+                          ]),
+                          `${inscripcionesDetalle.length} inscripciones · ${inscripcionesDetalle.reduce((a, i) => a + i.numPersonas, 0)} personas`
+                        );
+                      }}
+                      style={{ backgroundColor: "#91703d", color: "white", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: "700", padding: "6px 12px", cursor: "pointer", fontFamily: "'Baloo Bhai 2', Helvetica" }}
+                    >
+                      ↓ PDF
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "13px" }}>
+                    <thead>
+                      <tr style={{ backgroundColor: "#f0e8dc" }}>
+                        {["Nombre", "Correo", "Ciudad", "Personas", "Fecha"].map((h) => (
+                          <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontWeight: "700", color: "#91703d", whiteSpace: "nowrap" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {inscripcionesDetalle.map((ins) => (
+                        <tr key={ins._id} style={{ borderBottom: "1px solid #f0e8dc" }}>
+                          <td style={{ padding: "8px 12px", color: "#1a1a1a" }}>{ins.nombre}</td>
+                          <td style={{ padding: "8px 12px", color: "#4a4a4a" }}>{ins.correo}</td>
+                          <td style={{ padding: "8px 12px", color: "#4a4a4a" }}>{ins.ciudad}</td>
+                          <td style={{ padding: "8px 12px", color: "#4a4a4a", textAlign: "center" }}>{ins.numPersonas}</td>
+                          <td style={{ padding: "8px 12px", color: "#818181", whiteSpace: "nowrap" }}>
+                            {new Date(ins.createdAt).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

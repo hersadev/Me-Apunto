@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Suscripcion = require("../models/Suscripcion");
 const Empresa = require("../models/Empresa");
+const Notificacion = require("../models/Notificacion");
 const { enviarCorreoConfirmacionSuscripcion, enviarCorreoPersonalizadoSuscriptor } = require("../services/emailService");
 
 // POST /api/suscripciones
@@ -34,6 +35,12 @@ const suscribirse = async (req, res) => {
     } catch (errCorreo) {
       console.error("Error al enviar confirmación de suscripción:", errCorreo.message);
     }
+
+    Notificacion.create({
+      empresa: empresaId,
+      tipo: "suscripcion",
+      datos: { correo: email },
+    }).catch((err) => console.error("Error al crear notificación de suscripción:", err.message));
 
     res.status(201).json({ mensaje: "Suscripción confirmada correctamente" });
 

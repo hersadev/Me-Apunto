@@ -24,9 +24,11 @@ const getInscripcionPorToken = async (token) => {
   return response.data;
 };
 
-// cancelar una inscripcion por token
-const cancelarInscripcion = async (token) => {
-  const response = await api.delete(`/inscripciones/cancelar/${token}`);
+// cancelar una inscripcion por token, con motivo opcional
+const cancelarInscripcion = async (token, motivoCancelacion) => {
+  const response = await api.delete(`/inscripciones/cancelar/${token}`, {
+    data: motivoCancelacion ? { motivoCancelacion } : {},
+  });
   return response.data;
 };
 

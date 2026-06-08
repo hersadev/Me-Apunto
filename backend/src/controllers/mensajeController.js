@@ -1,5 +1,6 @@
 const Mensaje = require("../models/Mensaje");
 const Empresa = require("../models/Empresa");
+const Notificacion = require("../models/Notificacion");
 const { enviarCorreoRespuestaMensaje } = require("../services/emailService");
 
 // POST /api/mensajes — enviar mensaje a una empresa (público)
@@ -29,6 +30,12 @@ const enviarMensaje = async (req, res) => {
       cuerpo: cuerpoTrim,
       evento: eventoId || null,
     });
+
+    Notificacion.create({
+      empresa: empresaId,
+      tipo: "mensaje",
+      datos: { nombre: nombreTrim, correo: deTrim.toLowerCase() },
+    }).catch((err) => console.error("Error al crear notificación de mensaje:", err.message));
 
     res.status(201).json({ mensaje: "Mensaje enviado correctamente", id: mensaje._id });
   } catch (err) {

@@ -5,6 +5,7 @@
 const { eliminarImagen } = require("../services/cloudinaryService");
 const Evento = require("../models/Evento");
 const Inscripcion = require("../models/Inscripcion");
+const Suscripcion = require("../models/Suscripcion");
 
 // GET /api/eventos
 // devuelve todos los eventos activos para la pagina principal
@@ -554,8 +555,7 @@ const togglePatrocinio = async (req, res) => {
     await evento.save();
 
     let mensaje;
-    if (!evento.patrocinado) mensaje = "Patrocinio desactivado";
-    else if (evento.cancelacionPatrocinio) mensaje = "Patrocinio cancelado - activo hasta " + evento.fechaFinPatrocinio.toLocaleDateString("es-ES");
+    if (evento.cancelacionPatrocinio) mensaje = "Patrocinio cancelado - activo hasta " + evento.fechaFinPatrocinio.toLocaleDateString("es-ES");
     else mensaje = evento.fechaInicioPatrocinio ? "Patrocinio reactivado" : "Patrocinio activado";
 
     res.json({ mensaje, evento });
@@ -635,13 +635,13 @@ const obtenerAnaliticasEmpresa = async (req, res) => {
 
     // tasa de conversión por evento (inscritos / vistas)
     const tasaConversion = [...eventosConStats]
-      .filter((e) => (e.vistas || 0) > 0)
+      .filter((e) => Number(e.vistas) > 0)
       .map((e) => ({
         _id: e._id,
         titulo: e.titulo,
-        vistas: e.vistas || 0,
+        vistas: e.vistas,
         inscritos: e.totalInscritos,
-        tasa: parseFloat(((e.totalInscritos / e.vistas) * 100).toFixed(1)),
+        tasa: parseFloat(((e.totalInscritos / Number(e.vistas)) * 100).toFixed(1)),
       }))
       .sort((a, b) => b.tasa - a.tasa)
       .slice(0, 10);
@@ -714,12 +714,44 @@ const obtenerAnaliticasEmpresa = async (req, res) => {
       }))
       .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
 
+    // total de suscriptores activos a la empresa
+    const totalSuscriptores = await Suscripcion.countDocuments({ empresa: empresaId, activa: true });
+
+    // evolución de suscriptores nuevos por semana (últimas 8 semanas)
+    const evolucionSuscriptoresRaw = await Suscripcion.aggregate([
+      { $match: { empresa: empresaId, createdAt: { $gte: haceOchoSemanas } } },
+      {
+        $group: {
+          _id: { anio: { $isoWeekYear: "$createdAt" }, semana: { $isoWeek: "$createdAt" } },
+          nuevos: { $sum: 1 },
+        },
+      },
+      { $sort: { "_id.anio": 1, "_id.semana": 1 } },
+    ]);
+    const evolucionSuscriptores = evolucionSuscriptoresRaw.map(({ _id, nuevos }) => ({
+      semana: `Sem ${_id.semana}`,
+      nuevos,
+    }));
+
+    // inscripciones totales por evento (todos, activos + pasados, ordenados por inscritos desc)
+    const inscripcionesPorEvento = [...eventosConStats]
+      .sort((a, b) => b.totalInscritos - a.totalInscritos)
+      .map((e) => ({
+        _id: e._id,
+        titulo: e.titulo,
+        fecha: e.fecha,
+        totalInscritos: e.totalInscritos,
+        capacidadMaxima: e.capacidadMaxima || null,
+        activo: new Date(e.fecha) >= ahora,
+      }));
+
     res.json({
       resumen: {
         totalVistas,
         totalInscritos,
         totalEventosPublicados,
         totalEventosPasados: eventosPasados.length,
+        totalSuscriptores,
       },
       topPorVistas,
       topPorInscritos,
@@ -730,6 +762,8 @@ const obtenerAnaliticasEmpresa = async (req, res) => {
       proximosALlenarse,
       aforoCompleto,
       eventos: eventosConStats,
+      evolucionSuscriptores,
+      inscripcionesPorEvento,
     });
   } catch (error) {
     console.error("Error al obtener analíticas:", error);

@@ -7,6 +7,7 @@ const crypto = require("crypto");
 const Inscripcion = require("../models/Inscripcion");
 const Evento = require("../models/Evento");
 const Empresa = require("../models/Empresa");
+const Notificacion = require("../models/Notificacion");
 const { enviarCorreoInscripcion, enviarCorreoConfirmacionUsuario } = require("../services/emailService");
 
 // POST /api/inscripciones
@@ -115,6 +116,18 @@ const crearInscripcion = async (req, res) => {
         return res.status(400).json({ mensaje: "El evento ha alcanzado su capacidad máxima. Inténtalo de nuevo." });
       }
     }
+
+    // creamos notificacion para la empresa
+    Notificacion.create({
+      empresa: evento.empresa._id,
+      tipo: "inscripcion",
+      datos: {
+        nombre,
+        correo,
+        eventoTitulo: evento.titulo,
+        numPersonas,
+      },
+    }).catch((err) => console.error("Error al crear notificación de inscripción:", err.message));
 
     // enviamos correo a la empresa con los datos de la inscripcion
     // si falla el correo no interrumpimos la inscripcion
@@ -280,7 +293,7 @@ const obtenerInscripcionPorToken = async (req, res) => {
 const cancelarInscripcion = async (req, res) => {
   try {
     const inscripcion = await Inscripcion.findOne({ tokenCancelacion: req.params.token })
-      .populate("evento", "titulo");
+      .populate({ path: "evento", select: "titulo empresa" });
 
     if (!inscripcion) {
       return res.status(404).json({ mensaje: "Inscripción no encontrada o ya cancelada" });
@@ -290,7 +303,24 @@ const cancelarInscripcion = async (req, res) => {
       return res.status(410).json({ mensaje: "El enlace de cancelación ha expirado" });
     }
 
+    const empresaId = inscripcion.evento?.empresa;
+    const eventoTitulo = inscripcion.evento?.titulo || "";
+    const { nombre, correo, numPersonas } = inscripcion;
+
+    const motivoRaw = req.body?.motivoCancelacion;
+    const motivoCancelacion = typeof motivoRaw === "string" && motivoRaw.trim()
+      ? motivoRaw.trim().slice(0, 500)
+      : null;
+
     await inscripcion.deleteOne();
+
+    if (empresaId) {
+      Notificacion.create({
+        empresa: empresaId,
+        tipo: "cancelacion_inscripcion",
+        datos: { nombre, correo, eventoTitulo, numPersonas, motivoCancelacion },
+      }).catch((err) => console.error("Error al crear notificación de cancelación:", err.message));
+    }
 
     res.json({ mensaje: "Inscripción cancelada correctamente" });
   } catch (error) {

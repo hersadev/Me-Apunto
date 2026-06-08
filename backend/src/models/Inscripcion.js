@@ -76,6 +76,14 @@ const inscripcionSchema = new mongoose.Schema(
         default: null,
     },
 
+    // motivo opcional que el usuario escribe al cancelar su inscripcion
+    motivoCancelacion: {
+        type: String,
+        trim: true,
+        maxlength: 500,
+        default: null,
+    },
+
     // indica si ya se envio el recordatorio del dia anterior al evento
     // evita enviar duplicados si el cron se ejecuta varias veces
     recordatorioEnviado: {
