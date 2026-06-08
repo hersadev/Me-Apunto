@@ -84,7 +84,10 @@ const enviarCorreoSuscriptores = async (req, res) => {
     }
 
     let destinatarios;
-    if (Array.isArray(emails) && emails.length > 0) {
+    if (Array.isArray(emails)) {
+      if (emails.length === 0) {
+        return res.status(400).json({ mensaje: "Selecciona al menos un destinatario" });
+      }
       const validos = await Suscripcion.find({
         empresa: empresaId,
         activa: true,

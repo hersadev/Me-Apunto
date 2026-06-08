@@ -81,7 +81,7 @@ const obtenerEventos = async (req, res) => {
     }
 
     if (q.busqueda) {
-      const termino = q.busqueda.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const termino = q.busqueda.slice(0, 100).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       filtro.$or = [
         { titulo: { $regex: termino, $options: "i" } },
         { venue: { $regex: termino, $options: "i" } },
@@ -233,8 +233,8 @@ const crearEvento = async (req, res) => {
       hora,
       precio: precio || 0,
       imagen: imagenUrl,
-      maxPersonasPorInscripcion: maxPersonasPorInscripcion || null,
-      capacidadMaxima: capacidadMaxima || null,
+      maxPersonasPorInscripcion: (parseInt(maxPersonasPorInscripcion, 10) > 0) ? parseInt(maxPersonasPorInscripcion, 10) : null,
+      capacidadMaxima: (parseInt(capacidadMaxima, 10) > 0) ? parseInt(capacidadMaxima, 10) : null,
       empresa: req.empresa._id,
       categoria,
     });
@@ -286,16 +286,12 @@ const editarEvento = async (req, res) => {
     if (hora) evento.hora = hora;
     if (precio !== undefined) evento.precio = precio;
     if (maxPersonasPorInscripcion !== undefined) {
-      evento.maxPersonasPorInscripcion =
-        maxPersonasPorInscripcion === "" || maxPersonasPorInscripcion === null
-          ? null
-          : parseInt(maxPersonasPorInscripcion, 10);
+      const parsedMax = parseInt(maxPersonasPorInscripcion, 10);
+      evento.maxPersonasPorInscripcion = parsedMax > 0 ? parsedMax : null;
     }
     if (capacidadMaxima !== undefined) {
-      evento.capacidadMaxima =
-        capacidadMaxima === "" || capacidadMaxima === null
-          ? null
-          : (Number.isNaN(parseInt(capacidadMaxima, 10)) ? null : parseInt(capacidadMaxima, 10));
+      const parsedCap = parseInt(capacidadMaxima, 10);
+      evento.capacidadMaxima = parsedCap > 0 ? parsedCap : null;
     }
     if (categoria !== undefined) {
       if (!categoria) {
@@ -429,16 +425,12 @@ const restaurarEvento = async (req, res) => {
     if (hora) evento.hora = hora;
     if (precio !== undefined) evento.precio = precio;
     if (maxPersonasPorInscripcion !== undefined) {
-      evento.maxPersonasPorInscripcion =
-        maxPersonasPorInscripcion === "" || maxPersonasPorInscripcion === null
-          ? null
-          : parseInt(maxPersonasPorInscripcion, 10);
+      const parsedMax = parseInt(maxPersonasPorInscripcion, 10);
+      evento.maxPersonasPorInscripcion = parsedMax > 0 ? parsedMax : null;
     }
     if (capacidadMaxima !== undefined) {
-      evento.capacidadMaxima =
-        capacidadMaxima === "" || capacidadMaxima === null
-          ? null
-          : (Number.isNaN(parseInt(capacidadMaxima, 10)) ? null : parseInt(capacidadMaxima, 10));
+      const parsedCap = parseInt(capacidadMaxima, 10);
+      evento.capacidadMaxima = parsedCap > 0 ? parsedCap : null;
     }
     if (categoria !== undefined) {
       if (!categoria) {

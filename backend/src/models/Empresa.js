@@ -114,6 +114,12 @@ const empresaSchema = new mongoose.Schema(
         type: Date,
         default: null,
     },
+
+    // fecha del último cambio de contraseña — invalida tokens emitidos antes
+    contrasenaCambiadaEn: {
+        type: Date,
+        default: null,
+    },
     },
     {
     // añade automaticamente createdAt y updatedAt
@@ -126,7 +132,7 @@ empresaSchema.pre("save", async function () {
   // solo hasheamos si la contraseña ha cambiado
     if (!this.isModified("contrasena")) return;
 
-  // generamos el salt y hasheamos la contraseña
+    this.contrasenaCambiadaEn = new Date();
     const salt = await bcrypt.genSalt(10);
     this.contrasena = await bcrypt.hash(this.contrasena, salt);
 });

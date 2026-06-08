@@ -106,7 +106,11 @@ function EventDetail({ estaLogueado }) {
       const data = await eventoService.getEventoPorId(id);
       setEvento(data.evento);
       setTotalInscritos(data.evento.totalInscritos || 0);
-      eventoService.registrarVista(id);
+      const vistaKey = `vista_${id}`;
+      if (!sessionStorage.getItem(vistaKey)) {
+        sessionStorage.setItem(vistaKey, "1");
+        eventoService.registrarVista(id);
+      }
     } catch (err) {
       setError("Evento no encontrado");
       console.error(err);

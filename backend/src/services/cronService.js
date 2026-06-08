@@ -38,10 +38,9 @@
 
         console.log(`Encontrados ${eventosProximos.length} patrocinios proximos`);
 
-        // enviamos correo de aviso a cada empresa
-        for (const evento of eventosProximos) {
+        // enviamos correos en paralelo — cada evento es independiente
+        await Promise.allSettled(eventosProximos.map(async (evento) => {
         try {
-            // formateamos la fecha de renovacion para el correo
             const fechaRenovacion = new Date(evento.fechaFinPatrocinio)
             .toLocaleDateString("es-ES", {
                 day: "2-digit",
@@ -56,18 +55,15 @@
             fechaRenovacion,
             });
 
-            // marcamos el evento como que ya se envio el aviso
-            // para no enviar el correo mas de una vez
             evento.avisoPrevioEnviado = true;
             await evento.save();
-
         } catch (errorCorreo) {
             console.error(
             `Error al enviar aviso de renovacion para evento ${evento._id}:`,
             errorCorreo
             );
         }
-        }
+        }));
 
     } catch (error) {
         console.error("Error en revision de patrocinios:", error);
@@ -175,7 +171,7 @@
 
         console.log(`Encontrados ${expirados.length} eventos para purgar`);
 
-        for (const evento of expirados) {
+        await Promise.allSettled(expirados.map(async (evento) => {
         try {
             if (evento.imagen) {
             const publicId = evento.imagen
@@ -189,7 +185,7 @@
         } catch (errEvento) {
             console.error(`Error al purgar evento ${evento._id}:`, errEvento);
         }
-        }
+        }));
 
     } catch (error) {
         console.error("Error en purga de papelera:", error);

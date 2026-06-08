@@ -80,7 +80,7 @@ const marcarRespondido = async (req, res) => {
     const actualizado = await Mensaje.findOneAndUpdate(
       { _id: req.params.id, empresa: req.empresa._id, eliminadoEn: null },
       [{ $set: {
-        respondido: { $not: "$respondido" },
+        respondido: { $not: ["$respondido"] },
         leido: { $cond: [{ $eq: ["$respondido", false] }, true, "$leido"] },
       }}],
       { new: true },

@@ -203,8 +203,10 @@ function Home({ estaLogueado }) {
       if (categoria) params.categoria = categoria;
       if (fecha) params.fecha = fecha;
 
-      const dataNormales = await eventoService.getEventos({ ...params, patrocinado: "false" });
-      const dataPatrocinados = await eventoService.getEventos({ limite: 50, patrocinado: "true" });
+      const [dataNormales, dataPatrocinados] = await Promise.all([
+        eventoService.getEventos({ ...params, patrocinado: "false" }),
+        eventoService.getEventos({ limite: 50, patrocinado: "true" }),
+      ]);
 
       setEventos(dataNormales.eventos);
       setTotalPaginas(dataNormales.totalPaginas);
