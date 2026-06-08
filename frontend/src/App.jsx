@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import CookieBanner from "./components/CookieBanner";
 import ScrollToTop from "./components/ScrollToTop";
+import InstallPrompt from "./components/InstallPrompt";
 
 const Home = lazy(() => import("./pages/Home"));
 const Login = lazy(() => import("./pages/Login"));
@@ -75,6 +76,7 @@ function App() {
           </Routes>
         </Suspense>
         <CookieBanner />
+        <InstallPrompt />
       </BrowserRouter>
     </HelmetProvider>
   );
