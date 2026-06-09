@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import { useTranslation } from "react-i18next";
 import authService from "../services/authService";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
 function ConfirmarCorreo() {
+  const { t } = useTranslation();
   const { token } = useParams();
   const navegar = useNavigate();
   const [estado, setEstado] = useState("cargando");
@@ -66,7 +68,7 @@ function ConfirmarCorreo() {
         }}>
           {estado === "cargando" && (
             <p style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "16px", color: "#818181" }}>
-              Verificando enlace...
+              {t("confirmEmail.verifying")}
             </p>
           )}
 
@@ -79,7 +81,7 @@ function ConfirmarCorreo() {
                 color: "#1a1a1a", marginBottom: "12px",
                 wordBreak: "break-word"
               }}>
-                Correo confirmado
+                {t("confirmEmail.confirmed")}
               </h1>
               <p style={{
                 fontFamily: "'Baloo Bhai 2', Helvetica",
@@ -102,7 +104,7 @@ function ConfirmarCorreo() {
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#7a5c2e"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
               >
-                Ir a iniciar sesión
+                {t("confirmEmail.goToLogin")}
               </button>
             </>
           )}
@@ -116,7 +118,7 @@ function ConfirmarCorreo() {
                 color: "#c0392b", marginBottom: "12px",
                 wordBreak: "break-word"
               }}>
-                Enlace inválido
+                {t("confirmEmail.invalidLink")}
               </h1>
               <p style={{
                 fontFamily: "'Baloo Bhai 2', Helvetica",
@@ -139,7 +141,7 @@ function ConfirmarCorreo() {
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#7a5c2e"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
               >
-                Volver al panel
+                {t("confirmEmail.backToPanel")}
               </button>
             </>
           )}

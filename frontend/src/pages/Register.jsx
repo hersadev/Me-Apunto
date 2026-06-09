@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import { useTranslation } from "react-i18next";
 
 import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
@@ -45,6 +46,7 @@ function validarCIF(cif) {
 function Register() {
 
   const navegar = useNavigate();
+  const { t } = useTranslation();
 
   const [anchoVentana, setAnchoVentana] = useState(window.innerWidth);
   useEffect(() => {
@@ -81,22 +83,22 @@ function Register() {
 
     // validaciones en el frontend antes de llamar al backend
     if (formData.contrasena !== formData.repiteContrasena) {
-      setError("Las contraseñas no coinciden");
+      setError(t("register.errorPassMatch"));
       return;
     }
 
     if (!formData.aceptaTerminos) {
-      setError("Debes aceptar los términos y condiciones");
+      setError(t("register.errorTerms"));
       return;
     }
 
     if (formData.contrasena.length < 6) {
-      setError("La contraseña debe tener al menos 6 caracteres");
+      setError(t("register.errorPassLength"));
       return;
     }
 
     if (!validarCIF(formData.nifCif.trim())) {
-      setError("El CIF no es válido. Formato esperado: B12345678");
+      setError(t("register.errorCif"));
       return;
     }
 
@@ -112,7 +114,7 @@ function Register() {
       });
 
       // registro exitoso - redirigimos al login
-      alert("¡Empresa registrada correctamente! Ahora puedes iniciar sesión.");
+      alert(t("register.success"));
       navegar("/login");
 
     } catch (err) {
@@ -165,7 +167,7 @@ function Register() {
               color: "#2c2c2c",
               margin: 0
             }}>
-              Registro de Empresa
+              {t("register.title")}
             </h1>
           </div>
 
@@ -204,7 +206,7 @@ function Register() {
                   color: "#1a1a1a"
                 }}
               >
-                Nombre de empresa
+                {t("register.nameLabel")}
               </label>
               <input
                 id="nombreEmpresa"
@@ -213,7 +215,7 @@ function Register() {
                 value={formData.nombreEmpresa}
                 onChange={handleChange}
                 required
-                placeholder="Mi Empresa S.L."
+                placeholder={t("register.namePlaceholder")}
                 style={{
                   width: "100%",
                   height: "50px",
@@ -243,7 +245,7 @@ function Register() {
                   color: "#1a1a1a"
                 }}
               >
-                Correo de empresa
+                {t("register.emailLabel")}
               </label>
               <span style={{
                 fontFamily: "'Baloo Bhai 2', Helvetica",
@@ -251,7 +253,7 @@ function Register() {
                 color: "#818181",
                 marginTop: "-2px"
               }}>
-                Aquí recibirás las inscripciones de los usuarios
+                {t("register.emailHint")}
               </span>
               <input
                 id="correoEmpresa"
@@ -260,7 +262,7 @@ function Register() {
                 value={formData.correoEmpresa}
                 onChange={handleChange}
                 required
-                placeholder="empresa@correo.com"
+                placeholder={t("register.emailPlaceholder")}
                 style={{
                   width: "100%",
                   height: "50px",
@@ -298,7 +300,7 @@ function Register() {
                 color: "#818181",
                 marginTop: "-2px"
               }}>
-                CIF de la empresa (ej: B12345678)
+                {t("register.cifHint")}
               </span>
               <input
                 id="nifCif"
@@ -329,7 +331,7 @@ function Register() {
             {/* contraseña */}
             <PasswordInput
               nombre="contrasena"
-              label="Contraseña"
+              label={t("register.passwordLabel")}
               valor={formData.contrasena}
               onChange={handleChange}
             />
@@ -337,7 +339,7 @@ function Register() {
             {/* repetir contraseña */}
             <PasswordInput
               nombre="repiteContrasena"
-              label="Repite contraseña"
+              label={t("register.repeatPasswordLabel")}
               valor={formData.repiteContrasena}
               onChange={handleChange}
             />
@@ -370,7 +372,7 @@ function Register() {
                 fontWeight: "600",
                 color: "#1a1a1a"
               }}>
-                Acepto los términos y condiciones
+                {t("register.acceptTerms")}
               </span>
             </label>
 
@@ -399,7 +401,7 @@ function Register() {
                 if (!cargando) e.currentTarget.style.backgroundColor = "#91703d";
               }}
             >
-              {cargando ? "Registrando..." : "Registrar empresa"}
+              {cargando ? t("register.loading") : t("register.submit")}
             </button>
 
           </form>
@@ -428,7 +430,7 @@ function Register() {
             onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
             onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
           >
-            ¿Ya tienes cuenta de empresa?
+            {t("register.alreadyAccount")}
           </button>
 
           {/* enlace terminos */}
@@ -448,7 +450,7 @@ function Register() {
             onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
             onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
           >
-            Ver términos y condiciones
+            {t("register.viewTerms")}
           </button>
 
         </AuthCard>

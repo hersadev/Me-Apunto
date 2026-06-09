@@ -8,6 +8,8 @@ import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import Cropper from "react-easy-crop";
 
+import { useTranslation } from "react-i18next";
+
 import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
 import Footer from "../components/Footer";
@@ -94,6 +96,7 @@ async function recortarImagen(imageSrc, pixelCrop) {
 function CompanyPanel({ setEstaLogueado }) {
 
   const navegar = useNavigate();
+  const { t, i18n } = useTranslation();
 
   const [empresa, setEmpresa] = useState(authService.getEmpresa());
 
@@ -728,7 +731,11 @@ const abrirFormularioRestaurar = (evento) => {
     const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
 
     try {
-      const fontBuffer = await fetch(`${process.env.PUBLIC_URL}/fonts/Butterpop.ttf`).then((r) => r.arrayBuffer());
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const fontBuffer = await fetch(`${process.env.PUBLIC_URL}/fonts/Butterpop.ttf`, { signal: controller.signal })
+        .then((r) => r.arrayBuffer())
+        .finally(() => clearTimeout(timeoutId));
       const base64 = btoa(String.fromCharCode(...new Uint8Array(fontBuffer)));
       doc.addFileToVFS("Butterpop.ttf", base64);
       doc.addFont("Butterpop.ttf", "Butterpop", "normal");
@@ -936,7 +943,7 @@ const abrirFormularioRestaurar = (evento) => {
               color: "#5d4037",
               lineHeight: "1.4"
             }}>
-              Tu empresa no tiene descripción. Complétala para poder publicar eventos.
+              {t("panel.noDescription")}
             </span>
             <button
               onClick={() => cambiarSeccion("perfil")}
@@ -953,7 +960,7 @@ const abrirFormularioRestaurar = (evento) => {
                 flexShrink: 0
               }}
             >
-              Ir a Perfil
+              {t("panel.goToProfile")}
             </button>
           </div>
         )}
@@ -985,18 +992,18 @@ const abrirFormularioRestaurar = (evento) => {
           margin: 0,
           marginBottom: "24px"
         }}>
-          Hola, {empresa?.nombre || "…"}
+          {t("panel.hello", { nombre: empresa?.nombre || "…" })}
         </h1>
 
         {/* tabs de navegación */}
         {(() => {
           const tabs = [
-            { id: "eventos", label: "Gestión de eventos" },
-            { id: "mensajes", label: "Mensajes", badge: mensajes.filter((m) => !m.leido).length || 0 },
-            { id: "analiticas", label: "Analíticas" },
-            { id: "suscriptores", label: "Suscriptores" },
-            { id: "notificaciones", label: "Notificaciones", badge: notificacionesNoLeidas },
-            { id: "perfil", label: "Perfil" },
+            { id: "eventos", label: t("panel.tabEvents") },
+            { id: "mensajes", label: t("panel.tabMessages"), badge: mensajes.filter((m) => !m.leido).length || 0 },
+            { id: "analiticas", label: t("panel.tabAnalytics") },
+            { id: "suscriptores", label: t("panel.tabSubscribers") },
+            { id: "notificaciones", label: t("panel.tabNotifications"), badge: notificacionesNoLeidas },
+            { id: "perfil", label: t("panel.tabProfile") },
           ];
           return (
             <div style={{
@@ -1124,10 +1131,10 @@ const abrirFormularioRestaurar = (evento) => {
               marginBottom: "24px"
             }}>
               {restaurandoId !== null
-                ? "Recuperar evento de la papelera"
+                ? t("panel.formTitleRestore")
                 : editandoId !== null
-                  ? "Editar evento"
-                  : "Publicar nuevo evento"}
+                  ? t("panel.formTitleEdit")
+                  : t("panel.formTitleNew")}
             </h2>
             {restaurandoId !== null && (
               <p style={{
@@ -1137,7 +1144,7 @@ const abrirFormularioRestaurar = (evento) => {
                 marginTop: "-16px",
                 marginBottom: "20px"
               }}>
-                Revisa y modifica los datos antes de publicarlo de nuevo.
+                {t("panel.formRestoreHint")}
               </p>
             )}
 
@@ -1152,7 +1159,7 @@ const abrirFormularioRestaurar = (evento) => {
 
               {/* titulo */}
               <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: "4px" }}>
-                <label style={estiloLabel} htmlFor="titulo">Título del evento *</label>
+                <label style={estiloLabel} htmlFor="titulo">{t("panel.formTitleLabel")}</label>
                 <input
                   id="titulo"
                   type="text"
@@ -1160,14 +1167,14 @@ const abrirFormularioRestaurar = (evento) => {
                   value={formEvento.titulo}
                   onChange={handleFormChange}
                   required
-                  placeholder="Nombre del evento"
+                  placeholder={t("panel.formTitlePlaceholder")}
                   style={estiloInput}
                 />
               </div>
 
               {/* venue */}
               <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: "4px" }}>
-                <label style={estiloLabel} htmlFor="venue">Lugar / Venue *</label>
+                <label style={estiloLabel} htmlFor="venue">{t("panel.formVenueLabel")}</label>
                 <input
                   id="venue"
                   type="text"
@@ -1175,14 +1182,14 @@ const abrirFormularioRestaurar = (evento) => {
                   value={formEvento.venue}
                   onChange={handleFormChange}
                   required
-                  placeholder="Nombre del lugar"
+                  placeholder={t("panel.formVenuePlaceholder")}
                   style={estiloInput}
                 />
               </div>
 
               {/* direccion */}
               <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: "4px" }}>
-                <label style={estiloLabel} htmlFor="direccion">Dirección *</label>
+                <label style={estiloLabel} htmlFor="direccion">{t("panel.formAddressLabel")}</label>
                 <input
                   id="direccion"
                   type="text"
@@ -1190,14 +1197,14 @@ const abrirFormularioRestaurar = (evento) => {
                   value={formEvento.direccion}
                   onChange={handleFormChange}
                   required
-                  placeholder="Calle, número, ciudad"
+                  placeholder={t("panel.formAddressPlaceholder")}
                   style={estiloInput}
                 />
               </div>
 
               {/* fecha */}
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <label style={estiloLabel} htmlFor="fecha">Fecha *</label>
+                <label style={estiloLabel} htmlFor="fecha">{t("panel.formDateLabel")}</label>
                 <input
                   id="fecha"
                   type="date"
@@ -1211,7 +1218,7 @@ const abrirFormularioRestaurar = (evento) => {
 
               {/* hora */}
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <label style={estiloLabel} htmlFor="hora">Hora *</label>
+                <label style={estiloLabel} htmlFor="hora">{t("panel.formTimeLabel")}</label>
                 <input
                   id="hora"
                   type="time"
@@ -1226,11 +1233,11 @@ const abrirFormularioRestaurar = (evento) => {
               {/* precio */}
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <label style={estiloLabel} htmlFor="precio">Precio (€)</label>
+                  <label style={estiloLabel} htmlFor="precio">{t("panel.formPriceLabel")}</label>
                   <div
                     tabIndex={0}
                     role="img"
-                    aria-label="Me Apunto se lleva el 5% de comisión sobre el precio del ticket"
+                    aria-label={t("panel.formPriceTooltip")}
                     onMouseEnter={(e) => { const t = e.currentTarget.querySelector("[data-tooltip]"); if (t) t.style.display = "block"; }}
                     onMouseLeave={(e) => { const t = e.currentTarget.querySelector("[data-tooltip]"); if (t) t.style.display = "none"; }}
                     onFocus={(e) => { const t = e.currentTarget.querySelector("[data-tooltip]"); if (t) t.style.display = "block"; }}
@@ -1269,7 +1276,7 @@ const abrirFormularioRestaurar = (evento) => {
                         zIndex: 10,
                       }}
                     >
-                      Me Apunto se lleva el 5% de comisión
+                      {t("panel.formPriceTooltip")}
                       <div style={{
                         position: "absolute",
                         top: "100%", left: "50%",
@@ -1290,14 +1297,14 @@ const abrirFormularioRestaurar = (evento) => {
                   onChange={handleFormChange}
                   min="0"
                   step="0.01"
-                  placeholder="0 = gratuito"
+                  placeholder={t("panel.formPricePlaceholder")}
                   style={estiloInput}
                 />
               </div>
 
               {/* categoria */}
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <label style={estiloLabel} htmlFor="categoria">Categoría *</label>
+                <label style={estiloLabel} htmlFor="categoria">{t("panel.formCategoryLabel")}</label>
                 <select
                   id="categoria"
                   name="categoria"
@@ -1306,22 +1313,22 @@ const abrirFormularioRestaurar = (evento) => {
                   required
                   style={estiloInput}
                 >
-                  <option value="" disabled hidden>Selecciona...</option>
-                  <option value="taller">Taller</option>
-                  <option value="exposicion">Exposición</option>
-                  <option value="concurso">Concurso</option>
-                  <option value="concierto">Concierto</option>
-                  <option value="deporte">Deporte</option>
-                  <option value="gastronomia">Gastronomía</option>
-                  <option value="teatro">Teatro</option>
-                  <option value="otros">Otros</option>
+                  <option value="" disabled hidden>{t("panel.formCategorySelect")}</option>
+                  <option value="taller">{t("categories.taller")}</option>
+                  <option value="exposicion">{t("categories.exposicion")}</option>
+                  <option value="concurso">{t("categories.concurso")}</option>
+                  <option value="concierto">{t("categories.concierto")}</option>
+                  <option value="deporte">{t("categories.deporte")}</option>
+                  <option value="gastronomia">{t("categories.gastronomia")}</option>
+                  <option value="teatro">{t("categories.teatro")}</option>
+                  <option value="otros">{t("categories.otros")}</option>
                 </select>
               </div>
 
               {/* limite de personas por inscripcion */}
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                 <label style={estiloLabel} htmlFor="maxPersonasPorInscripcion">
-                  Límite por inscripción
+                  {t("panel.formMaxPerLabel")}
                 </label>
                 <input
                   id="maxPersonasPorInscripcion"
@@ -1330,7 +1337,7 @@ const abrirFormularioRestaurar = (evento) => {
                   value={formEvento.maxPersonasPorInscripcion}
                   onChange={handleFormChange}
                   min="1"
-                  placeholder="Sin límite"
+                  placeholder={t("panel.formMaxPerPlaceholder")}
                   style={estiloInput}
                 />
               </div>
@@ -1338,7 +1345,7 @@ const abrirFormularioRestaurar = (evento) => {
               {/* capacidad maxima total del evento */}
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                 <label style={estiloLabel} htmlFor="capacidadMaxima">
-                  Capacidad máxima total
+                  {t("panel.formCapacityLabel")}
                 </label>
                 <input
                   id="capacidadMaxima"
@@ -1347,14 +1354,14 @@ const abrirFormularioRestaurar = (evento) => {
                   value={formEvento.capacidadMaxima}
                   onChange={handleFormChange}
                   min="1"
-                  placeholder="Sin límite"
+                  placeholder={t("panel.formMaxPerPlaceholder")}
                   style={estiloInput}
                 />
               </div>
 
               {/* imagen */}
               <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: "4px" }}>
-                <label style={estiloLabel} htmlFor="imagen">Imagen del evento</label>
+                <label style={estiloLabel} htmlFor="imagen">{t("panel.formImageLabel")}</label>
                 {imagenFile ? (
                   <div style={{
                     display: "flex",
@@ -1413,14 +1420,14 @@ const abrirFormularioRestaurar = (evento) => {
 
               {/* descripcion */}
               <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: "4px" }}>
-                <label style={estiloLabel} htmlFor="descripcion">Descripción *</label>
+                <label style={estiloLabel} htmlFor="descripcion">{t("panel.formDescLabel")}</label>
                 <textarea
                   id="descripcion"
                   name="descripcion"
                   value={formEvento.descripcion}
                   onChange={handleFormChange}
                   required
-                  placeholder="Describe tu evento..."
+                  placeholder={t("panel.formDescPlaceholder")}
                   rows={3}
                   style={{
                     width: "100%",
@@ -1457,7 +1464,7 @@ const abrirFormularioRestaurar = (evento) => {
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#5a5a5a"}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#818181"}
                 >
-                  Cancelar
+                  {t("panel.formCancel")}
                 </button>
 
                 <button
@@ -1467,10 +1474,10 @@ const abrirFormularioRestaurar = (evento) => {
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
                 >
                   {restaurandoId !== null
-                    ? "Recuperar y publicar"
+                    ? t("panel.formSubmitRestore")
                     : editandoId !== null
-                      ? "Guardar cambios"
-                      : "Publicar evento"}
+                      ? t("panel.formSubmitEdit")
+                      : t("panel.formSubmitNew")}
                 </button>
               </div>
 
@@ -1490,7 +1497,7 @@ const abrirFormularioRestaurar = (evento) => {
               color: "#1a1a1a",
               margin: 0
             }}>
-              Mis eventos ({eventosActivos.length})
+              {t("panel.eventsTitle", { n: eventosActivos.length })}
             </h2>
             <button
               onClick={abrirFormularioNuevo}
@@ -1498,7 +1505,7 @@ const abrirFormularioRestaurar = (evento) => {
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#7a5c2e"}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
             >
-              + Publicar evento
+              {t("panel.publishBtn")}
             </button>
           </div>
 
@@ -1510,7 +1517,7 @@ const abrirFormularioRestaurar = (evento) => {
               fontFamily: "'Baloo Bhai 2', Helvetica",
               fontSize: "18px"
             }}>
-              Cargando eventos...
+              {t("panel.loadingEvents")}
             </div>
           )}
 
@@ -1522,8 +1529,7 @@ const abrirFormularioRestaurar = (evento) => {
               fontFamily: "'Baloo Bhai 2', Helvetica",
               fontSize: "18px"
             }}>
-              No tienes eventos publicados todavía.
-              Pulsa "Publicar evento" para crear el primero.
+              {t("panel.noEvents")}
             </div>
           )}
 
@@ -1582,7 +1588,7 @@ const abrirFormularioRestaurar = (evento) => {
                       fontSize: "13px",
                       color: "#4a4a4a"
                     }}>
-                      {evento.fecha ? new Date(evento.fecha).toLocaleDateString("es-ES") : "Sin fecha"} — {evento.hora}
+                      {evento.fecha ? new Date(evento.fecha).toLocaleDateString(i18n.language) : t("panel.noDate")} — {evento.hora}
                     </div>
 
                     {/* categoria badge */}
@@ -1596,10 +1602,9 @@ const abrirFormularioRestaurar = (evento) => {
                         padding: "3px 10px",
                         borderRadius: "999px",
                         display: "inline-block",
-                        alignSelf: "flex-start",
-                        textTransform: "capitalize"
+                        alignSelf: "flex-start"
                       }}>
-                        {evento.categoria}
+                        {t(`categories.${evento.categoria}`, { defaultValue: evento.categoria })}
                       </div>
                     )}
 
@@ -1609,7 +1614,7 @@ const abrirFormularioRestaurar = (evento) => {
                       fontWeight: "600",
                       color: (evento.precio ?? 0) === 0 ? "#2e7d32" : "#91703d"
                     }}>
-                      {(evento.precio ?? 0) === 0 ? "Gratuito" : `${evento.precio}€`}
+                      {(evento.precio ?? 0) === 0 ? t("panel.free") : `${evento.precio}€`}
                     </div>
 
                     {evento.capacidadMaxima && (
@@ -1619,8 +1624,8 @@ const abrirFormularioRestaurar = (evento) => {
                         fontWeight: "600",
                         color: (evento.totalInscritos || 0) >= evento.capacidadMaxima ? "#c0392b" : "#4a4a4a"
                       }}>
-                        👥 {evento.totalInscritos || 0}/{evento.capacidadMaxima} inscritos
-                        {(evento.totalInscritos || 0) >= evento.capacidadMaxima && " · Completo"}
+                        👥 {evento.totalInscritos || 0}/{evento.capacidadMaxima} {t("panel.inscribed")}
+                        {(evento.totalInscritos || 0) >= evento.capacidadMaxima && ` · ${t("panel.full")}`}
                       </div>
                     )}
 
@@ -1636,8 +1641,8 @@ const abrirFormularioRestaurar = (evento) => {
                         display: "inline-block",
                         alignSelf: "flex-start"
                       }}>
-                        ★ Patrocinado{evento.cancelacionPatrocinio && evento.fechaFinPatrocinio
-                          ? ` · hasta ${new Date(evento.fechaFinPatrocinio).toLocaleDateString("es-ES")}`
+                        {t("panel.sponsored")}{evento.cancelacionPatrocinio && evento.fechaFinPatrocinio
+                          ? ` · ${t("panel.sponsoredUntil", { fecha: new Date(evento.fechaFinPatrocinio).toLocaleDateString(i18n.language) })}`
                           : ""}
                       </div>
                     )}
@@ -1653,17 +1658,17 @@ const abrirFormularioRestaurar = (evento) => {
                           onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
                           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#b79868"}
                         >
-                          <span aria-hidden="true">✏️</span> Editar
+                          <span aria-hidden="true">✏️</span> {t("panel.editBtn")}
                         </button>
 
                         <button
-                          aria-label={`Eliminar evento: ${evento.titulo}`}
+                          aria-label={`${t("panel.editBtn")}: ${evento.titulo}`}
                           onClick={() => setModalEliminar(evento._id)}
                           style={estiloBotonPeligro}
                           onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#922b21"}
                           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#c0392b"}
                         >
-                          <span aria-hidden="true">🗑️</span> Eliminar
+                          <span aria-hidden="true">🗑️</span> {t("panel.deleteBtn")}
                         </button>
                       </div>
 
@@ -1690,10 +1695,10 @@ const abrirFormularioRestaurar = (evento) => {
                       >
                         <span aria-hidden="true">⭐</span>{" "}
                         {!evento.patrocinado
-                          ? "Activar patrocinio (10€/mes)"
+                          ? t("panel.activateSponsor")
                           : evento.cancelacionPatrocinio
-                            ? "Reactivar patrocinio"
-                            : "Cancelar patrocinio"}
+                            ? t("panel.reactivateSponsor")
+                            : t("panel.cancelSponsor")}
                       </button>
                     </div>
                   </div>
@@ -1739,7 +1744,7 @@ const abrirFormularioRestaurar = (evento) => {
                 >
                   ▶
                 </span>
-                Eventos pasados ({eventosPasados.length})
+                {t("panel.pastEvents", { n: eventosPasados.length })}
               </button>
 
               {eventosPasadosAbierto && (
@@ -1792,7 +1797,7 @@ const abrirFormularioRestaurar = (evento) => {
                             fontSize: "13px",
                             color: "#818181"
                           }}>
-                            📅 {evento.fecha ? new Date(evento.fecha).toLocaleDateString("es-ES") : "Sin fecha"}
+                            📅 {evento.fecha ? new Date(evento.fecha).toLocaleDateString(i18n.language) : t("panel.noDate")}
                             {evento.hora && ` · ${evento.hora.slice(0, 5)}`}
                           </div>
 
@@ -1809,7 +1814,7 @@ const abrirFormularioRestaurar = (evento) => {
                             fontSize: "13px",
                             color: "#818181"
                           }}>
-                            👥 {evento.totalInscritos || 0} inscritos
+                            👥 {evento.totalInscritos || 0} {t("panel.inscribed")}
                             {evento.capacidadMaxima && ` / ${evento.capacidadMaxima}`}
                           </div>
 
@@ -1819,7 +1824,7 @@ const abrirFormularioRestaurar = (evento) => {
                             color: "#a0a0a0",
                             fontStyle: "italic"
                           }}>
-                            Este evento ha finalizado
+                            {t("panel.eventEnded")}
                           </div>
                         </div>
                       </div>
@@ -1866,7 +1871,7 @@ const abrirFormularioRestaurar = (evento) => {
                 >
                   ▶
                 </span>
-                <span aria-hidden="true">🗑️</span> Papelera ({eventosPapelera.length})
+                <span aria-hidden="true">🗑️</span> {t("panel.trashTitle", { n: eventosPapelera.length })}
               </button>
 
               <p style={{
@@ -1875,7 +1880,7 @@ const abrirFormularioRestaurar = (evento) => {
                 color: "#6a6a6a",
                 marginBottom: "20px"
               }}>
-                Los eventos eliminados se conservan 30 días. Después se borran definitivamente.
+                {t("panel.trashInfo")}
               </p>
 
               {papeleraAbierta && (
@@ -1930,7 +1935,7 @@ const abrirFormularioRestaurar = (evento) => {
                             fontSize: "13px",
                             color: "#818181"
                           }}>
-                            📅 {evento.fecha ? new Date(evento.fecha).toLocaleDateString("es-ES") : "Sin fecha"}
+                            📅 {evento.fecha ? new Date(evento.fecha).toLocaleDateString(i18n.language) : t("panel.noDate")}
                             {evento.hora && ` · ${evento.hora.slice(0, 5)}`}
                           </div>
 
@@ -1954,10 +1959,10 @@ const abrirFormularioRestaurar = (evento) => {
                             alignSelf: "flex-start"
                           }}>
                             {dias === 0
-                              ? "Se eliminará hoy"
+                              ? t("panel.trashToday")
                               : dias === 1
-                                ? "Queda 1 día"
-                                : `Quedan ${dias} días`}
+                                ? t("panel.trashOneDay")
+                                : t("panel.trashDays", { n: dias })}
                           </div>
 
                           <div style={{ height: "1px", backgroundColor: "#f5c6c2", margin: "4px 0" }} />
@@ -1970,17 +1975,17 @@ const abrirFormularioRestaurar = (evento) => {
                               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
                               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#b79868"}
                             >
-                              <span aria-hidden="true">♻️</span> Recuperar
+                              <span aria-hidden="true">♻️</span> {t("panel.restoreBtn")}
                             </button>
 
                             <button
-                              aria-label={`Eliminar definitivamente: ${evento.titulo}`}
+                              aria-label={`${t("panel.deleteNowBtn")}: ${evento.titulo}`}
                               onClick={() => setModalEliminarDefinitivo(evento._id)}
                               style={estiloBotonPeligro}
                               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#922b21"}
                               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#c0392b"}
                             >
-                              <span aria-hidden="true">🗑️</span> Eliminar ya
+                              <span aria-hidden="true">🗑️</span> {t("panel.deleteNowBtn")}
                             </button>
                           </div>
                         </div>
@@ -2000,25 +2005,25 @@ const abrirFormularioRestaurar = (evento) => {
         {seccionActiva === "mensajes" && (
           <div style={{ fontFamily: "'Baloo Bhai 2', Helvetica" }}>
             <h2 style={{ fontSize: "22px", fontWeight: "700", color: "#1a1a1a", marginBottom: "24px" }}>
-              Mensajes
+              {t("panel.msgTitle")}
             </h2>
 
             {cargandoMensajes ? (
               <div style={{ textAlign: "center", padding: "48px 0", color: "#818181", fontSize: "18px" }}>
-                Cargando mensajes...
+                {t("panel.msgLoading")}
               </div>
             ) : errorMensajes ? (
               <div style={{ textAlign: "center", padding: "48px 0", color: "#c0392b", fontSize: "16px", fontFamily: "'Baloo Bhai 2', Helvetica" }}>
                 {errorMensajes}
                 <br />
                 <button onClick={cargarMensajes} style={{ marginTop: "12px", background: "none", border: "none", color: "#91703d", fontWeight: "700", cursor: "pointer", fontSize: "14px", fontFamily: "'Baloo Bhai 2', Helvetica" }}>
-                  Reintentar
+                  {t("panel.msgRetry")}
                 </button>
               </div>
             ) : mensajes.length === 0 ? (
               <div style={{ textAlign: "center", padding: "80px 0", color: "#818181", fontSize: "18px" }}>
                 <div style={{ fontSize: "48px", marginBottom: "16px" }}>💬</div>
-                No tienes mensajes todavía
+                {t("panel.msgEmpty")}
               </div>
             ) : (
               <div style={{ backgroundColor: "white", borderRadius: "16px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)", overflow: "hidden" }}>
@@ -2027,12 +2032,12 @@ const abrirFormularioRestaurar = (evento) => {
                     <thead>
                       <tr style={{ backgroundColor: "#f7f0e8", borderBottom: "1px solid #e8ddd0" }}>
                         <th style={{ width: "8px", padding: "12px 8px 12px 16px" }} />
-                        <th style={{ padding: "12px 12px", textAlign: "left", fontSize: "13px", fontWeight: "700", color: "#818181" }}>Remitente</th>
-                        <th style={{ padding: "12px 12px", textAlign: "left", fontSize: "13px", fontWeight: "700", color: "#818181" }}>Asunto</th>
-                        <th style={{ padding: "12px 12px", textAlign: "left", fontSize: "13px", fontWeight: "700", color: "#818181" }}>Evento</th>
-                        <th style={{ padding: "12px 12px", textAlign: "left", fontSize: "13px", fontWeight: "700", color: "#818181" }}>Estado</th>
-                        <th style={{ padding: "12px 16px 12px 12px", textAlign: "left", fontSize: "13px", fontWeight: "700", color: "#818181" }}>Fecha</th>
-                        <th style={{ padding: "12px 16px", textAlign: "right", fontSize: "13px", fontWeight: "700", color: "#818181" }}>Acciones</th>
+                        <th style={{ padding: "12px 12px", textAlign: "left", fontSize: "13px", fontWeight: "700", color: "#818181" }}>{t("panel.msgColSender")}</th>
+                        <th style={{ padding: "12px 12px", textAlign: "left", fontSize: "13px", fontWeight: "700", color: "#818181" }}>{t("panel.msgColSubject")}</th>
+                        <th style={{ padding: "12px 12px", textAlign: "left", fontSize: "13px", fontWeight: "700", color: "#818181" }}>{t("panel.msgColEvent")}</th>
+                        <th style={{ padding: "12px 12px", textAlign: "left", fontSize: "13px", fontWeight: "700", color: "#818181" }}>{t("panel.msgColStatus")}</th>
+                        <th style={{ padding: "12px 16px 12px 12px", textAlign: "left", fontSize: "13px", fontWeight: "700", color: "#818181" }}>{t("panel.msgColDate")}</th>
+                        <th style={{ padding: "12px 16px", textAlign: "right", fontSize: "13px", fontWeight: "700", color: "#818181" }}>{t("panel.msgColActions")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2095,17 +2100,17 @@ const abrirFormularioRestaurar = (evento) => {
                                 <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                                   {!m.leido && (
                                     <span style={{ fontSize: "11px", fontWeight: "700", padding: "2px 8px", borderRadius: "999px", backgroundColor: "#ebf4ff", color: "#2b6cb0" }}>
-                                      Sin leer
+                                      {t("panel.msgUnread")}
                                     </span>
                                   )}
                                   {!m.respondido && (
                                     <span style={{ fontSize: "11px", fontWeight: "700", padding: "2px 8px", borderRadius: "999px", backgroundColor: "#fff5f5", color: "#c53030" }}>
-                                      Sin responder
+                                      {t("panel.msgUnreplied")}
                                     </span>
                                   )}
                                   {m.respondido && (
                                     <span style={{ fontSize: "11px", fontWeight: "700", padding: "2px 8px", borderRadius: "999px", backgroundColor: "#f0fff4", color: "#276749" }}>
-                                      Respondido
+                                      {t("panel.msgReplied")}
                                     </span>
                                   )}
                                 </div>
@@ -2123,19 +2128,19 @@ const abrirFormularioRestaurar = (evento) => {
                                 <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
                                   {!m.leido && (
                                     <button
-                                      title="Marcar como leído"
+                                      title={t("panel.msgMarkRead")}
                                       onClick={() => handleMarcarLeido(m._id)}
                                       style={{ background: "none", border: "1px solid #d4b896", borderRadius: "6px", padding: "4px 8px", fontSize: "13px", cursor: "pointer", color: "#818181" }}
                                     >
-                                      ✓ Leído
+                                      {t("panel.msgMarkRead")}
                                     </button>
                                   )}
                                   <button
-                                    title={m.respondido ? "Marcar como no respondido" : "Marcar como respondido"}
+                                    title={m.respondido ? t("panel.msgUnmark") : t("panel.msgMarkReplied")}
                                     onClick={() => handleToggleRespondido(m._id)}
                                     style={{ background: "none", border: `1px solid ${m.respondido ? "#c6f6d5" : "#d4b896"}`, borderRadius: "6px", padding: "4px 8px", fontSize: "13px", cursor: "pointer", color: m.respondido ? "#276749" : "#818181" }}
                                   >
-                                    {m.respondido ? "↩ Desmarcar" : "↩ Respondido"}
+                                    {m.respondido ? t("panel.msgUnmark") : t("panel.msgMarkReplied")}
                                   </button>
                                   <button
                                     title="Eliminar"
@@ -2164,7 +2169,7 @@ const abrirFormularioRestaurar = (evento) => {
                                       </p>
                                       {m.evento?.titulo && (
                                         <p style={{ fontSize: "13px", color: "#91703d", margin: "0 0 4px", fontWeight: "600" }}>
-                                          📅 Desde el evento: {m.evento.titulo}
+                                          📅 {t("panel.msgFromEvent")} {m.evento.titulo}
                                         </p>
                                       )}
                                       <p style={{ fontSize: "12px", color: "#aaa", margin: 0 }}>
@@ -2180,12 +2185,12 @@ const abrirFormularioRestaurar = (evento) => {
                                     {/* formulario respuesta */}
                                     <div style={{ borderTop: "1px solid #ecdcc8", paddingTop: "16px" }}>
                                       <label style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "13px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "8px" }}>
-                                        Responder a {m.nombre}
+                                        {t("panel.msgReplyTo", { nombre: m.nombre })}
                                       </label>
                                       <textarea
                                         value={textoRespuesta}
                                         onChange={(e) => setTextoRespuesta(e.target.value)}
-                                        placeholder="Escribe tu respuesta..."
+                                        placeholder={t("panel.msgReplyPlaceholder")}
                                         rows={4}
                                         maxLength={2000}
                                         style={{ width: "100%", backgroundColor: "#f8f8f8", padding: "10px 12px", fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "14px", color: "#1a1a1a", border: "1px solid #d4b896", borderRadius: "8px", outline: "none", resize: "vertical", boxSizing: "border-box", marginBottom: "8px" }}
@@ -2197,7 +2202,7 @@ const abrirFormularioRestaurar = (evento) => {
                                       )}
                                       {respuestaExitosa && (
                                         <p style={{ fontSize: "13px", color: "#276749", margin: "0 0 8px", fontFamily: "'Baloo Bhai 2', Helvetica" }}>
-                                          ✓ Respuesta enviada correctamente
+                                          {t("panel.msgReplySent")}
                                         </p>
                                       )}
                                       <div style={{ display: "flex", gap: "8px" }}>
@@ -2206,7 +2211,7 @@ const abrirFormularioRestaurar = (evento) => {
                                           disabled={enviandoRespuesta || !textoRespuesta.trim()}
                                           style={{ flex: 1, padding: "10px 0", backgroundColor: enviandoRespuesta || !textoRespuesta.trim() ? "#ccc" : "#91703d", color: "white", border: "none", borderRadius: "999px", fontFamily: "'Baloo Bhai 2', Helvetica", fontWeight: "700", fontSize: "14px", cursor: enviandoRespuesta || !textoRespuesta.trim() ? "not-allowed" : "pointer" }}
                                         >
-                                          {enviandoRespuesta ? "Enviando..." : "↩ Responder"}
+                                          {enviandoRespuesta ? t("panel.msgSending") : t("panel.msgSendReply")}
                                         </button>
                                         <button
                                           onClick={() => setModalEliminarMensaje(m._id)}
@@ -2236,12 +2241,12 @@ const abrirFormularioRestaurar = (evento) => {
         {seccionActiva === "analiticas" && (
           <div style={{ fontFamily: "'Baloo Bhai 2', Helvetica" }}>
             <h2 style={{ fontSize: "22px", fontWeight: "700", color: "#1a1a1a", marginBottom: "24px" }}>
-              Analíticas
+              {t("panel.analyticsTitle")}
             </h2>
 
             {cargandoAnaliticas && (
               <div style={{ textAlign: "center", padding: "48px 0", color: "#818181", fontSize: "18px" }}>
-                Cargando analíticas...
+                {t("panel.analyticsLoading")}
               </div>
             )}
 
@@ -2255,11 +2260,11 @@ const abrirFormularioRestaurar = (evento) => {
                   marginBottom: "36px"
                 }}>
                   {[
-                    { label: "Visitas totales", valor: analiticas.resumen.totalVistas, icono: "👁️" },
-                    { label: "Inscripciones totales", valor: analiticas.resumen.totalInscritos, icono: "✅" },
-                    { label: "Suscriptores", valor: analiticas.resumen.totalSuscriptores ?? 0, icono: "🔔" },
-                    { label: "Eventos activos", valor: analiticas.resumen.totalEventosPublicados, icono: "📅" },
-                    { label: "Eventos pasados", valor: analiticas.resumen.totalEventosPasados, icono: "🏁" },
+                    { label: t("panel.kpiViews"), valor: analiticas.resumen.totalVistas, icono: "👁️" },
+                    { label: t("panel.kpiSignups"), valor: analiticas.resumen.totalInscritos, icono: "✅" },
+                    { label: t("panel.kpiSubscribers"), valor: analiticas.resumen.totalSuscriptores ?? 0, icono: "🔔" },
+                    { label: t("panel.kpiActiveEvents"), valor: analiticas.resumen.totalEventosPublicados, icono: "📅" },
+                    { label: t("panel.kpiPastEvents"), valor: analiticas.resumen.totalEventosPasados, icono: "🏁" },
                   ].map((kpi) => (
                     <div key={kpi.label} style={{
                       backgroundColor: "white",
@@ -2295,10 +2300,10 @@ const abrirFormularioRestaurar = (evento) => {
                     boxShadow: "0 2px 12px rgba(0,0,0,0.08)"
                   }}>
                     <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", marginBottom: "16px" }}>
-                      👁️ Top eventos por visitas
+                      {t("panel.topByViews")}
                     </h3>
                     {analiticas.topPorVistas.length === 0 ? (
-                      <p style={{ fontSize: "14px", color: "#818181" }}>Sin datos todavía</p>
+                      <p style={{ fontSize: "14px", color: "#818181" }}>{t("panel.noDataYet")}</p>
                     ) : (
                       <ol style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "10px" }}>
                         {analiticas.topPorVistas.map((ev, i) => (
@@ -2331,10 +2336,10 @@ const abrirFormularioRestaurar = (evento) => {
                     boxShadow: "0 2px 12px rgba(0,0,0,0.08)"
                   }}>
                     <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", marginBottom: "16px" }}>
-                      ✅ Top eventos por inscripciones
+                      {t("panel.topBySignups")}
                     </h3>
                     {analiticas.topPorInscritos.length === 0 ? (
-                      <p style={{ fontSize: "14px", color: "#818181" }}>Sin datos todavía</p>
+                      <p style={{ fontSize: "14px", color: "#818181" }}>{t("panel.noDataYet")}</p>
                     ) : (
                       <ol style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "10px" }}>
                         {analiticas.topPorInscritos.map((ev, i) => (
@@ -2370,11 +2375,11 @@ const abrirFormularioRestaurar = (evento) => {
                   {/* tasa de conversión */}
                   <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px 24px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
                     <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", marginBottom: "4px" }}>
-                      🔄 Tasa de conversión
+                      {t("panel.conversionRate")}
                     </h3>
-                    <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>Inscritos ÷ visitas por evento</p>
+                    <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>{t("panel.conversionSubtitle")}</p>
                     {analiticas.tasaConversion.length === 0 ? (
-                      <p style={{ fontSize: "14px", color: "#818181" }}>Sin datos todavía</p>
+                      <p style={{ fontSize: "14px", color: "#818181" }}>{t("panel.noDataYet")}</p>
                     ) : (
                       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                         {analiticas.tasaConversion.map((ev) => (
@@ -2399,11 +2404,11 @@ const abrirFormularioRestaurar = (evento) => {
                   {/* tasa de llenado */}
                   <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px 24px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
                     <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", marginBottom: "4px" }}>
-                      📊 Tasa de llenado
+                      {t("panel.fillRate")}
                     </h3>
-                    <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>Inscritos sobre aforo máximo</p>
+                    <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>{t("panel.fillSubtitle")}</p>
                     {analiticas.tasaLlenado.length === 0 ? (
-                      <p style={{ fontSize: "14px", color: "#818181" }}>Sin eventos con aforo definido</p>
+                      <p style={{ fontSize: "14px", color: "#818181" }}>{t("panel.noCapacityData")}</p>
                     ) : (
                       <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                         {analiticas.tasaLlenado.slice(0, 8).map((ev) => (
@@ -2437,11 +2442,11 @@ const abrirFormularioRestaurar = (evento) => {
                   {/* top ciudades */}
                   <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px 24px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
                     <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", marginBottom: "4px" }}>
-                      📍 Top ciudades
+                      {t("panel.topCities")}
                     </h3>
-                    <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>Por número de inscritos</p>
+                    <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>{t("panel.topCitiesSubtitle")}</p>
                     {analiticas.topCiudades.length === 0 ? (
-                      <p style={{ fontSize: "14px", color: "#818181" }}>Sin datos todavía</p>
+                      <p style={{ fontSize: "14px", color: "#818181" }}>{t("panel.noDataYet")}</p>
                     ) : (
                       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                         {(() => {
@@ -2472,11 +2477,11 @@ const abrirFormularioRestaurar = (evento) => {
                   {/* evolución de inscripciones por semana */}
                   <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px 24px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
                     <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", marginBottom: "4px" }}>
-                      📈 Evolución de inscripciones
+                      {t("panel.weeklySignups")}
                     </h3>
-                    <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>Últimas 8 semanas</p>
+                    <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>{t("panel.weeklySignupsSubtitle")}</p>
                     {analiticas.evolucionSemanal.length === 0 ? (
-                      <p style={{ fontSize: "14px", color: "#818181" }}>Sin datos todavía</p>
+                      <p style={{ fontSize: "14px", color: "#818181" }}>{t("panel.noDataYet")}</p>
                     ) : (() => {
                       const maxSem = Math.max(...analiticas.evolucionSemanal.map((s) => s.inscritos));
                       return (
@@ -2501,9 +2506,9 @@ const abrirFormularioRestaurar = (evento) => {
                 {analiticas.proximosALlenarse.length > 0 && (
                   <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px 24px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)", marginTop: "24px" }}>
                     <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", marginBottom: "4px" }}>
-                      🚨 Próximos a llenarse
+                      {t("panel.nearlyFull")}
                     </h3>
-                    <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>Eventos activos con más del 80% del aforo ocupado</p>
+                    <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>{t("panel.nearlyFullSubtitle")}</p>
                     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                       {analiticas.proximosALlenarse.map((ev) => (
                         <div key={String(ev._id)} style={{
@@ -2547,11 +2552,11 @@ const abrirFormularioRestaurar = (evento) => {
                 }}>
                   <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px 24px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
                     <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", marginBottom: "4px" }}>
-                      🔔 Nuevos suscriptores
+                      {t("panel.newSubscribers")}
                     </h3>
-                    <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>Últimas 8 semanas</p>
+                    <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>{t("panel.newSubscribersSubtitle")}</p>
                     {(!analiticas.evolucionSuscriptores || analiticas.evolucionSuscriptores.length === 0) ? (
-                      <p style={{ fontSize: "14px", color: "#818181" }}>Sin datos todavía</p>
+                      <p style={{ fontSize: "14px", color: "#818181" }}>{t("panel.noDataYet")}</p>
                     ) : (() => {
                       const maxSem = Math.max(...analiticas.evolucionSuscriptores.map((s) => s.nuevos));
                       return (
@@ -2574,11 +2579,11 @@ const abrirFormularioRestaurar = (evento) => {
                   {/* inscripciones por evento — tabla completa */}
                   <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px 24px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
                     <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", marginBottom: "4px" }}>
-                      ✅ Inscritos por evento
+                      {t("panel.signupsByEvent")}
                     </h3>
-                    <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>Todos los eventos, ordenados por inscritos</p>
+                    <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>{t("panel.signupsByEventSubtitle")}</p>
                     {(!analiticas.inscripcionesPorEvento || analiticas.inscripcionesPorEvento.length === 0) ? (
-                      <p style={{ fontSize: "14px", color: "#818181" }}>Sin eventos todavía</p>
+                      <p style={{ fontSize: "14px", color: "#818181" }}>{t("panel.noEventsYet")}</p>
                     ) : (
                       <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "300px", overflowY: "auto" }}>
                         {analiticas.inscripcionesPorEvento.map((ev, i) => (
@@ -2595,7 +2600,7 @@ const abrirFormularioRestaurar = (evento) => {
                                 {ev.titulo}
                               </p>
                               <p style={{ fontSize: "11px", color: "#a0a0a0", margin: 0 }}>
-                                {ev.activo ? "Activo" : "Pasado"} · {new Date(ev.fecha).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })}
+                                {ev.activo ? t("panel.active") : t("panel.past")} · {new Date(ev.fecha).toLocaleDateString(i18n.language, { day: "numeric", month: "short", year: "numeric" })}
                               </p>
                             </div>
                             <span style={{ fontSize: "14px", fontWeight: "700", color: "#91703d", flexShrink: 0 }}>
@@ -2614,7 +2619,7 @@ const abrirFormularioRestaurar = (evento) => {
                                 flexShrink: 0,
                               }}
                             >
-                              Ver lista
+                              {t("panel.viewList")}
                             </button>
                           </div>
                         ))}
@@ -2627,9 +2632,9 @@ const abrirFormularioRestaurar = (evento) => {
                 {analiticas.aforoCompleto.length > 0 && (
                   <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px 24px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)", marginTop: "24px" }}>
                     <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", marginBottom: "4px" }}>
-                      🔴 Aforo completo
+                      {t("panel.capacityFull")}
                     </h3>
-                    <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>Eventos activos que han alcanzado su capacidad máxima</p>
+                    <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>{t("panel.capacityFullSubtitle")}</p>
                     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                       {analiticas.aforoCompleto.map((ev) => (
                         <div key={String(ev._id)} style={{
@@ -2648,7 +2653,7 @@ const abrirFormularioRestaurar = (evento) => {
                             display: "flex", alignItems: "center", justifyContent: "center",
                             flexShrink: 0
                           }}>
-                            LLENO
+                            {t("panel.fullBadge")}
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", margin: "0 0 2px 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -2668,12 +2673,12 @@ const abrirFormularioRestaurar = (evento) => {
 
             {!cargandoAnaliticas && !analiticas && (
               <div style={{ textAlign: "center", padding: "48px 0", color: "#818181", fontSize: "16px" }}>
-                No se pudieron cargar las analíticas.{" "}
+                {t("panel.analyticsError")}{" "}
                 <button
                   onClick={cargarAnaliticas}
                   style={{ background: "none", border: "none", color: "#91703d", fontWeight: "700", cursor: "pointer", fontSize: "14px", fontFamily: "'Baloo Bhai 2', Helvetica" }}
                 >
-                  Reintentar
+                  {t("panel.analyticsRetry")}
                 </button>
               </div>
             )}
@@ -2684,23 +2689,23 @@ const abrirFormularioRestaurar = (evento) => {
         {seccionActiva === "suscriptores" && (
           <div style={{ fontFamily: "'Baloo Bhai 2', Helvetica" }}>
             <h2 style={{ fontSize: "22px", fontWeight: "700", color: "#1a1a1a", marginBottom: "24px" }}>
-              Suscriptores
+              {t("panel.subscribersTitle")}
             </h2>
 
             {cargandoSuscriptores && (
               <div style={{ textAlign: "center", padding: "48px 0", color: "#818181", fontSize: "18px" }}>
-                Cargando suscriptores...
+                {t("panel.subscribersLoading")}
               </div>
             )}
 
             {!cargandoSuscriptores && suscriptores === null && (
               <div style={{ textAlign: "center", padding: "48px 0", color: "#818181", fontSize: "16px" }}>
-                No se pudieron cargar los suscriptores.{" "}
+                {t("panel.subscribersError")}{" "}
                 <button
                   onClick={cargarSuscriptores}
                   style={{ background: "none", border: "none", color: "#91703d", fontWeight: "700", cursor: "pointer", fontSize: "14px", fontFamily: "'Baloo Bhai 2', Helvetica" }}
                 >
-                  Reintentar
+                  {t("panel.subscribersRetry")}
                 </button>
               </div>
             )}
@@ -2726,7 +2731,7 @@ const abrirFormularioRestaurar = (evento) => {
                           }}
                           style={{ background: "none", border: "none", color: "#91703d", fontWeight: "700", cursor: "pointer", fontSize: "13px", fontFamily: "'Baloo Bhai 2', Helvetica" }}
                         >
-                          {seleccionados.size === suscriptores.length ? "Deseleccionar todos" : "Seleccionar todos"}
+                          {seleccionados.size === suscriptores.length ? t("panel.deselectAll") : t("panel.selectAll")}
                         </button>
                         <button
                           onClick={() => {
@@ -2761,7 +2766,7 @@ const abrirFormularioRestaurar = (evento) => {
                   </div>
 
                   {!suscriptores || suscriptores.length === 0 ? (
-                    <p style={{ fontSize: "14px", color: "#818181" }}>Aún no tienes suscriptores.</p>
+                    <p style={{ fontSize: "14px", color: "#818181" }}>{t("panel.noSubscribers")}</p>
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "400px", overflowY: "auto" }}>
                       {suscriptores.map((s) => (
@@ -2792,32 +2797,32 @@ const abrirFormularioRestaurar = (evento) => {
                 {/* formulario de envío */}
                 <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px 24px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
                   <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a1a", marginBottom: "4px" }}>
-                    ✉️ Enviar correo
+                    {t("panel.emailFormTitle")}
                   </h3>
                   <p style={{ fontSize: "12px", color: "#818181", marginBottom: "16px", marginTop: 0 }}>
                     {seleccionados.size > 0
-                      ? `A ${seleccionados.size} suscriptor${seleccionados.size !== 1 ? "es" : ""} seleccionado${seleccionados.size !== 1 ? "s" : ""}`
-                      : suscriptores.length > 0 ? `A todos (${suscriptores.length})` : "Sin suscriptores"}
+                      ? `${seleccionados.size} ${t("panel.tabSubscribers").toLowerCase()}`
+                      : suscriptores.length > 0 ? t("panel.emailFormToAll", { n: suscriptores.length }) : t("panel.emailFormNoSubs")}
                   </p>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                     <div>
-                      <label style={{ fontSize: "13px", fontWeight: "600", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>Asunto</label>
+                      <label style={{ fontSize: "13px", fontWeight: "600", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>{t("panel.emailSubjectLabel")}</label>
                       <input
                         type="text"
                         value={asuntoCorreo}
                         onChange={(e) => setAsuntoCorreo(e.target.value)}
-                        placeholder="Asunto del correo"
+                        placeholder={t("panel.emailSubjectPlaceholder")}
                         maxLength={150}
                         style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #e0d5c5", fontSize: "13px", fontFamily: "'Baloo Bhai 2', Helvetica", boxSizing: "border-box", outline: "none" }}
                       />
                     </div>
                     <div>
-                      <label style={{ fontSize: "13px", fontWeight: "600", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>Mensaje</label>
+                      <label style={{ fontSize: "13px", fontWeight: "600", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>{t("panel.emailBodyLabel")}</label>
                       <textarea
                         value={mensajeCorreo}
                         onChange={(e) => setMensajeCorreo(e.target.value)}
-                        placeholder="Escribe aquí tu mensaje..."
+                        placeholder={t("panel.emailBodyPlaceholder")}
                         rows={6}
                         maxLength={2000}
                         style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #e0d5c5", fontSize: "13px", fontFamily: "'Baloo Bhai 2', Helvetica", resize: "vertical", boxSizing: "border-box", outline: "none" }}
@@ -2847,7 +2852,7 @@ const abrirFormularioRestaurar = (evento) => {
                         opacity: enviandoCorreo || !asuntoCorreo.trim() || !mensajeCorreo.trim() || !suscriptores || suscriptores.length === 0 ? 0.6 : 1,
                       }}
                     >
-                      {enviandoCorreo ? "Enviando..." : seleccionados.size > 0 ? `Enviar a ${seleccionados.size} seleccionado${seleccionados.size !== 1 ? "s" : ""}` : `Enviar a todos (${suscriptores.length})`}
+                      {enviandoCorreo ? t("panel.emailSending") : seleccionados.size > 0 ? t("panel.emailSendToSelected", { n: seleccionados.size }) : t("panel.emailSendToAll", { n: suscriptores.length })}
                     </button>
                   </div>
                 </div>
@@ -2861,9 +2866,9 @@ const abrirFormularioRestaurar = (evento) => {
           <div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", marginBottom: "16px" }}>
               <h2 style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "22px", fontWeight: "700", color: "#1a1a1a", margin: 0 }}>
-                Notificaciones {notificacionesNoLeidas > 0 && (
+                {t("panel.notifTitle")} {notificacionesNoLeidas > 0 && (
                   <span style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "14px", fontWeight: "700", backgroundColor: "#e53e3e", color: "white", borderRadius: "999px", padding: "2px 10px", marginLeft: "8px", verticalAlign: "middle" }}>
-                    {notificacionesNoLeidas} nueva{notificacionesNoLeidas !== 1 ? "s" : ""}
+                    {notificacionesNoLeidas}
                   </span>
                 )}
               </h2>
@@ -2874,7 +2879,7 @@ const abrirFormularioRestaurar = (evento) => {
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#b79868"}
                 >
-                  Marcar todas como leídas
+                  {t("panel.notifMarkAllRead")}
                 </button>
               )}
             </div>
@@ -2882,12 +2887,12 @@ const abrirFormularioRestaurar = (evento) => {
             {/* filtros */}
             {!cargandoNotificaciones && notificaciones.length > 0 && (() => {
               const filtros = [
-                { id: "todas", label: "Todas" },
-                { id: "no_leidas", label: "No leídas" },
-                { id: "inscripcion", label: "✅ Inscripciones" },
-                { id: "cancelacion_inscripcion", label: "❌ Cancelaciones" },
-                { id: "suscripcion", label: "🔔 Suscripciones" },
-                { id: "mensaje", label: "✉️ Mensajes" },
+                { id: "todas", label: t("panel.notifFilterAll") },
+                { id: "no_leidas", label: t("panel.notifFilterUnread") },
+                { id: "inscripcion", label: t("panel.notifFilterSignup") },
+                { id: "cancelacion_inscripcion", label: t("panel.notifFilterCancel") },
+                { id: "suscripcion", label: t("panel.notifFilterSub") },
+                { id: "mensaje", label: t("panel.notifFilterMsg") },
               ];
               return (
                 <div style={{
@@ -2924,7 +2929,7 @@ const abrirFormularioRestaurar = (evento) => {
 
             {cargandoNotificaciones && (
               <div style={{ textAlign: "center", padding: "48px 0", color: "#818181", fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "16px" }}>
-                Cargando notificaciones...
+                {t("panel.notifLoading")}
               </div>
             )}
 
@@ -2932,8 +2937,7 @@ const abrirFormularioRestaurar = (evento) => {
               <div style={{ textAlign: "center", padding: "80px 0" }}>
                 <div style={{ fontSize: "48px", marginBottom: "16px" }}>🔔</div>
                 <p style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "16px", color: "#818181" }}>
-                  Sin notificaciones por ahora.<br />
-                  Aquí verás las inscripciones, suscripciones y mensajes nuevos.
+                  {t("panel.notifEmpty")}
                 </p>
               </div>
             )}
@@ -2948,20 +2952,20 @@ const abrirFormularioRestaurar = (evento) => {
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {notifFiltradas.length === 0 && (
                   <div style={{ textAlign: "center", padding: "48px 0", color: "#818181", fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "15px" }}>
-                    No hay notificaciones en este filtro.
+                    {t("panel.notifNoResults")}
                   </div>
                 )}
                 {notifFiltradas.map((n) => {
                   const icono = n.tipo === "inscripcion" ? "✅" : n.tipo === "cancelacion_inscripcion" ? "❌" : n.tipo === "suscripcion" ? "🔔" : "✉️";
                   const textoTipo = n.tipo === "inscripcion"
-                    ? "Nueva inscripción"
+                    ? t("panel.notifTypeSignup")
                     : n.tipo === "cancelacion_inscripcion"
-                    ? "Cancelación de inscripción"
+                    ? t("panel.notifTypeCancel")
                     : n.tipo === "suscripcion"
-                    ? "Nueva suscripción"
-                    : "Nuevo mensaje";
+                    ? t("panel.notifTypeSub")
+                    : t("panel.notifTypeMsg");
 
-                  const fechaFormateada = new Date(n.createdAt).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+                  const fechaFormateada = new Date(n.createdAt).toLocaleDateString(i18n.language, { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
                   return (
                     <div
@@ -2988,7 +2992,7 @@ const abrirFormularioRestaurar = (evento) => {
                           </span>
                           {!n.leida && (
                             <span style={{ backgroundColor: "#e53e3e", color: "white", borderRadius: "999px", fontSize: "10px", fontWeight: "700", padding: "1px 7px", fontFamily: "'Baloo Bhai 2', Helvetica" }}>
-                              NUEVA
+                              {t("panel.notifNEW")}
                             </span>
                           )}
                         </div>
@@ -3020,19 +3024,19 @@ const abrirFormularioRestaurar = (evento) => {
 
                         {n.tipo === "suscripcion" && (
                           <p style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "13px", color: "#4a4a4a", margin: "0 0 2px 0" }}>
-                            {n.datos.correo} se ha suscrito a tu empresa.
+                            {t("panel.notifSubscribed", { email: n.datos.correo })}
                           </p>
                         )}
 
                         {n.tipo === "mensaje" && (
                           <p style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "13px", color: "#4a4a4a", margin: "0 0 2px 0" }}>
-                            <strong>{n.datos.nombre}</strong> ({n.datos.correo}) te ha enviado un mensaje.
+                            {t("panel.notifSentMsg", { nombre: n.datos.nombre, email: n.datos.correo })}
                           </p>
                         )}
 
                         <p style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "11px", color: "#a0a0a0", margin: 0 }}>
                           {fechaFormateada}
-                          {!n.leida && <span style={{ marginLeft: "8px", color: "#b79868" }}>· Clic para marcar como leída</span>}
+                          {!n.leida && <span style={{ marginLeft: "8px", color: "#b79868" }}>{t("panel.notifClickRead")}</span>}
                         </p>
                       </div>
                     </div>
@@ -3054,7 +3058,7 @@ const abrirFormularioRestaurar = (evento) => {
               color: "#1a1a1a",
               marginBottom: "24px"
             }}>
-              Información del perfil
+              {t("panel.profileTitle")}
             </h2>
 
             <div style={{
@@ -3080,7 +3084,7 @@ const abrirFormularioRestaurar = (evento) => {
               }}
             >
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <label style={{ ...estiloLabel, fontSize: "13px" }} htmlFor="perfil-nombre">Nombre de empresa</label>
+                <label style={{ ...estiloLabel, fontSize: "13px" }} htmlFor="perfil-nombre">{t("panel.profileNameLabel")}</label>
                 <input
                   id="perfil-nombre"
                   type="text"
@@ -3091,7 +3095,7 @@ const abrirFormularioRestaurar = (evento) => {
                 />
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <label style={{ ...estiloLabel, fontSize: "13px" }} htmlFor="perfil-correo">Correo electrónico</label>
+                <label style={{ ...estiloLabel, fontSize: "13px" }} htmlFor="perfil-correo">{t("panel.profileEmailLabel")}</label>
                 <input
                   id="perfil-correo"
                   type="email"
@@ -3113,14 +3117,14 @@ const abrirFormularioRestaurar = (evento) => {
                   : null;
                 return (
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    <label style={{ ...estiloLabel, fontSize: "13px" }} htmlFor="perfil-descripcion">Descripción</label>
+                    <label style={{ ...estiloLabel, fontSize: "13px" }} htmlFor="perfil-descripcion">{t("panel.profileDescLabel")}</label>
                     <textarea
                       id="perfil-descripcion"
                       value={formPerfil.descripcion}
                       onChange={(e) => setFormPerfil((p) => ({ ...p, descripcion: e.target.value }))}
                       maxLength={500}
                       rows={3}
-                      placeholder="Cuéntanos sobre tu empresa..."
+                      placeholder={t("panel.profileDescPlaceholder")}
                       style={{
                         width: "100%",
                         backgroundColor: "#f8f8f8",
@@ -3138,7 +3142,7 @@ const abrirFormularioRestaurar = (evento) => {
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       {bloqueadaHasta ? (
                         <span style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "11px", color: "#b79868" }}>
-                          Podrás modificarla el {bloqueadaHasta.toLocaleDateString("es-ES")}
+                          {t("panel.profileDescLocked", { fecha: bloqueadaHasta.toLocaleDateString(i18n.language) })}
                         </span>
                       ) : <span />}
                       <span style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "11px", color: "#b0b0b0" }}>
@@ -3150,14 +3154,14 @@ const abrirFormularioRestaurar = (evento) => {
               })()}
 
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <label style={{ ...estiloLabel, fontSize: "13px" }} htmlFor="perfil-contrasena">Contraseña actual</label>
+                <label style={{ ...estiloLabel, fontSize: "13px" }} htmlFor="perfil-contrasena">{t("panel.profilePasswordLabel")}</label>
                 <input
                   id="perfil-contrasena"
                   type="password"
                   value={formPerfil.contrasena}
                   onChange={(e) => setFormPerfil((p) => ({ ...p, contrasena: e.target.value }))}
                   required
-                  placeholder="Introduce tu contraseña para confirmar"
+                  placeholder={t("panel.profilePasswordPlaceholder")}
                   style={{ ...estiloInput, height: "38px", fontSize: "14px" }}
                 />
               </div>
@@ -3169,7 +3173,7 @@ const abrirFormularioRestaurar = (evento) => {
                 margin: 0,
                 lineHeight: "1.4"
               }}>
-                Cada campo solo puede modificarse una vez cada 2 meses.
+                {t("panel.profileChangeFreq")}
               </p>
 
               {perfilExito && (
@@ -3205,7 +3209,7 @@ const abrirFormularioRestaurar = (evento) => {
                   onMouseEnter={(e) => { if (!perfilGuardando) e.currentTarget.style.backgroundColor = "#7a5c2e"; }}
                   onMouseLeave={(e) => { if (!perfilGuardando) e.currentTarget.style.backgroundColor = "#91703d"; }}
                 >
-                  {perfilGuardando ? "Guardando..." : "Guardar cambios"}
+                  {perfilGuardando ? t("panel.profileSaving") : t("panel.profileSaveBtn")}
                 </button>
               </div>
             </form>
@@ -3232,7 +3236,7 @@ const abrirFormularioRestaurar = (evento) => {
                 {empresa?.fotoPerfil ? (
                   <img
                     src={empresa.fotoPerfil}
-                    alt="Foto de perfil"
+                    alt={t("panel.profilePhotoAlt")}
                     style={{ width: "100%", height: "100%", objectFit: "cover" }}
                   />
                 ) : (
@@ -3268,7 +3272,7 @@ const abrirFormularioRestaurar = (evento) => {
                 onMouseEnter={(e) => { if (!fotoSubiendo) e.currentTarget.style.backgroundColor = "#91703d"; }}
                 onMouseLeave={(e) => { if (!fotoSubiendo) e.currentTarget.style.backgroundColor = "#b79868"; }}
               >
-                {fotoSubiendo ? "Subiendo..." : "Cambiar foto"}
+                {fotoSubiendo ? t("panel.profileUploading") : t("panel.profileChangePhoto")}
               </button>
 
               {fotoError && (
@@ -3303,7 +3307,7 @@ const abrirFormularioRestaurar = (evento) => {
                   color: "#c0392b",
                   margin: "0 0 2px 0"
                 }}>
-                  Zona de peligro
+                  {t("panel.dangerTitle")}
                 </p>
                 <p style={{
                   fontFamily: "'Baloo Bhai 2', Helvetica",
@@ -3312,7 +3316,7 @@ const abrirFormularioRestaurar = (evento) => {
                   margin: 0,
                   lineHeight: "1.4"
                 }}>
-                  Eliminar la cuenta borrará todos tus eventos. Esta acción no se puede deshacer.
+                  {t("panel.dangerDesc")}
                 </p>
               </div>
               <button
@@ -3321,7 +3325,7 @@ const abrirFormularioRestaurar = (evento) => {
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#922b21"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#c0392b"}
               >
-                Eliminar perfil
+                {t("panel.dangerBtn")}
               </button>
             </div>
           </div>
@@ -3348,7 +3352,7 @@ const abrirFormularioRestaurar = (evento) => {
             fontSize: "16px", fontWeight: "700",
             color: "white", margin: 0
           }}>
-            Ajusta el encuadre de la imagen
+            {t("panel.cropAdjust")}
           </p>
 
           {/* contenedor del recortador */}
@@ -3367,7 +3371,7 @@ const abrirFormularioRestaurar = (evento) => {
           {/* zoom slider */}
           <div style={{ display: "flex", alignItems: "center", gap: "12px", width: "100%", maxWidth: "600px" }}>
             <span style={{ color: "white", fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "13px", whiteSpace: "nowrap" }}>
-              Zoom
+              {t("panel.cropZoom")}
             </span>
             <input
               type="range"
@@ -3390,7 +3394,7 @@ const abrirFormularioRestaurar = (evento) => {
                 minHeight: "44px"
               }}
             >
-              Cancelar
+              {t("panel.cropCancel")}
             </button>
             <button
               onClick={confirmarRecorte}
@@ -3405,7 +3409,7 @@ const abrirFormularioRestaurar = (evento) => {
                 minHeight: "44px"
               }}
             >
-              {recortando ? "Procesando..." : "Usar este encuadre"}
+              {recortando ? t("panel.cropProcessing") : t("panel.cropUse")}
             </button>
           </div>
         </div>
@@ -3443,14 +3447,14 @@ const abrirFormularioRestaurar = (evento) => {
               fontSize: "20px", fontWeight: "700",
               color: "#1a1a1a", marginBottom: "12px"
             }}>
-              ¿Enviar este evento a la papelera?
+              {t("panel.modalTrashTitle")}
             </h3>
             <p style={{
               fontFamily: "'Baloo Bhai 2', Helvetica",
               fontSize: "15px", color: "#4a4a4a",
               marginBottom: "24px", lineHeight: "1.5"
             }}>
-              Podrás recuperarlo durante 30 días desde la papelera. Después se eliminará definitivamente.
+              {t("panel.modalTrashBody")}
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center" }}>
               <button
@@ -3459,7 +3463,7 @@ const abrirFormularioRestaurar = (evento) => {
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#5a5a5a"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#818181"}
               >
-                Cancelar
+                {t("panel.formCancel")}
               </button>
               <button
                 onClick={eliminarEvento}
@@ -3467,7 +3471,7 @@ const abrirFormularioRestaurar = (evento) => {
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#922b21"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#c0392b"}
               >
-                Sí, a la papelera
+                {t("panel.modalTrashConfirm")}
               </button>
             </div>
           </div>
@@ -3505,14 +3509,14 @@ const abrirFormularioRestaurar = (evento) => {
               fontSize: "20px", fontWeight: "700",
               color: "#c0392b", marginBottom: "12px"
             }}>
-              ¿Eliminar definitivamente?
+              {t("panel.modalDeleteTitle")}
             </h3>
             <p style={{
               fontFamily: "'Baloo Bhai 2', Helvetica",
               fontSize: "15px", color: "#4a4a4a",
               marginBottom: "24px", lineHeight: "1.5"
             }}>
-              El evento se borrará para siempre. Esta acción no se puede deshacer.
+              {t("panel.modalDeleteBody")}
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center" }}>
               <button
@@ -3521,7 +3525,7 @@ const abrirFormularioRestaurar = (evento) => {
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#5a5a5a"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#818181"}
               >
-                Cancelar
+                {t("panel.formCancel")}
               </button>
               <button
                 onClick={eliminarEventoDefinitivo}
@@ -3529,7 +3533,7 @@ const abrirFormularioRestaurar = (evento) => {
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#7b241c"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#922b21"}
               >
-                Sí, eliminar para siempre
+                {t("panel.modalDeleteConfirm")}
               </button>
             </div>
           </div>
@@ -3567,14 +3571,14 @@ const abrirFormularioRestaurar = (evento) => {
               fontSize: "20px", fontWeight: "700",
               color: "#1a1a1a", marginBottom: "12px"
             }}>
-              ¿Eliminar este mensaje?
+              {t("panel.modalMsgDeleteTitle")}
             </h3>
             <p style={{
               fontFamily: "'Baloo Bhai 2', Helvetica",
               fontSize: "15px", color: "#4a4a4a",
               marginBottom: "24px", lineHeight: "1.5"
             }}>
-              Esta acción no se puede deshacer.
+              {t("panel.modalMsgDeleteBody")}
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center" }}>
               <button
@@ -3583,7 +3587,7 @@ const abrirFormularioRestaurar = (evento) => {
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#5a5a5a"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#818181"}
               >
-                Cancelar
+                {t("panel.formCancel")}
               </button>
               <button
                 onClick={() => { handleEliminarMensaje(modalEliminarMensaje); setModalEliminarMensaje(null); }}
@@ -3591,7 +3595,7 @@ const abrirFormularioRestaurar = (evento) => {
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#922b21"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#c0392b"}
               >
-                Sí, eliminar
+                {t("panel.modalMsgDeleteConfirm")}
               </button>
             </div>
           </div>
@@ -3630,14 +3634,14 @@ const abrirFormularioRestaurar = (evento) => {
               fontSize: "20px", fontWeight: "700",
               color: "#1a1a1a", marginBottom: "12px"
             }}>
-              ¿Eliminar tu perfil de empresa?
+              {t("panel.modalAccountTitle1")}
             </h3>
             <p style={{
               fontFamily: "'Baloo Bhai 2', Helvetica",
               fontSize: "15px", color: "#4a4a4a",
               marginBottom: "24px", lineHeight: "1.5"
             }}>
-              Se eliminarán tu cuenta y todos tus eventos publicados. Esta acción no se puede deshacer.
+              {t("panel.modalAccountBody1")}
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center" }}>
               <button
@@ -3646,7 +3650,7 @@ const abrirFormularioRestaurar = (evento) => {
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#5a5a5a"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#818181"}
               >
-                Cancelar
+                {t("panel.formCancel")}
               </button>
               <button
                 onClick={() => setPasoEliminarCuenta(2)}
@@ -3654,7 +3658,7 @@ const abrirFormularioRestaurar = (evento) => {
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#922b21"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#c0392b"}
               >
-                Sí, quiero eliminarlo
+                {t("panel.modalAccountConfirm1")}
               </button>
             </div>
           </div>
@@ -3692,14 +3696,14 @@ const abrirFormularioRestaurar = (evento) => {
               fontSize: "20px", fontWeight: "700",
               color: "#c0392b", marginBottom: "12px"
             }}>
-              Confirmación final
+              {t("panel.modalAccountTitle2")}
             </h3>
             <p style={{
               fontFamily: "'Baloo Bhai 2', Helvetica",
               fontSize: "15px", color: "#4a4a4a",
               marginBottom: "24px", lineHeight: "1.5"
             }}>
-              ¿Confirmas que quieres eliminar definitivamente la cuenta de <strong>{empresa?.nombre}</strong> y todos sus eventos?
+              {t("panel.modalAccountBody2", { nombre: empresa?.nombre })}
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center" }}>
               <button
@@ -3708,7 +3712,7 @@ const abrirFormularioRestaurar = (evento) => {
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#5a5a5a"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#818181"}
               >
-                Cancelar
+                {t("panel.formCancel")}
               </button>
               <button
                 onClick={eliminarCuenta}
@@ -3716,7 +3720,7 @@ const abrirFormularioRestaurar = (evento) => {
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#7b241c"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#922b21"}
               >
-                Eliminar definitivamente
+                {t("panel.modalAccountConfirm2")}
               </button>
             </div>
           </div>
@@ -3756,10 +3760,10 @@ const abrirFormularioRestaurar = (evento) => {
               color: "#1a1a1a", marginBottom: "12px"
             }}>
               {!modalPatrocinio.patrocinado
-                ? "¿Activar el patrocinio?"
+                ? t("panel.modalSponsorTitleActivate")
                 : modalPatrocinio.cancelacionPatrocinio
-                  ? "¿Reactivar el patrocinio?"
-                  : "¿Cancelar el patrocinio?"}
+                  ? t("panel.modalSponsorTitleReactivate")
+                  : t("panel.modalSponsorTitleCancel")}
             </h3>
             <p style={{
               fontFamily: "'Baloo Bhai 2', Helvetica",
@@ -3767,10 +3771,10 @@ const abrirFormularioRestaurar = (evento) => {
               marginBottom: "24px", lineHeight: "1.5"
             }}>
               {!modalPatrocinio.patrocinado
-                ? "Tu evento aparecerá en la sección destacada. El coste es de 10€/mes."
+                ? t("panel.modalSponsorBodyActivate")
                 : modalPatrocinio.cancelacionPatrocinio
-                  ? "Tu evento volverá a renovarse automáticamente cada mes (10€/mes)."
-                  : `El evento seguirá apareciendo en la sección destacada hasta el ${new Date(modalPatrocinio.fechaFinPatrocinio).toLocaleDateString("es-ES")}. Después no se renovará.`}
+                  ? t("panel.modalSponsorBodyReactivate")
+                  : t("panel.modalSponsorBodyCancel", { fecha: new Date(modalPatrocinio.fechaFinPatrocinio).toLocaleDateString(i18n.language) })}
             </p>
             {(!modalPatrocinio.patrocinado || modalPatrocinio.cancelacionPatrocinio) && (
               <div style={{
@@ -3781,7 +3785,7 @@ const abrirFormularioRestaurar = (evento) => {
                   fontFamily: "'Baloo Bhai 2', Helvetica",
                   fontSize: "16px", fontWeight: "700", color: "#2e7d32"
                 }}>
-                  10€ / mes por este evento
+                  {t("panel.modalSponsorPrice")}
                 </span>
               </div>
             )}
@@ -3792,7 +3796,7 @@ const abrirFormularioRestaurar = (evento) => {
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#5a5a5a"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#818181"}
               >
-                Cancelar
+                {t("panel.formCancel")}
               </button>
               <button
                 onClick={confirmarPatrocinio}
@@ -3801,10 +3805,10 @@ const abrirFormularioRestaurar = (evento) => {
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
               >
                 {!modalPatrocinio.patrocinado
-                  ? "Sí, activar"
+                  ? t("panel.modalSponsorConfirmActivate")
                   : modalPatrocinio.cancelacionPatrocinio
-                    ? "Sí, reactivar"
-                    : "Sí, cancelar"}
+                    ? t("panel.modalSponsorConfirmReactivate")
+                    : t("panel.modalSponsorConfirmCancel")}
               </button>
             </div>
           </div>
@@ -3826,7 +3830,7 @@ const abrirFormularioRestaurar = (evento) => {
             fontSize: "16px", fontWeight: "700",
             color: "white", margin: 0
           }}>
-            Ajusta el encuadre de tu foto
+            {t("panel.cropAdjustProfile")}
           </p>
 
           <div style={{ position: "relative", width: "280px", height: "280px" }}>
@@ -3845,7 +3849,7 @@ const abrirFormularioRestaurar = (evento) => {
 
           <div style={{ display: "flex", alignItems: "center", gap: "12px", width: "100%", maxWidth: "280px" }}>
             <span style={{ color: "white", fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "13px", whiteSpace: "nowrap" }}>
-              Zoom
+              {t("panel.cropZoom")}
             </span>
             <input
               type="range"
@@ -3867,7 +3871,7 @@ const abrirFormularioRestaurar = (evento) => {
                 minHeight: "44px"
               }}
             >
-              Cancelar
+              {t("panel.cropCancel")}
             </button>
             <button
               onClick={confirmarRecortePerfil}
@@ -3882,7 +3886,7 @@ const abrirFormularioRestaurar = (evento) => {
                 minHeight: "44px"
               }}
             >
-              {fotoSubiendo ? "Subiendo..." : "Usar este encuadre"}
+              {fotoSubiendo ? t("panel.profileUploading") : t("panel.cropUse")}
             </button>
           </div>
         </div>
@@ -3915,21 +3919,21 @@ const abrirFormularioRestaurar = (evento) => {
             >✕</button>
 
             <h2 style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "18px", fontWeight: "700", color: "#1a1a1a", marginBottom: "4px", paddingRight: "32px" }}>
-              Inscritos — {modalDetalleEvento.titulo}
+              {t("panel.modalDetalleTitle", { titulo: modalDetalleEvento.titulo })}
             </h2>
             <p style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "13px", color: "#818181", marginBottom: "20px", marginTop: 0 }}>
-              {new Date(modalDetalleEvento.fecha).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })}
+              {new Date(modalDetalleEvento.fecha).toLocaleDateString(i18n.language, { day: "numeric", month: "long", year: "numeric" })}
             </p>
 
             {cargandoDetalle && (
               <p style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "15px", color: "#818181", textAlign: "center", padding: "32px 0" }}>
-                Cargando inscripciones...
+                {t("panel.modalDetalleLoading")}
               </p>
             )}
 
             {!cargandoDetalle && inscripcionesDetalle.length === 0 && (
               <p style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "15px", color: "#818181", textAlign: "center", padding: "32px 0" }}>
-                Ninguna inscripción todavía.
+                {t("panel.modalDetalleEmpty")}
               </p>
             )}
 
@@ -3937,16 +3941,16 @@ const abrirFormularioRestaurar = (evento) => {
               <>
                 <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap", alignItems: "center" }}>
                   <span style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "13px", color: "#4a4a4a" }}>
-                    {inscripcionesDetalle.length} inscripcion{inscripcionesDetalle.length !== 1 ? "es" : ""} · {inscripcionesDetalle.reduce((a, i) => a + i.numPersonas, 0)} persona{inscripcionesDetalle.reduce((a, i) => a + i.numPersonas, 0) !== 1 ? "s" : ""}
+                    {inscripcionesDetalle.length} {t("panel.modalDetalleRegistrations", { count: inscripcionesDetalle.length })} · {inscripcionesDetalle.reduce((a, i) => a + i.numPersonas, 0)} {t("panel.modalDetallePersons", { count: inscripcionesDetalle.reduce((a, i) => a + i.numPersonas, 0) })}
                   </span>
                   <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
                     <button
                       onClick={() => {
                         const filas = [
-                          ["Nombre", "Correo", "Ciudad", "Personas", "Fecha inscripción"],
+                          [t("panel.modalDetalleColName"), t("panel.modalDetalleColEmail"), t("panel.modalDetalleColCity"), t("panel.modalDetalleColPersons"), t("panel.modalDetalleColDate")],
                           ...inscripcionesDetalle.map((i) => [
                             i.nombre, i.correo, i.ciudad, i.numPersonas,
-                            new Date(i.createdAt).toLocaleDateString("es-ES"),
+                            new Date(i.createdAt).toLocaleDateString(i18n.language),
                           ]),
                         ];
                         descargarCSV(filas, `inscritos-${modalDetalleEvento.titulo.slice(0, 30)}.csv`);
@@ -3957,14 +3961,15 @@ const abrirFormularioRestaurar = (evento) => {
                     </button>
                     <button
                       onClick={() => {
+                        const totalPers = inscripcionesDetalle.reduce((a, i) => a + i.numPersonas, 0);
                         descargarPDF(
-                          `Inscritos — ${modalDetalleEvento.titulo}`,
-                          ["Nombre", "Correo", "Ciudad", "Personas", "Fecha"],
+                          t("panel.modalDetalleTitle", { titulo: modalDetalleEvento.titulo }),
+                          [t("panel.modalDetalleColName"), t("panel.modalDetalleColEmail"), t("panel.modalDetalleColCity"), t("panel.modalDetalleColPersons"), t("panel.modalDetalleColDate")],
                           inscripcionesDetalle.map((i) => [
                             i.nombre, i.correo, i.ciudad, i.numPersonas,
-                            new Date(i.createdAt).toLocaleDateString("es-ES"),
+                            new Date(i.createdAt).toLocaleDateString(i18n.language),
                           ]),
-                          `${inscripcionesDetalle.length} inscripciones · ${inscripcionesDetalle.reduce((a, i) => a + i.numPersonas, 0)} personas`
+                          `${inscripcionesDetalle.length} ${t("panel.modalDetalleRegistrations", { count: inscripcionesDetalle.length })} · ${totalPers} ${t("panel.modalDetallePersons", { count: totalPers })}`
                         );
                       }}
                       style={{ backgroundColor: "#91703d", color: "white", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: "700", padding: "6px 12px", cursor: "pointer", fontFamily: "'Baloo Bhai 2', Helvetica" }}
@@ -3978,7 +3983,7 @@ const abrirFormularioRestaurar = (evento) => {
                   <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "13px" }}>
                     <thead>
                       <tr style={{ backgroundColor: "#f0e8dc" }}>
-                        {["Nombre", "Correo", "Ciudad", "Personas", "Fecha"].map((h) => (
+                        {[t("panel.modalDetalleColName"), t("panel.modalDetalleColEmail"), t("panel.modalDetalleColCity"), t("panel.modalDetalleColPersons"), t("panel.modalDetalleColDate")].map((h) => (
                           <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontWeight: "700", color: "#91703d", whiteSpace: "nowrap" }}>{h}</th>
                         ))}
                       </tr>
@@ -3991,7 +3996,7 @@ const abrirFormularioRestaurar = (evento) => {
                           <td style={{ padding: "8px 12px", color: "#4a4a4a" }}>{ins.ciudad}</td>
                           <td style={{ padding: "8px 12px", color: "#4a4a4a", textAlign: "center" }}>{ins.numPersonas}</td>
                           <td style={{ padding: "8px 12px", color: "#818181", whiteSpace: "nowrap" }}>
-                            {new Date(ins.createdAt).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                            {new Date(ins.createdAt).toLocaleDateString(i18n.language, { day: "2-digit", month: "2-digit", year: "numeric" })}
                           </td>
                         </tr>
                       ))}

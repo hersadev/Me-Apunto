@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import { useTranslation } from "react-i18next";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import suscripcionEmpresaService from "../services/suscripcionEmpresaService";
 
 function BajaSuscripcion() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const [estado, setEstado] = useState("cargando"); // cargando | exito | error
 
@@ -32,20 +34,20 @@ function BajaSuscripcion() {
           {estado === "cargando" && (
             <>
               <div style={{ fontSize: "48px", marginBottom: "20px" }}>⏳</div>
-              <p style={{ fontSize: "16px", color: "#818181" }}>Procesando tu baja...</p>
+              <p style={{ fontSize: "16px", color: "#818181" }}>{t("unsubscribe.processing")}</p>
             </>
           )}
           {estado === "exito" && (
             <>
               <div style={{ fontSize: "48px", marginBottom: "20px" }}>✅</div>
               <h1 style={{ fontSize: "22px", fontWeight: "700", color: "#1a1a1a", marginBottom: "12px" }}>
-                Baja completada
+                {t("unsubscribe.done")}
               </h1>
               <p style={{ fontSize: "15px", color: "#818181", lineHeight: "1.6", marginBottom: "28px" }}>
-                Has dejado de recibir mensajes de esta empresa. Si fue un error, puedes volver a suscribirte desde su página.
+                {t("unsubscribe.doneInfo")}
               </p>
               <Link to="/" style={{ display: "inline-block", backgroundColor: "#91703d", color: "white", borderRadius: "10px", padding: "12px 28px", fontWeight: "700", fontSize: "14px", textDecoration: "none" }}>
-                Volver al inicio
+                {t("unsubscribe.backHome")}
               </Link>
             </>
           )}
@@ -53,13 +55,13 @@ function BajaSuscripcion() {
             <>
               <div style={{ fontSize: "48px", marginBottom: "20px" }}>❌</div>
               <h1 style={{ fontSize: "22px", fontWeight: "700", color: "#1a1a1a", marginBottom: "12px" }}>
-                Enlace no válido
+                {t("unsubscribe.invalidLink")}
               </h1>
               <p style={{ fontSize: "15px", color: "#818181", lineHeight: "1.6", marginBottom: "28px" }}>
-                El enlace de baja no es válido o ya has sido dado de baja anteriormente.
+                {t("unsubscribe.invalidInfo")}
               </p>
               <Link to="/" style={{ display: "inline-block", backgroundColor: "#91703d", color: "white", borderRadius: "10px", padding: "12px 28px", fontWeight: "700", fontSize: "14px", textDecoration: "none" }}>
-                Volver al inicio
+                {t("unsubscribe.backHome")}
               </Link>
             </>
           )}

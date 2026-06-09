@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import headerImg from "../assets/images/header_.png";
 import eventoService from "../services/eventoService";
 
 function Hero({ mostrarBuscador = false, compacto = false, onBuscar, onSubmit }) {
   const navegar = useNavigate();
+  const { t } = useTranslation();
   const [esMobil, setEsMobil] = useState(() => window.innerWidth < 768);
   const [valor, setValor] = useState("");
   const [sugerencias, setSugerencias] = useState([]);
@@ -176,14 +178,14 @@ function Hero({ mostrarBuscador = false, compacto = false, onBuscar, onSubmit })
               <input
                 type="text"
                 role="combobox"
-                aria-label="Buscar evento o categoría"
+                aria-label={t("hero.searchPlaceholder")}
                 aria-expanded={mostrarSugerencias}
                 aria-haspopup="listbox"
                 aria-controls={listboxId}
                 aria-autocomplete="list"
                 aria-activedescendant={indiceActivo >= 0 ? `sugerencia-${indiceActivo}` : undefined}
                 value={valor}
-                placeholder="Buscar evento o categoría"
+                placeholder={t("hero.searchPlaceholder")}
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}
                 style={{
@@ -208,7 +210,7 @@ function Hero({ mostrarBuscador = false, compacto = false, onBuscar, onSubmit })
                   whiteSpace: "nowrap",
                 }}
               >
-                Buscar
+                {t("hero.searchBtn")}
               </button>
             </div>
 
@@ -275,7 +277,7 @@ function Hero({ mostrarBuscador = false, compacto = false, onBuscar, onSubmit })
                         marginLeft: "auto", flexShrink: 0,
                         fontSize: "12px", fontWeight: "700",
                         color: "#2e7d32", fontFamily: "'Baloo Bhai 2', Helvetica"
-                      }}>Gratis</span>
+                      }}>{t("eventCard.free")}</span>
                     ) : (
                       <span style={{
                         marginLeft: "auto", flexShrink: 0,

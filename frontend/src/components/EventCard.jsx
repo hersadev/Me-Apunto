@@ -1,10 +1,12 @@
 import { useState, memo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import calendarioIcon from "../assets/icons/iconoCalendario.svg";
 import relojIcon from "../assets/icons/iconoReloj.svg";
 
 function EventCard({ evento, destacado = false, esMobil: esMobilProp }) {
   const navegar = useNavigate();
+  const { t, i18n } = useTranslation();
   const [hovered, setHovered] = useState(false);
   const esMobil = esMobilProp !== undefined ? esMobilProp : window.innerWidth < 768;
 
@@ -63,7 +65,7 @@ function EventCard({ evento, destacado = false, esMobil: esMobilProp }) {
             padding: "4px 10px", borderRadius: "999px",
             boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
           }}>
-            ★ Destacado
+            {t("eventCard.featured")}
           </div>
         )}
 
@@ -77,7 +79,7 @@ function EventCard({ evento, destacado = false, esMobil: esMobilProp }) {
           padding: "3px 10px", borderRadius: "999px",
           boxShadow: "0 2px 6px rgba(0,0,0,0.2)"
         }}>
-          {evento.precio === 0 ? "Gratis" : `${evento.precio}€`}
+          {evento.precio === 0 ? t("eventCard.free") : `${evento.precio}€`}
         </div>
 
         {/* badge aforo */}
@@ -94,7 +96,7 @@ function EventCard({ evento, destacado = false, esMobil: esMobilProp }) {
             boxShadow: "0 2px 6px rgba(0,0,0,0.2)"
           }}>
             {(evento.totalInscritos || 0) >= evento.capacidadMaxima
-              ? "Completo"
+              ? t("eventCard.full")
               : `${evento.totalInscritos || 0}/${evento.capacidadMaxima}`
             }
           </div>
@@ -142,7 +144,7 @@ function EventCard({ evento, destacado = false, esMobil: esMobilProp }) {
       <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "8px", paddingLeft: "8px" }}>
         <img src={calendarioIcon} alt="fecha" style={{ width: "14px", height: "14px" }} />
         <span style={{ fontSize: "13px", fontFamily: "'Baloo Bhai 2', Helvetica" }} className="text-black">
-          {new Date(evento.fecha).toLocaleDateString("es-ES")}
+          {new Date(evento.fecha).toLocaleDateString(i18n.language)}
         </span>
       </div>
 

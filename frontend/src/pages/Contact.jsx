@@ -5,6 +5,7 @@
     import { useState, useEffect } from "react";
     import { Helmet } from "react-helmet-async";
     import { useNavigate } from "react-router-dom";
+    import { useTranslation } from "react-i18next";
 
     import Navbar from "../components/Navbar";
     import Hero from "../components/Hero";
@@ -15,6 +16,7 @@
 
     function Contact() {
 
+    const { t } = useTranslation();
     const navegar = useNavigate();
 
     // deteccion de ancho para responsividad movil
@@ -151,7 +153,7 @@
                 margin: 0,
                 wordBreak: "break-word"
             }}>
-                Contacte con nosotros
+                {t("contact.title")}
             </h1>
 
             {/* subtitulo */}
@@ -164,8 +166,7 @@
                 lineHeight: "1.5",
                 wordBreak: "break-word"
             }}>
-                ¿Tienes alguna pregunta o sugerencia? Escríbenos y te
-                responderemos lo antes posible.
+                {t("contact.subtitle")}
             </p>
 
             {/* mensaje de error */}
@@ -205,7 +206,7 @@
                     fontWeight: "600",
                     wordBreak: "break-word"
                 }}>
-                    ✓ Mensaje enviado correctamente. ¡Gracias por escribirnos!
+                    {t("contact.success")}
                 </span>
                 <button
                     type="button"
@@ -221,7 +222,7 @@
                     minHeight: "44px"
                     }}
                 >
-                    Enviar otro mensaje
+                    {t("contact.sendAnother")}
                 </button>
                 </div>
             )}
@@ -236,7 +237,7 @@
                 {/* nombre */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                     <label style={estiloLabel} htmlFor="nombre">
-                    Nombre
+                    {t("contact.nameLabel")}
                     </label>
                     <input
                     id="nombre"
@@ -245,7 +246,7 @@
                     value={formData.nombre}
                     onChange={handleChange}
                     required
-                    placeholder="Tu nombre completo"
+                    placeholder={t("contact.namePlaceholder")}
                     style={estiloInput}
                     autoComplete="name"
                     />
@@ -254,7 +255,7 @@
                 {/* email */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                     <label style={estiloLabel} htmlFor="email">
-                    Email
+                    {t("contact.emailLabel")}
                     </label>
                     <input
                     id="email"
@@ -263,7 +264,7 @@
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    placeholder="tu@correo.com"
+                    placeholder={t("contact.emailPlaceholder")}
                     style={estiloInput}
                     autoComplete="email"
                     />
@@ -272,7 +273,7 @@
                 {/* asunto */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                     <label style={estiloLabel} htmlFor="asunto">
-                    Asunto
+                    {t("contact.subjectLabel")}
                     </label>
                     <input
                     id="asunto"
@@ -281,7 +282,7 @@
                     value={formData.asunto}
                     onChange={handleChange}
                     required
-                    placeholder="¿En qué podemos ayudarte?"
+                    placeholder={t("contact.subjectPlaceholder")}
                     style={estiloInput}
                     />
                 </div>
@@ -289,7 +290,7 @@
                 {/* mensaje */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                     <label style={estiloLabel} htmlFor="contexto">
-                    Mensaje
+                    {t("contact.messageLabel")}
                     </label>
                     <textarea
                     id="contexto"
@@ -297,7 +298,7 @@
                     value={formData.contexto}
                     onChange={handleChange}
                     required
-                    placeholder="Escribe aquí tu mensaje..."
+                    placeholder={t("contact.messagePlaceholder")}
                     rows={6}
                     style={{
                         width: "100%",
@@ -345,7 +346,7 @@
                     if (!cargando) e.currentTarget.style.backgroundColor = "#91703d";
                     }}
                 >
-                    {cargando ? "Enviando..." : "Enviar mensaje"}
+                    {cargando ? t("contact.sending") : t("contact.submit")}
                 </button>
 
                 </form>
@@ -368,7 +369,7 @@
                 onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
                 onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
             >
-                Volver al inicio
+                {t("contact.backHome")}
             </button>
 
             </div>

@@ -5,6 +5,7 @@
     import { useState, useEffect } from "react";
     import { useNavigate } from "react-router-dom";
     import { Helmet } from "react-helmet-async";
+    import { useTranslation } from "react-i18next";
 
     import Navbar from "../components/Navbar";
     import Hero from "../components/Hero";
@@ -18,6 +19,7 @@
     function Login({ setEstaLogueado }) {
 
     const navegar = useNavigate();
+    const { t } = useTranslation();
 
     const [anchoVentana, setAnchoVentana] = useState(window.innerWidth);
     useEffect(() => {
@@ -103,7 +105,7 @@
                 margin: 0,
                 textAlign: "center"
             }}>
-                Acceso Empresas
+                {t("login.title")}
             </h1>
 
             {/* mensaje de error - solo aparece si hay error */}
@@ -146,7 +148,7 @@
                     color: "#1a1a1a"
                     }}
                 >
-                    Correo de empresa
+                    {t("login.emailLabel")}
                 </label>
                 <input
                     id="correo"
@@ -154,7 +156,7 @@
                     value={correo}
                     onChange={(e) => setCorreo(e.target.value)}
                     required
-                    placeholder="empresa@correo.com"
+                    placeholder={t("login.emailPlaceholder")}
                     style={{
                     width: "100%",
                     height: "44px",
@@ -176,7 +178,7 @@
                 {/* contraseña */}
                 <PasswordInput
                 nombre="contrasena"
-                label="Contraseña"
+                label={t("login.passwordLabel")}
                 valor={contrasena}
                 onChange={(e) => setContrasena(e.target.value)}
                 />
@@ -206,7 +208,7 @@
                     if (!cargando) e.currentTarget.style.backgroundColor = "#91703d";
                 }}
                 >
-                {cargando ? "Accediendo..." : "Acceder"}
+                {cargando ? t("login.loading") : t("login.submit")}
                 </button>
 
             </form>
@@ -244,7 +246,7 @@
                 onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
                 onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
                 >
-                ¿Olvidaste tu contraseña?
+                {t("login.forgotPassword")}
                 </button>
 
                 <button
@@ -263,7 +265,7 @@
                 onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
                 onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
                 >
-                ¿No tienes cuenta de empresa?
+                {t("login.noAccount")}
                 </button>
             </div>
 

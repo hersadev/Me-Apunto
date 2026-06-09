@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
@@ -15,13 +16,6 @@ import EventCard from "../components/EventCard";
 import eventoService from "../services/eventoService";
 
 const EVENTOS_POR_PAGINA = 8;
-
-const nombresMeses = [
-  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-];
-
-const nombresDias = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
 const COLORES_CATEGORIA = {
   taller: "#e67e22",
@@ -72,6 +66,10 @@ function CirculoEvento({ evento, navegar, size = 10 }) {
 function Home({ estaLogueado }) {
 
   const navegar = useNavigate();
+  const { t } = useTranslation();
+
+  const nombresMeses = t("home.months", { returnObjects: true });
+  const nombresDias  = t("home.days",   { returnObjects: true });
 
   // ── detección de ancho reactiva ──
   const [anchoVentana, setAnchoVentana] = useState(window.innerWidth);
@@ -91,6 +89,7 @@ function Home({ estaLogueado }) {
   const [categoria, setCategoria] = useState("");
   const [fecha, setFecha] = useState("");
   const [tipo, setTipo] = useState("");
+  const [ciudad, setCiudad] = useState("");
   const [paginaActual, setPaginaActual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
 
@@ -186,7 +185,7 @@ function Home({ estaLogueado }) {
 
   // recarga cuando se limpian todos los filtros
   useEffect(() => {
-    if (!busqueda && !categoria && !fecha && !tipo) {
+    if (!busqueda && !categoria && !fecha && !tipo && !ciudad) {
       cargarEventos();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -202,6 +201,7 @@ function Home({ estaLogueado }) {
       if (tipo) params.tipo = tipo;
       if (categoria) params.categoria = categoria;
       if (fecha) params.fecha = fecha;
+      if (ciudad) params.ciudad = ciudad;
 
       const [dataNormales, dataPatrocinados] = await Promise.all([
         eventoService.getEventos({ ...params, patrocinado: "false" }),
@@ -230,10 +230,11 @@ function Home({ estaLogueado }) {
     setCategoria("");
     setFecha("");
     setTipo("");
+    setCiudad("");
     setPaginaActual(1);
   };
 
-  const hayFiltros = busqueda || categoria || fecha || tipo;
+  const hayFiltros = busqueda || categoria || fecha || tipo || ciudad;
 
   const mesPrevio = () => {
     if (mesCalendario === 0) {
@@ -304,7 +305,7 @@ function Home({ estaLogueado }) {
     } else {
       return `${primero.getDate()} ${nombresMeses[primero.getMonth()]} - ${ultimo.getDate()} ${nombresMeses[ultimo.getMonth()]} ${ultimo.getFullYear()}`;
     }
-  }, [diasDeLaSemana]);
+  }, [diasDeLaSemana, nombresMeses]);
 
   const handleClickDia = (eventosDelDiaArr) => {
     if (eventosDelDiaArr.length > 0) {
@@ -361,15 +362,15 @@ function Home({ estaLogueado }) {
             cursor: "pointer",
             fontFamily: "'Baloo Bhai 2', Helvetica"
           }}>
-            <option value="">Todo evento</option>
-            <option value="taller">Taller</option>
-            <option value="exposicion">Exposición</option>
-            <option value="concurso">Concurso</option>
-            <option value="concierto">Concierto</option>
-            <option value="deporte">Deporte</option>
-            <option value="gastronomia">Gastronomía</option>
-            <option value="teatro">Teatro</option>
-            <option value="otros">Otros</option>
+            <option value="">{t("home.allEvents")}</option>
+            <option value="taller">{t("categories.taller")}</option>
+            <option value="exposicion">{t("categories.exposicion")}</option>
+            <option value="concurso">{t("categories.concurso")}</option>
+            <option value="concierto">{t("categories.concierto")}</option>
+            <option value="deporte">{t("categories.deporte")}</option>
+            <option value="gastronomia">{t("categories.gastronomia")}</option>
+            <option value="teatro">{t("categories.teatro")}</option>
+            <option value="otros">{t("categories.otros")}</option>
           </select>
 
           <select aria-label="Filtrar por fecha" value={fecha} onChange={(e) => setFecha(e.target.value)} style={{
@@ -381,10 +382,10 @@ function Home({ estaLogueado }) {
             cursor: "pointer",
             fontFamily: "'Baloo Bhai 2', Helvetica"
           }}>
-            <option value="">Toda Fecha</option>
-            <option value="hoy">Hoy</option>
-            <option value="semana">Esta semana</option>
-            <option value="mes">Este mes</option>
+            <option value="">{t("home.allDates")}</option>
+            <option value="hoy">{t("home.today")}</option>
+            <option value="semana">{t("home.thisWeek")}</option>
+            <option value="mes">{t("home.thisMonth")}</option>
           </select>
 
           <select aria-label="Filtrar por tipo" value={tipo} onChange={(e) => setTipo(e.target.value)} style={{
@@ -396,10 +397,29 @@ function Home({ estaLogueado }) {
             cursor: "pointer",
             fontFamily: "'Baloo Bhai 2', Helvetica"
           }}>
-            <option value="">Todo Tipo</option>
-            <option value="gratuito">Gratuito</option>
-            <option value="de-pago">De pago</option>
+            <option value="">{t("home.allTypes")}</option>
+            <option value="gratuito">{t("home.free")}</option>
+            <option value="de-pago">{t("home.paid")}</option>
           </select>
+
+          <input
+            type="text"
+            aria-label="Filtrar por ciudad o dirección"
+            placeholder={t("home.locationPlaceholder")}
+            value={ciudad}
+            onChange={(e) => setCiudad(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleBuscar(); }}
+            style={{
+              backgroundColor: "#f9f6f1", border: "1px solid #afacac",
+              fontSize: esMobil ? "14px" : "20px",
+              padding: esMobil ? "6px 10px" : "8px 16px",
+              width: esMobil ? "100%" : "auto",
+              minWidth: esMobil ? "0" : "180px",
+              fontFamily: "'Baloo Bhai 2', Helvetica",
+              outline: "none",
+              color: "#3a2e1e",
+            }}
+          />
 
           <button onClick={handleBuscar} style={{
             backgroundColor: "#b79868", color: "white", fontWeight: "bold",
@@ -412,7 +432,7 @@ function Home({ estaLogueado }) {
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#b79868"}
           >
-            Aplicar filtros
+            {t("home.applyFilters")}
           </button>
 
           {hayFiltros && (
@@ -440,7 +460,7 @@ function Home({ estaLogueado }) {
                 e.currentTarget.style.color = "#c0392b";
               }}
             >
-              ✕ Limpiar filtros
+              {t("home.clearFilters")}
             </button>
           )}
         </div>
@@ -451,7 +471,7 @@ function Home({ estaLogueado }) {
             textAlign: "center", padding: "64px 0",
             color: "#818181", fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "20px"
           }}>
-            Cargando eventos...
+            {t("home.loading")}
           </div>
         )}
 
@@ -481,14 +501,14 @@ function Home({ estaLogueado }) {
                     fontSize: esMobil ? "16px" : "20px",
                     fontWeight: "700", color: "#b79868"
                   }}>
-                    ★ Eventos Destacados
+                    {t("home.featured")}
                   </span>
                 </div>
 
                 <div style={{ position: "relative", padding: `0 ${paddingFlechas}` }}>
                   {/* flecha izquierda */}
                   {hayFlechas && (
-                    <button aria-label="Evento destacado anterior" onClick={irAAnterior} style={{
+                    <button aria-label={t("home.prevFeatured")} onClick={irAAnterior} style={{
                       position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)",
                       width: paddingFlechas, height: "48px", zIndex: 2,
                       backgroundColor: "#b79868", border: "none", cursor: "pointer",
@@ -519,7 +539,7 @@ function Home({ estaLogueado }) {
 
                   {/* flecha derecha */}
                   {hayFlechas && (
-                    <button aria-label="Evento destacado siguiente" onClick={irASiguiente} style={{
+                    <button aria-label={t("home.nextFeatured")} onClick={irASiguiente} style={{
                       position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)",
                       width: paddingFlechas, height: "48px", zIndex: 2,
                       backgroundColor: "#b79868", border: "none", cursor: "pointer",
@@ -534,7 +554,7 @@ function Home({ estaLogueado }) {
                 {hayFlechas && (
                   <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginTop: "16px" }}>
                     {[...Array(Math.max(0, eventosPatrocinados.length - tarjetasPorVista + 1))].map((_, i) => (
-                      <button key={i} aria-label={`Ir al evento destacado ${i + 1}`} aria-current={i === indiceCarrusel ? "true" : undefined} onClick={() => irASlide(i)} style={{
+                      <button key={i} aria-label={t("home.goToFeatured", { n: i + 1 })} aria-current={i === indiceCarrusel ? "true" : undefined} onClick={() => irASlide(i)} style={{
                         width: i === indiceCarrusel ? "20px" : "8px",
                         height: "8px", borderRadius: "999px",
                         backgroundColor: i === indiceCarrusel ? "#b79868" : "#d4b896",
@@ -586,7 +606,7 @@ function Home({ estaLogueado }) {
                 alignItems: "center", gap: "8px", margin: "32px 0"
               }}>
                 <button
-                  aria-label="Primera página"
+                  aria-label={t("home.firstPage")}
                   onClick={() => setPaginaActual(1)}
                   disabled={paginaActual === 1}
                   style={{
@@ -600,7 +620,7 @@ function Home({ estaLogueado }) {
                   &laquo;
                 </button>
                 <button
-                  aria-label="Página anterior"
+                  aria-label={t("home.prevPage")}
                   onClick={() => setPaginaActual((p) => Math.max(p - 1, 1))}
                   disabled={paginaActual === 1}
                   style={{
@@ -620,7 +640,7 @@ function Home({ estaLogueado }) {
                   {paginaActual} / {totalPaginas}
                 </span>
                 <button
-                  aria-label="Página siguiente"
+                  aria-label={t("home.nextPage")}
                   onClick={() => setPaginaActual((p) => Math.min(p + 1, totalPaginas))}
                   disabled={paginaActual === totalPaginas}
                   style={{
@@ -634,7 +654,7 @@ function Home({ estaLogueado }) {
                   &gt;
                 </button>
                 <button
-                  aria-label="Última página"
+                  aria-label={t("home.lastPage")}
                   onClick={() => setPaginaActual(totalPaginas)}
                   disabled={paginaActual === totalPaginas}
                   style={{
@@ -655,7 +675,7 @@ function Home({ estaLogueado }) {
                 textAlign: "center", color: "#818181", fontSize: "20px",
                 padding: "64px 0", fontFamily: "'Baloo Bhai 2', Helvetica"
               }}>
-                No se encontraron eventos
+                {t("home.noEvents")}
               </div>
             )}
           </>
@@ -728,7 +748,7 @@ function Home({ estaLogueado }) {
                   background: "none", border: "none", cursor: "pointer",
                   color: "#b79868", fontSize: "13px", marginLeft: "4px",
                   fontFamily: "'Baloo Bhai 2', Helvetica", fontWeight: "600"
-                }}>Hoy</button>
+                }}>{t("home.calToday")}</button>
               </div>
 
               <span style={{
@@ -752,8 +772,8 @@ function Home({ estaLogueado }) {
                   padding: "4px 8px", borderRadius: "4px",
                   fontFamily: "'Baloo Bhai 2', Helvetica", cursor: "pointer"
                 }}>
-                  <option>Mes</option>
-                  <option>Semana</option>
+                  <option value="Mes">{t("home.calMonth")}</option>
+                  <option value="Semana">{t("home.calWeek")}</option>
                 </select>
               )}
 
@@ -766,7 +786,7 @@ function Home({ estaLogueado }) {
                     minHeight: "32px",
                     backgroundColor: vistaCalendario === "Mes" ? "#b79868" : "white",
                     color: vistaCalendario === "Mes" ? "white" : "#6b7280"
-                  }}>Mes</button>
+                  }}>{t("home.calMonth")}</button>
                   <button onClick={() => setVistaCalendario("Semana")} style={{
                     fontSize: "11px", padding: "6px 8px", borderRadius: "4px",
                     border: "1px solid #d1d5db", cursor: "pointer",
@@ -774,7 +794,7 @@ function Home({ estaLogueado }) {
                     minHeight: "32px",
                     backgroundColor: vistaCalendario === "Semana" ? "#b79868" : "white",
                     color: vistaCalendario === "Semana" ? "white" : "#6b7280"
-                  }}>Sem</button>
+                  }}>{t("home.calWeekShort")}</button>
                 </div>
               )}
             </div>
@@ -787,8 +807,8 @@ function Home({ estaLogueado }) {
                   textAlign: "center", borderBottom: "1px solid #e5e7eb"
                 }}>
                   {(esMobil
-                    ? ["L", "M", "X", "J", "V", "S", "D"]
-                    : ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+                    ? t("home.daysShort", { returnObjects: true })
+                    : t("home.days", { returnObjects: true })
                   ).map((dia) => (
                     <div key={dia} style={{
                       fontSize: "11px", fontWeight: "600", color: "#6b7280",
@@ -819,7 +839,7 @@ function Home({ estaLogueado }) {
                       <div key={dia}
                         role={tieneEventos ? "button" : undefined}
                         tabIndex={tieneEventos ? 0 : undefined}
-                        aria-label={tieneEventos ? `${dia} de ${nombresMeses[mesCalendario]}, ${evsDia.length} evento${evsDia.length > 1 ? "s" : ""}` : undefined}
+                        aria-label={tieneEventos ? `${dia} ${nombresMeses[mesCalendario]}, ${evsDia.length}` : undefined}
                         onClick={() => tieneEventos && handleClickDia(evsDia)}
                         onKeyDown={(e) => { if (tieneEventos && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); handleClickDia(evsDia); } }}
                         style={{
@@ -925,7 +945,7 @@ function Home({ estaLogueado }) {
                     fontSize: "13px", fontFamily: "'Baloo Bhai 2', Helvetica",
                     borderTop: "1px solid #f3f4f6"
                   }}>
-                    No hay eventos esta semana
+                    {t("home.noEventsWeek")}
                   </div>
                 )}
               </>

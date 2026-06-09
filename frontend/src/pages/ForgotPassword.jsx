@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import { useTranslation } from "react-i18next";
 
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -8,6 +9,7 @@ import AuthCard from "../components/AuthCard";
 import authService from "../services/authService";
 
 function ForgotPassword() {
+  const { t } = useTranslation();
   const navegar = useNavigate();
 
   const [anchoVentana, setAnchoVentana] = useState(window.innerWidth);
@@ -31,7 +33,7 @@ function ForgotPassword() {
 
     try {
       await authService.solicitarRecuperacion(correo);
-      setMensaje("Se ha enviado un correo con las instrucciones para recuperar tu contraseña");
+      setMensaje(t("forgotPassword.success"));
       setCorreo("");
     } catch (err) {
       setError(err.response?.data?.mensaje || "Error al procesar la solicitud");
@@ -78,7 +80,7 @@ function ForgotPassword() {
             marginBottom: "4px",
             textAlign: "center"
           }}>
-            Recuperar Contraseña
+            {t("forgotPassword.title")}
           </span>
 
           <p style={{
@@ -88,7 +90,7 @@ function ForgotPassword() {
             marginBottom: "16px",
             textAlign: "center"
           }}>
-            Introduce tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.
+            {t("forgotPassword.subtitle")}
           </p>
 
           {mensaje && (
@@ -148,7 +150,7 @@ function ForgotPassword() {
                   color: "#1a1a1a"
                 }}
               >
-                Correo electrónico
+                {t("forgotPassword.emailLabel")}
               </label>
               <input
                 id="correo"
@@ -156,7 +158,7 @@ function ForgotPassword() {
                 value={correo}
                 onChange={(e) => setCorreo(e.target.value)}
                 required
-                placeholder="empresa@correo.com"
+                placeholder={t("forgotPassword.emailPlaceholder")}
                 disabled={cargando}
                 style={{
                   width: "100%",
@@ -199,7 +201,7 @@ function ForgotPassword() {
                 if (!cargando) e.currentTarget.style.backgroundColor = "#91703d";
               }}
             >
-              {cargando ? "Enviando..." : "Enviar enlace"}
+              {cargando ? t("forgotPassword.sending") : t("forgotPassword.submit")}
             </button>
           </form>
 
@@ -222,7 +224,7 @@ function ForgotPassword() {
               onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
               onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
             >
-              Volver al inicio de sesión
+              {t("forgotPassword.backToLogin")}
             </button>
           </div>
 

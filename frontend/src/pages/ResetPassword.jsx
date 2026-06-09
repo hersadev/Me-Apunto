@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import { useTranslation } from "react-i18next";
 
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -9,6 +10,7 @@ import PasswordInput from "../components/PasswordInput";
 import authService from "../services/authService";
 
 function ResetPassword() {
+  const { t } = useTranslation();
   const { token } = useParams();
   const navegar = useNavigate();
 
@@ -32,12 +34,12 @@ function ResetPassword() {
     setMensaje("");
 
     if (contrasena !== confirmarContrasena) {
-      setError("Las contraseñas no coinciden");
+      setError(t("resetPassword.errorPassMatch"));
       return;
     }
 
     if (contrasena.length < 6) {
-      setError("La contraseña debe tener al menos 6 caracteres");
+      setError(t("resetPassword.errorPassLength"));
       return;
     }
 
@@ -45,7 +47,7 @@ function ResetPassword() {
 
     try {
       await authService.cambiarContrasena(token, contrasena);
-      setMensaje("Contraseña actualizada correctamente");
+      setMensaje(t("resetPassword.success"));
       setTimeout(() => {
         navegar("/login");
       }, 2000);
@@ -94,7 +96,7 @@ function ResetPassword() {
             marginBottom: "4px",
             textAlign: "center"
           }}>
-            Nueva Contraseña
+            {t("resetPassword.title")}
           </span>
 
           <p style={{
@@ -104,7 +106,7 @@ function ResetPassword() {
             marginBottom: "16px",
             textAlign: "center"
           }}>
-            Introduce tu nueva contraseña.
+            {t("resetPassword.subtitle")}
           </p>
 
           {mensaje && (
@@ -156,14 +158,15 @@ function ResetPassword() {
           >
             <PasswordInput
               nombre="contrasena"
-              label="Nueva contraseña"
+              label={t("resetPassword.newPasswordLabel")}
               valor={contrasena}
               onChange={(e) => setContrasena(e.target.value)}
+              disabled={cargando}
             />
 
             <PasswordInput
               nombre="confirmarContrasena"
-              label="Confirmar contraseña"
+              label={t("resetPassword.confirmPasswordLabel")}
               valor={confirmarContrasena}
               onChange={(e) => setConfirmarContrasena(e.target.value)}
               disabled={cargando}
@@ -193,7 +196,7 @@ function ResetPassword() {
                 if (!cargando) e.currentTarget.style.backgroundColor = "#91703d";
               }}
             >
-              {cargando ? "Guardando..." : "Guardar contraseña"}
+              {cargando ? t("resetPassword.saving") : t("resetPassword.submit")}
             </button>
           </form>
 
@@ -216,7 +219,7 @@ function ResetPassword() {
               onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
               onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
             >
-              Volver al inicio de sesión
+              {t("forgotPassword.backToLogin")}
             </button>
           </div>
 

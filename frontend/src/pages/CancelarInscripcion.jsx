@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import { useTranslation } from "react-i18next";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import inscripcionService from "../services/inscripcionService";
 
 function CancelarInscripcion() {
+  const { t } = useTranslation();
   const { token } = useParams();
   const navegar = useNavigate();
 
@@ -94,7 +96,7 @@ function CancelarInscripcion() {
               fontFamily: "'Baloo Bhai 2', Helvetica",
               fontSize: "18px", color: "#818181"
             }}>
-              Cargando...
+              {t("cancelInscription.loading")}
             </p>
           )}
 
@@ -105,7 +107,7 @@ function CancelarInscripcion() {
                 fontSize: "22px", fontWeight: "700", color: "#c0392b",
                 marginBottom: "12px"
               }}>
-                Inscripción no encontrada
+                {t("cancelInscription.notFound")}
               </h1>
               <p style={{
                 fontFamily: "'Baloo Bhai 2', Helvetica",
@@ -123,7 +125,7 @@ function CancelarInscripcion() {
                   border: "none", cursor: "pointer",
                 }}
               >
-                Volver al inicio
+                {t("cancelInscription.backHome")}
               </button>
             </>
           )}
@@ -135,19 +137,19 @@ function CancelarInscripcion() {
                 fontSize: "22px", fontWeight: "700", color: "#2e7d32",
                 marginBottom: "12px"
               }}>
-                Inscripción cancelada
+                {t("cancelInscription.cancelled")}
               </h1>
               <p style={{
                 fontFamily: "'Baloo Bhai 2', Helvetica",
                 fontSize: "15px", color: "#4a4a4a", marginBottom: "8px"
               }}>
-                Tu plaza en <strong>{inscripcion?.evento?.titulo}</strong> ha sido liberada.
+                {t("cancelInscription.cancelledInfo", { titulo: inscripcion?.evento?.titulo })}
               </p>
               <p style={{
                 fontFamily: "'Baloo Bhai 2', Helvetica",
                 fontSize: "14px", color: "#818181", marginBottom: "28px"
               }}>
-                Esperamos verte en otro evento pronto.
+                {t("cancelInscription.seeYouSoon")}
               </p>
               <button
                 onClick={() => navegar("/")}
@@ -161,7 +163,7 @@ function CancelarInscripcion() {
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#b79868"}
               >
-                Ver más eventos
+                {t("cancelInscription.seeEvents")}
               </button>
             </>
           )}
@@ -173,13 +175,13 @@ function CancelarInscripcion() {
                 fontSize: "22px", fontWeight: "700", color: "#1a1a1a",
                 marginBottom: "8px"
               }}>
-                ¿Cancelar tu inscripción?
+                {t("cancelInscription.confirmTitle")}
               </h1>
               <p style={{
                 fontFamily: "'Baloo Bhai 2', Helvetica",
                 fontSize: "15px", color: "#4a4a4a", marginBottom: "24px"
               }}>
-                Estás a punto de cancelar tu plaza en el siguiente evento:
+                {t("cancelInscription.confirmSubtitle")}
               </p>
 
               <div style={{
@@ -222,14 +224,14 @@ function CancelarInscripcion() {
                   fontSize: "14px", fontWeight: "600", color: "#4a4a4a",
                   display: "block", marginBottom: "6px"
                 }}>
-                  ¿Quieres decirnos el motivo? <span style={{ fontWeight: "400", color: "#818181" }}>(opcional)</span>
+                  {t("cancelInscription.reasonLabel")} <span style={{ fontWeight: "400", color: "#818181" }}>{t("cancelInscription.reasonOptional")}</span>
                 </label>
                 <textarea
                   value={motivoCancelacion}
                   onChange={(e) => setMotivoCancelacion(e.target.value)}
                   maxLength={500}
                   rows={3}
-                  placeholder="Cuéntanos si quieres, nos ayuda a mejorar..."
+                  placeholder={t("cancelInscription.reasonPlaceholder")}
                   style={{
                     width: "100%",
                     backgroundColor: "#f8f8f8",
@@ -268,7 +270,7 @@ function CancelarInscripcion() {
                   onMouseEnter={(e) => { if (!cancelando) e.currentTarget.style.backgroundColor = "#922b21"; }}
                   onMouseLeave={(e) => { if (!cancelando) e.currentTarget.style.backgroundColor = "#c0392b"; }}
                 >
-                  {cancelando ? "Cancelando..." : "Sí, cancelar mi inscripción"}
+                  {cancelando ? t("cancelInscription.cancelling") : t("cancelInscription.confirmBtn")}
                 </button>
 
                 <button
@@ -286,7 +288,7 @@ function CancelarInscripcion() {
                   onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#b79868"; e.currentTarget.style.color = "#b79868"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#d4b896"; e.currentTarget.style.color = "#818181"; }}
                 >
-                  No, mantener mi plaza
+                  {t("cancelInscription.keepBtn")}
                 </button>
               </div>
             </>

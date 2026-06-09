@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 function Footer() {
 
   const navegar = useNavigate();
   const { pathname } = useLocation();
+  const { t } = useTranslation();
   const [esMobil, setEsMobil] = useState(() => window.innerWidth < 768);
 
   useEffect(() => {
@@ -28,9 +30,9 @@ function Footer() {
   };
 
   const enlaces = [
-    { ruta: "/contacto", label: "Contacte con nosotros" },
-    { ruta: "/cookies",  label: "Política de Cookies" },
-    { ruta: "/terminos", label: "Términos y Condiciones" },
+    { ruta: "/contacto", label: t("footer.contact") },
+    { ruta: "/cookies",  label: t("footer.cookies") },
+    { ruta: "/terminos", label: t("footer.terms") },
   ].filter((enlace) => enlace.ruta !== pathname);
 
   return (

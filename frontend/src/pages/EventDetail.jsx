@@ -5,6 +5,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import { useTranslation } from "react-i18next";
 
 import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
@@ -17,6 +18,7 @@ import mensajeService from "../services/mensajeService";
 
 function EventDetail({ estaLogueado }) {
 
+  const { t } = useTranslation();
   const { id } = useParams();
   const navegar = useNavigate();
 
@@ -132,17 +134,23 @@ function EventDetail({ estaLogueado }) {
     setEnviando(true);
 
     try {
+      const numPersonas = parseInt(formInscripcion.numPersonas, 10);
+      if (isNaN(numPersonas) || numPersonas < 1) {
+        setErrorInscripcion("Número de personas no válido");
+        return;
+      }
+
       await inscripcionService.crearInscripcion({
         eventoId: evento._id,
         nombre: formInscripcion.nombre,
         correo: formInscripcion.correo,
         ciudad: formInscripcion.ciudad,
-        numPersonas: parseInt(formInscripcion.numPersonas, 10),
+        numPersonas,
       });
 
       // inscripcion exitosa
       setInscripcionExitosa(true);
-      setTotalInscritos((prev) => prev + parseInt(formInscripcion.numPersonas, 10));
+      setTotalInscritos((prev) => prev + numPersonas);
       setFormInscripcion({ nombre: "", correo: "", ciudad: "", numPersonas: 1 });
 
       // cerramos el modal despues de 2 segundos
@@ -226,7 +234,7 @@ function EventDetail({ estaLogueado }) {
           fontSize: "24px",
           color: "#818181"
         }}>
-          Cargando evento...
+          {t("eventDetail.loading")}
         </p>
       </div>
     );
@@ -249,7 +257,7 @@ function EventDetail({ estaLogueado }) {
           fontSize: "24px",
           color: "#818181"
         }}>
-          Evento no encontrado
+          {t("eventDetail.notFound")}
         </p>
         <button
           onClick={() => navegar("/")}
@@ -265,7 +273,7 @@ function EventDetail({ estaLogueado }) {
             cursor: "pointer"
           }}
         >
-          Volver al inicio
+          {t("eventDetail.backHome")}
         </button>
       </div>
     );
@@ -346,30 +354,34 @@ function EventDetail({ estaLogueado }) {
               marginBottom: "16px"
             }}>
               {[
-                { label: "📍 Lugar", value: evento.venue },
-                { label: "🗺️ Dirección", value: evento.direccion },
+                { label: `📍 ${t("eventDetail.place")}`, value: evento.venue },
+                { label: `🗺️ ${t("eventDetail.address")}`, value: evento.direccion },
                 {
-                  label: "📅 Fecha y hora",
-                  value: `${new Date(evento.fecha).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" })} · ${evento.hora}`
+                  label: `📅 ${t("eventDetail.dateTime")}`,
+                  value: (() => {
+                    const d = evento.fecha ? new Date(evento.fecha) : null;
+                    const fecha = d && !isNaN(d.getTime()) ? d.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" }) : "—";
+                    return `${fecha} · ${evento.hora || ""}`;
+                  })()
                 },
                 {
-                  label: "💰 Precio",
-                  value: evento.precio === 0 ? "Gratuito" : `${evento.precio}€`,
+                  label: `💰 ${t("eventDetail.price")}`,
+                  value: evento.precio === 0 ? t("eventDetail.free") : `${evento.precio}€`,
                   valueColor: evento.precio === 0 ? "#2e7d32" : "#91703d"
                 },
                 evento.capacidadMaxima && {
-                  label: "👥 Aforo",
+                  label: `👥 ${t("eventDetail.capacity")}`,
                   value: totalInscritos >= evento.capacidadMaxima
-                    ? `${totalInscritos}/${evento.capacidadMaxima} — Completo`
+                    ? `${totalInscritos}/${evento.capacidadMaxima} — ${t("eventDetail.full")}`
                     : `${totalInscritos}/${evento.capacidadMaxima}`,
                   valueColor: totalInscritos >= evento.capacidadMaxima ? "#c0392b" : "#1a1a1a"
                 },
                 evento.categoria && {
-                  label: "🏷️ Categoría",
+                  label: `🏷️ ${t("eventDetail.category")}`,
                   value: evento.categoria,
                   capitalize: true
                 },
-                { label: "🏢 Organiza", value: evento.empresa?.nombre },
+                { label: `🏢 ${t("eventDetail.organizer")}`, value: evento.empresa?.nombre },
               ].filter(Boolean).map((fila, i, arr) => (
                 <div
                   key={fila.label}
@@ -419,7 +431,7 @@ function EventDetail({ estaLogueado }) {
                 color: "#818181",
                 marginBottom: "8px"
               }}>
-                📝 Descripción
+                📝 {t("eventDetail.description")}
               </h2>
               <p style={{
                 fontFamily: "'Baloo Bhai 2', Helvetica",
@@ -501,7 +513,7 @@ function EventDetail({ estaLogueado }) {
                       fontSize: "11px", fontWeight: "700", color: "#818181",
                       margin: "0 0 2px 0", textTransform: "uppercase", letterSpacing: "0.5px"
                     }}>
-                      Organizado por
+                      {t("eventDetail.organizedBy")}
                     </p>
                     <p style={{
                       fontFamily: "'Baloo Bhai 2', Helvetica",
@@ -536,7 +548,7 @@ function EventDetail({ estaLogueado }) {
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#7a5c2e"}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#91703d"}
                   >
-                    Contactar
+                    {t("eventDetail.contact")}
                   </button>
                   <button
                     onClick={() => { setModalSuscripcionAbierto(true); setErrorSuscripcion(""); setSuscripcionExitosa(false); }}
@@ -552,7 +564,7 @@ function EventDetail({ estaLogueado }) {
                     onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#91703d"; e.currentTarget.style.color = "white"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "white"; e.currentTarget.style.color = "#91703d"; }}
                   >
-                    Suscribirse
+                    {t("eventDetail.subscribe")}
                   </button>
                 </div>
               </div>
@@ -625,7 +637,7 @@ function EventDetail({ estaLogueado }) {
                 color: "#1a1a1a",
                 marginRight: "8px"
               }}>
-                ¡Me apunto a {evento.titulo}!
+                {t("eventDetail.signUpTitle", { titulo: evento.titulo })}
               </h2>
               <button
                 aria-label="Cerrar modal de inscripción"
@@ -652,8 +664,8 @@ function EventDetail({ estaLogueado }) {
                 color: evento.precio === 0 ? "#2e7d32" : "#91703d"
               }}>
                 {evento.precio === 0
-                  ? "✓ Evento gratuito"
-                  : `💳 Precio: ${evento.precio}€ por persona`
+                  ? t("eventDetail.freeEvent")
+                  : t("eventDetail.pricePerPerson", { precio: evento.precio })
                 }
               </span>
             </div>
@@ -672,7 +684,7 @@ function EventDetail({ estaLogueado }) {
                   fontWeight: "600",
                   color: "#2e7d32"
                 }}>
-                  ✓ ¡Inscripción realizada correctamente!
+                  {t("eventDetail.successInscription")}
                 </span>
               </div>
             )}
@@ -710,7 +722,7 @@ function EventDetail({ estaLogueado }) {
                     fontWeight: "600",
                     color: "#1a1a1a"
                   }}>
-                    Nombre completo
+                    {t("eventDetail.fullName")}
                   </label>
                   <input
                     id="insc-nombre"
@@ -719,7 +731,7 @@ function EventDetail({ estaLogueado }) {
                     value={formInscripcion.nombre}
                     onChange={handleFormChange}
                     required
-                    placeholder="Tu nombre completo"
+                    placeholder={t("eventDetail.fullNamePlaceholder")}
                     style={{
                       width: "100%",
                       height: "46px",
@@ -745,7 +757,7 @@ function EventDetail({ estaLogueado }) {
                     fontWeight: "600",
                     color: "#1a1a1a"
                   }}>
-                    Correo electrónico
+                    {t("eventDetail.email")}
                   </label>
                   <input
                     id="insc-correo"
@@ -754,7 +766,7 @@ function EventDetail({ estaLogueado }) {
                     value={formInscripcion.correo}
                     onChange={handleFormChange}
                     required
-                    placeholder="tu@correo.com"
+                    placeholder={t("eventDetail.emailPlaceholder")}
                     style={{
                       width: "100%",
                       height: "46px",
@@ -780,7 +792,7 @@ function EventDetail({ estaLogueado }) {
                     fontWeight: "600",
                     color: "#1a1a1a"
                   }}>
-                    Ciudad
+                    {t("eventDetail.city")}
                   </label>
                   <input
                     id="insc-ciudad"
@@ -789,7 +801,7 @@ function EventDetail({ estaLogueado }) {
                     value={formInscripcion.ciudad}
                     onChange={handleFormChange}
                     required
-                    placeholder="Tu ciudad"
+                    placeholder={t("eventDetail.cityPlaceholder")}
                     style={{
                       width: "100%",
                       height: "46px",
@@ -815,7 +827,7 @@ function EventDetail({ estaLogueado }) {
                     fontWeight: "600",
                     color: "#1a1a1a"
                   }}>
-                    Número de personas
+                    {t("eventDetail.numPersons")}
                   </label>
                   <span style={{
                     fontFamily: "'Baloo Bhai 2', Helvetica",
@@ -823,8 +835,8 @@ function EventDetail({ estaLogueado }) {
                     color: "#818181"
                   }}>
                     {evento.maxPersonasPorInscripcion
-                      ? `Máximo ${evento.maxPersonasPorInscripcion} personas por inscripción`
-                      : "Por defecto 1 — la empresa puede permitir más"
+                      ? t("eventDetail.maxPersons", { n: evento.maxPersonasPorInscripcion })
+                      : t("eventDetail.defaultPersons")
                     }
                   </span>
                   <input
@@ -878,7 +890,7 @@ function EventDetail({ estaLogueado }) {
                     if (!enviando) e.currentTarget.style.backgroundColor = "#b79868";
                   }}
                 >
-                  {enviando ? "Procesando..." : "¡Confirmar inscripción!"}
+                  {enviando ? t("eventDetail.processing") : t("eventDetail.confirmInscription")}
                 </button>
 
               </form>
@@ -919,7 +931,7 @@ function EventDetail({ estaLogueado }) {
           onMouseEnter={(e) => { if (!(evento?.capacidadMaxima && totalInscritos >= evento.capacidadMaxima)) e.currentTarget.style.backgroundColor = "#91703d"; }}
           onMouseLeave={(e) => { if (!(evento?.capacidadMaxima && totalInscritos >= evento.capacidadMaxima)) e.currentTarget.style.backgroundColor = "#b79868"; }}
         >
-          {evento?.capacidadMaxima && totalInscritos >= evento.capacidadMaxima ? "Aforo completo" : "¡Me apunto!"}
+          {evento?.capacidadMaxima && totalInscritos >= evento.capacidadMaxima ? t("eventDetail.capacityFull") : t("eventDetail.signUpBtn")}
         </button>
       </div>
 
@@ -957,7 +969,7 @@ function EventDetail({ estaLogueado }) {
                 fontFamily: "'Baloo Bhai 2', Helvetica",
                 fontSize: esMobil ? "16px" : "20px", fontWeight: "700", color: "#1a1a1a", margin: 0, marginRight: "8px"
               }}>
-                Suscribirse a {evento.empresa?.nombre}
+                {t("eventDetail.subscribeTitle", { nombre: evento.empresa?.nombre })}
               </h2>
               <button
                 aria-label="Cerrar"
@@ -974,23 +986,23 @@ function EventDetail({ estaLogueado }) {
                   fontFamily: "'Baloo Bhai 2', Helvetica",
                   fontSize: "16px", fontWeight: "600", color: "#2e7d32", margin: "0 0 8px 0"
                 }}>
-                  ✓ ¡Suscripción confirmada!
+                  {t("eventDetail.subscribed")}
                 </p>
                 <p style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "13px", color: "#4a4a4a", margin: 0 }}>
-                  Te avisaremos cuando {evento.empresa?.nombre} publique nuevos eventos o realice cambios.
+                  {t("eventDetail.subscribedInfo", { nombre: evento.empresa?.nombre })}
                 </p>
               </div>
             ) : (
               <>
                 <div style={{ backgroundColor: "white", borderRadius: "10px", padding: "14px 16px" }}>
                   <p style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "13px", color: "#4a4a4a", margin: "0 0 6px 0" }}>
-                    Recibirás notificaciones por correo cuando:
+                    {t("eventDetail.subscribeInfo")}
                   </p>
                   <p style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "13px", color: "#4a4a4a", margin: "4px 0" }}>
-                    ✓ {evento.empresa?.nombre} publique nuevos eventos
+                    {t("eventDetail.subscribeNew", { nombre: evento.empresa?.nombre })}
                   </p>
                   <p style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "13px", color: "#4a4a4a", margin: "4px 0" }}>
-                    ✓ Haya cambios en sus eventos
+                    {t("eventDetail.subscribeChanges")}
                   </p>
                 </div>
 
@@ -1036,7 +1048,7 @@ function EventDetail({ estaLogueado }) {
                     onMouseEnter={(e) => { if (!enviandoSuscripcion) e.currentTarget.style.backgroundColor = "#91703d"; }}
                     onMouseLeave={(e) => { if (!enviandoSuscripcion) e.currentTarget.style.backgroundColor = "#b79868"; }}
                   >
-                    {enviandoSuscripcion ? "Suscribiendo..." : "Suscribirme"}
+                    {enviandoSuscripcion ? t("eventDetail.subscribing") : t("eventDetail.subscribeBtn")}
                   </button>
                 </form>
               </>
@@ -1079,7 +1091,7 @@ function EventDetail({ estaLogueado }) {
                 fontFamily: "'Baloo Bhai 2', Helvetica",
                 fontSize: esMobil ? "16px" : "20px", fontWeight: "700", color: "#1a1a1a", margin: 0, marginRight: "8px"
               }}>
-                Contactar con {evento.empresa?.nombre}
+                {t("eventDetail.contactTitle", { nombre: evento.empresa?.nombre })}
               </h2>
               <button
                 aria-label="Cerrar"
@@ -1099,21 +1111,21 @@ function EventDetail({ estaLogueado }) {
                   fontFamily: "'Baloo Bhai 2', Helvetica",
                   fontSize: "16px", fontWeight: "600", color: "#2e7d32", margin: 0
                 }}>
-                  ✓ Mensaje enviado correctamente
+                  {t("eventDetail.messageSent")}
                 </p>
               </div>
             ) : (
               <form onSubmit={handleContactoEmpresa} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                   <label style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "14px", fontWeight: "600", color: "#1a1a1a" }}>
-                    Tu nombre
+                    {t("eventDetail.yourName")}
                   </label>
                   <input
                     type="text"
                     value={formContacto.nombre}
                     onChange={(e) => setFormContacto((p) => ({ ...p, nombre: e.target.value }))}
                     required
-                    placeholder="Nombre completo"
+                    placeholder={t("eventDetail.namePlaceholder")}
                     style={{
                       width: "100%", height: "44px", backgroundColor: "#f8f8f8",
                       paddingLeft: "12px", paddingRight: "12px",
@@ -1125,14 +1137,14 @@ function EventDetail({ estaLogueado }) {
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                   <label style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "14px", fontWeight: "600", color: "#1a1a1a" }}>
-                    Tu correo electrónico
+                    {t("eventDetail.yourEmail")}
                   </label>
                   <input
                     type="email"
                     value={formContacto.email}
                     onChange={(e) => setFormContacto((p) => ({ ...p, email: e.target.value }))}
                     required
-                    placeholder="tu@correo.com"
+                    placeholder={t("eventDetail.emailPlaceholder")}
                     style={{
                       width: "100%", height: "44px", backgroundColor: "#f8f8f8",
                       paddingLeft: "12px", paddingRight: "12px",
@@ -1144,7 +1156,7 @@ function EventDetail({ estaLogueado }) {
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                   <label style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "14px", fontWeight: "600", color: "#1a1a1a" }}>
-                    Asunto
+                    {t("eventDetail.subject")}
                   </label>
                   <input
                     type="text"
@@ -1152,7 +1164,7 @@ function EventDetail({ estaLogueado }) {
                     onChange={(e) => setFormContacto((p) => ({ ...p, asunto: e.target.value }))}
                     required
                     maxLength={120}
-                    placeholder="¿De qué trata tu mensaje?"
+                    placeholder={t("eventDetail.subjectPlaceholder")}
                     style={{
                       width: "100%", height: "44px", backgroundColor: "#f8f8f8",
                       paddingLeft: "12px", paddingRight: "12px",
@@ -1164,14 +1176,14 @@ function EventDetail({ estaLogueado }) {
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                   <label style={{ fontFamily: "'Baloo Bhai 2', Helvetica", fontSize: "14px", fontWeight: "600", color: "#1a1a1a" }}>
-                    Mensaje
+                    {t("eventDetail.message")}
                   </label>
                   <textarea
                     value={formContacto.mensaje}
                     onChange={(e) => setFormContacto((p) => ({ ...p, mensaje: e.target.value }))}
                     required
                     maxLength={2000}
-                    placeholder="Escribe tu mensaje..."
+                    placeholder={t("eventDetail.messagePlaceholder")}
                     rows={4}
                     style={{
                       width: "100%", backgroundColor: "#f8f8f8", padding: "10px 12px",
@@ -1202,7 +1214,7 @@ function EventDetail({ estaLogueado }) {
                   onMouseEnter={(e) => { if (!enviandoContacto) e.currentTarget.style.backgroundColor = "#91703d"; }}
                   onMouseLeave={(e) => { if (!enviandoContacto) e.currentTarget.style.backgroundColor = "#b79868"; }}
                 >
-                  {enviandoContacto ? "Enviando..." : "Enviar mensaje"}
+                  {enviandoContacto ? t("eventDetail.sending") : t("eventDetail.sendMessage")}
                 </button>
               </form>
             )}

@@ -88,6 +88,11 @@ const obtenerEventos = async (req, res) => {
       ];
     }
 
+    if (q.ciudad) {
+      const terminoCiudad = q.ciudad.slice(0, 100).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      filtro.direccion = { $regex: terminoCiudad, $options: "i" };
+    }
+
     const eventosDocs = await Evento.find(filtro)
       .populate("empresa", "nombre correo")
       .sort({ patrocinado: -1, fechaInicioPatrocinio: 1, fecha: 1 })
