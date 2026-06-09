@@ -20,6 +20,10 @@ const protegerRuta = async (req, res, next) => {
             return res.status(401).json({ mensaje: "No autorizado - empresa no encontrada" });
         }
 
+        if (!req.empresa.activa) {
+            return res.status(401).json({ mensaje: "Esta cuenta ha sido suspendida" });
+        }
+
         if (req.empresa.contrasenaCambiadaEn && decoded.iat * 1000 < req.empresa.contrasenaCambiadaEn.getTime()) {
             return res.status(401).json({ mensaje: "No autorizado - sesión caducada, vuelve a iniciar sesión" });
         }

@@ -17,6 +17,9 @@ const suscripcionSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    tokenBaja: {
+      type: String,
+    },
   },
   { timestamps: true }
 );

@@ -1,6 +1,15 @@
 // rutas de eventos
 const express = require("express");
 const router = express.Router();
+const { rateLimit } = require("express-rate-limit");
+
+const vistaLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 10,
+  message: { mensaje: "Demasiadas peticiones." },
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+});
 const {
   obtenerEventos,
   obtenerEventoPorId,
@@ -50,7 +59,7 @@ router.delete("/:id/permanente", protegerRuta, eliminarEventoDefinitivo);
 router.patch("/:id/patrocinio", protegerRuta, togglePatrocinio);
 
 // PATCH /api/eventos/:id/vista - registrar visita al detalle del evento (publico)
-router.patch("/:id/vista", registrarVista);
+router.patch("/:id/vista", vistaLimiter, registrarVista);
 
 // GET /api/eventos/:id - al final porque captura cualquier string
 router.get("/:id", obtenerEventoPorId);

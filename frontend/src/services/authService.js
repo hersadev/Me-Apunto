@@ -3,14 +3,12 @@ import api from "./api";
 const registrar = async (datos) => {
   const response = await api.post("/auth/register", datos);
   localStorage.setItem("empresa", JSON.stringify(response.data.empresa));
-  if (response.data.token) localStorage.setItem("token", response.data.token);
   return response.data;
 };
 
 const login = async (correo, contrasena) => {
   const response = await api.post("/auth/login", { correo, contrasena });
   localStorage.setItem("empresa", JSON.stringify(response.data.empresa));
-  if (response.data.token) localStorage.setItem("token", response.data.token);
   return response.data;
 };
 
@@ -19,7 +17,6 @@ const logout = async () => {
     await api.post("/auth/logout");
   } finally {
     localStorage.removeItem("empresa");
-    localStorage.removeItem("token");
   }
 };
 
@@ -55,7 +52,7 @@ const cambiarContrasena = async (token, contrasena) => {
 
 const actualizarPerfil = async (datos) => {
   const response = await api.put("/auth/perfil", datos);
-  localStorage.setItem("empresa", JSON.stringify(response.data.empresa));
+  if (response.data.empresa) localStorage.setItem("empresa", JSON.stringify(response.data.empresa));
   return response.data;
 };
 
@@ -65,7 +62,7 @@ const actualizarFotoPerfil = async (file) => {
   const response = await api.put("/auth/foto-perfil", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
-  localStorage.setItem("empresa", JSON.stringify(response.data.empresa));
+  if (response.data.empresa) localStorage.setItem("empresa", JSON.stringify(response.data.empresa));
   return response.data;
 };
 
@@ -79,6 +76,17 @@ const eliminarCuenta = async () => {
   localStorage.removeItem("empresa");
 };
 
+const verificarSesion = async () => {
+  try {
+    const response = await api.get("/auth/perfil");
+    localStorage.setItem("empresa", JSON.stringify(response.data.empresa));
+    return true;
+  } catch {
+    localStorage.removeItem("empresa");
+    return false;
+  }
+};
+
 const authService = {
   registrar,
   login,
@@ -86,6 +94,7 @@ const authService = {
   getEmpresa,
   estaLogueado,
   getPerfil,
+  verificarSesion,
   actualizarPerfil,
   actualizarFotoPerfil,
   confirmarCambioCorreo,

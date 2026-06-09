@@ -8,20 +8,20 @@ import suscripcionEmpresaService from "../services/suscripcionEmpresaService";
 
 function BajaSuscripcion() {
   const { t } = useTranslation();
-  const { id } = useParams();
+  const { token } = useParams();
   const [estado, setEstado] = useState("cargando"); // cargando | exito | error
 
   useEffect(() => {
     const procesar = async () => {
       try {
-        await suscripcionEmpresaService.darDeBaja(id);
+        await suscripcionEmpresaService.darDeBaja(token);
         setEstado("exito");
       } catch (err) {
         setEstado("error");
       }
     };
     procesar();
-  }, [id]);
+  }, [token]);
 
   return (
     <>

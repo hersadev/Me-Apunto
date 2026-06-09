@@ -1,10 +1,11 @@
 // archivo principal de la app - aqui se definen todas las rutas
-import { useState, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import CookieBanner from "./components/CookieBanner";
 import ScrollToTop from "./components/ScrollToTop";
 import InstallPrompt from "./components/InstallPrompt";
+import authService from "./services/authService";
 
 const Home = lazy(() => import("./pages/Home"));
 const Login = lazy(() => import("./pages/Login"));
@@ -21,10 +22,12 @@ const CancelarInscripcion = lazy(() => import("./pages/CancelarInscripcion"));
 const BajaSuscripcion = lazy(() => import("./pages/BajaSuscripcion"));
 
 function App() {
+  const [estaLogueado, setEstaLogueado] = useState(!!localStorage.getItem("empresa"));
 
-  // simulamos el estado de login hasta que el backend este listo
-  // TODO: sustituir por el estado real del JWT
-    const [estaLogueado, setEstaLogueado] = useState(!!localStorage.getItem("empresa"));
+  useEffect(() => {
+    if (!localStorage.getItem("empresa")) return;
+    authService.verificarSesion().then((valida) => setEstaLogueado(valida));
+  }, []);
 
   return (
     <HelmetProvider>
@@ -71,7 +74,7 @@ function App() {
             <Route path="/cancelar-inscripcion/:token" element={<CancelarInscripcion />} />
 
             {/* baja de suscripción a empresa por enlace del email */}
-            <Route path="/baja/:id" element={<BajaSuscripcion />} />
+            <Route path="/baja/:token" element={<BajaSuscripcion />} />
 
           </Routes>
         </Suspense>

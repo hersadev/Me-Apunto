@@ -15,7 +15,29 @@ conectarDB();
 
 const app = express();
 
-app.use(helmet());
+// redirige HTTP -> HTTPS en producción (Railway/Render pasan el protocolo original en x-forwarded-proto)
+if (process.env.NODE_ENV === "production") {
+  app.use((req, res, next) => {
+    if (req.headers["x-forwarded-proto"] !== "https") {
+      return res.redirect(301, "https://" + req.headers.host + req.url);
+    }
+    next();
+  });
+}
+
+app.use(helmet({
+  hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https://res.cloudinary.com", "https://picsum.photos"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      styleSrc: ["'self'", "https://fonts.googleapis.com"],
+      frameSrc: ["https://www.google.com"],
+    },
+  },
+}));
 
 app.use(cors({
   origin: [
@@ -76,9 +98,39 @@ const mensajeLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// limita el endpoint de reset de contraseña a 5 intentos por 15 minutos
+const resetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  message: { mensaje: "Demasiados intentos. Inténtalo de nuevo en 15 minutos." },
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+});
+
+// limita el contador de vistas de eventos: 10 por minuto por IP
+const vistaLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 10,
+  message: { mensaje: "Demasiadas peticiones." },
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+});
+
+// limita la cancelación de inscripciones por enlace: 20 por hora por IP
+const cancelarInscripcionLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 20,
+  message: { mensaje: "Demasiadas peticiones. Inténtalo más tarde." },
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+});
+
+
 app.use("/api/auth/login", authLimiter);
 app.use("/api/auth/register", authLimiter);
 app.use("/api/auth/recuperar", authLimiter);
+app.use("/api/auth/reset", resetLimiter);
+app.use("/api/inscripciones/cancelar", cancelarInscripcionLimiter);
 app.use("/api/contacto", contactoLimiter);
 
 app.use("/api/auth", require("./src/routes/authRoutes"));

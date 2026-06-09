@@ -7,12 +7,6 @@ const api = axios.create({
   withCredentials: true,
 });
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) config.headers["Authorization"] = `Bearer ${token}`;
-  return config;
-});
-
 // si el servidor devuelve 401 limpiamos los datos locales y redirigimos al login
 api.interceptors.response.use(
   (response) => response,
@@ -20,7 +14,6 @@ api.interceptors.response.use(
     const url = error.config?.url || "";
     if (error.response?.status === 401 && !url.includes("/auth/")) {
       localStorage.removeItem("empresa");
-      localStorage.removeItem("token");
       window.location.href = "/login";
     }
     return Promise.reject(error);

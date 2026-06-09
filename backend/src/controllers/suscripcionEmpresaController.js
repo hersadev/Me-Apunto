@@ -1,12 +1,20 @@
-const mongoose = require("mongoose");
+const crypto = require("crypto");
+const { body, validationResult } = require("express-validator");
 const Suscripcion = require("../models/Suscripcion");
 const Empresa = require("../models/Empresa");
 const Notificacion = require("../models/Notificacion");
 const { enviarCorreoConfirmacionSuscripcion, enviarCorreoPersonalizadoSuscriptor } = require("../services/emailService");
 
+const generarTokenBaja = () => crypto.randomBytes(32).toString("hex");
+
 // POST /api/suscripciones
 const suscribirse = async (req, res) => {
   try {
+    const errores = validationResult(req);
+    if (!errores.isEmpty()) {
+      return res.status(400).json({ mensaje: errores.array()[0].msg });
+    }
+
     const { email, empresaId } = req.body;
 
     if (!email || !empresaId) {
@@ -20,18 +28,22 @@ const suscribirse = async (req, res) => {
 
     const existente = await Suscripcion.findOne({ email, empresa: empresaId });
 
+    let tokenBaja;
     if (existente) {
       if (existente.activa) {
         return res.status(409).json({ mensaje: "Ya estás suscrito a esta empresa" });
       }
+      tokenBaja = generarTokenBaja();
       existente.activa = true;
+      existente.tokenBaja = tokenBaja;
       await existente.save();
     } else {
-      await Suscripcion.create({ email, empresa: empresaId });
+      tokenBaja = generarTokenBaja();
+      await Suscripcion.create({ email, empresa: empresaId, tokenBaja });
     }
 
     try {
-      await enviarCorreoConfirmacionSuscripcion({ email, nombreEmpresa: empresa.nombre });
+      await enviarCorreoConfirmacionSuscripcion({ email, nombreEmpresa: empresa.nombre, tokenBaja });
     } catch (errCorreo) {
       console.error("Error al enviar confirmación de suscripción:", errCorreo.message);
     }
@@ -92,10 +104,10 @@ const enviarCorreoSuscriptores = async (req, res) => {
         empresa: empresaId,
         activa: true,
         email: { $in: emails },
-      }).select("email").lean();
+      }).select("email tokenBaja").lean();
       destinatarios = validos;
     } else {
-      const todos = await Suscripcion.find({ empresa: empresaId, activa: true }).select("email").lean();
+      const todos = await Suscripcion.find({ empresa: empresaId, activa: true }).select("email tokenBaja").lean();
       destinatarios = todos;
     }
 
@@ -110,7 +122,7 @@ const enviarCorreoSuscriptores = async (req, res) => {
           nombreEmpresa: empresa.nombre,
           asunto: asunto.trim(),
           mensaje: mensaje.trim(),
-          suscripcionId: suscriptor._id.toString(),
+          tokenBaja: suscriptor.tokenBaja,
         })
       )
     );
@@ -133,13 +145,14 @@ const enviarCorreoSuscriptores = async (req, res) => {
   }
 };
 
-// PATCH /api/suscripciones/baja/:id — da de baja sin autenticación (enlace del email)
+// PATCH /api/suscripciones/baja/:token — da de baja sin autenticación (enlace del email)
 const darDeBaja = async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    const tokenBaja = req.params.token;
+    if (!tokenBaja || tokenBaja.length !== 64 || !/^[0-9a-f]+$/.test(tokenBaja)) {
       return res.status(400).json({ mensaje: "Enlace de baja no válido" });
     }
-    const suscripcion = await Suscripcion.findById(req.params.id);
+    const suscripcion = await Suscripcion.findOne({ tokenBaja });
     if (!suscripcion) {
       return res.status(404).json({ mensaje: "Suscripción no encontrada" });
     }
@@ -150,9 +163,14 @@ const darDeBaja = async (req, res) => {
     await suscripcion.save();
     res.json({ mensaje: "Te has dado de baja correctamente" });
   } catch (error) {
-    console.error("Error al dar de baja:", error);
+    console.error("Error al dar de baja:", error.message);
     res.status(500).json({ mensaje: "Error interno del servidor" });
   }
 };
 
-module.exports = { suscribirse, obtenerSuscriptoresEmpresa, enviarCorreoSuscriptores, darDeBaja };
+const validarSuscripcion = [
+  body("email").trim().isEmail().withMessage("El correo no es válido")
+    .isLength({ max: 200 }).withMessage("El correo no puede superar 200 caracteres"),
+];
+
+module.exports = { suscribirse, obtenerSuscriptoresEmpresa, enviarCorreoSuscriptores, darDeBaja, validarSuscripcion };

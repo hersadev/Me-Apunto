@@ -71,7 +71,7 @@ const enviarCorreoInscripcion = async ({
     html,
   });
 
-  console.log(`Correo de inscripcion enviado a ${correoEmpresa}`);
+  console.log("Correo de inscripcion enviado");
 };
 
 // correo que se envia cuando falta una semana para la renovacion del patrocinio
@@ -134,13 +134,13 @@ const enviarCorreoContacto = async ({ nombre, email, asunto, contexto }) => {
 
   await resend.emails.send({
     from: "Me Apunto <onboarding@resend.dev>",
-    to: process.env.ADMIN_EMAIL || "juanjosehersa@gmail.com",
+    to: process.env.ADMIN_EMAIL,
     subject: `Contacto web: ${asunto}`,
     reply_to: email,
     html,
   });
 
-  console.log(`Correo de contacto enviado de ${email}`);
+  console.log("Correo de contacto enviado");
 };
 
 // correo de bienvenida que se envia a la empresa cuando se registra
@@ -184,7 +184,7 @@ const enviarCorreoBienvenida = async ({ correoEmpresa, nombreEmpresa }) => {
     html,
   });
 
-  console.log(`Correo de bienvenida enviado a ${correoEmpresa}`);
+  console.log("Correo de bienvenida enviado");
 };
 
 // correo que se envia para recuperar contraseña
@@ -224,7 +224,7 @@ const enviarCorreoRecuperacion = async ({ correoEmpresa, nombreEmpresa, token })
     html,
   });
 
-  console.log(`Correo de recuperacion enviado a ${correoEmpresa}`);
+  console.log("Correo de recuperacion enviado");
 };
 
 // correo de confirmacion de cambio de correo electronico
@@ -264,10 +264,13 @@ const enviarCorreoConfirmacionCambio = async ({ correoNuevo, nombreEmpresa, toke
     html,
   });
 
-  console.log(`Correo de confirmacion de cambio enviado a ${correoNuevo}`);
+  console.log("Correo de confirmacion de cambio de correo enviado");
 };
 
-const enviarCorreoConfirmacionSuscripcion = async ({ email, nombreEmpresa }) => {
+const enviarCorreoConfirmacionSuscripcion = async ({ email, nombreEmpresa, tokenBaja }) => {
+  const urlBaja = tokenBaja
+    ? `${process.env.FRONTEND_URL || "http://localhost:3000"}/baja/${tokenBaja}`
+    : null;
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -284,7 +287,7 @@ const enviarCorreoConfirmacionSuscripcion = async ({ email, nombreEmpresa }) => 
           <p style="margin: 8px 0; color: #333;">✓ Recibirás un aviso cuando <strong>${escapeHtml(nombreEmpresa)}</strong> publique nuevos eventos</p>
           <p style="margin: 8px 0; color: #333;">✓ Te notificaremos si hay cambios importantes en sus eventos</p>
         </div>
-        <p style="font-size: 14px; color: #818181; margin-top: 24px;">Si no solicitaste esta suscripción, puedes ignorar este correo.</p>
+        ${urlBaja ? `<p style="font-size: 13px; color: #818181; margin-top: 24px;">Si no solicitaste esta suscripción o deseas darte de baja, <a href="${urlBaja}" style="color:#91703d;">pulsa aquí</a>.</p>` : `<p style="font-size: 13px; color: #818181; margin-top: 24px;">Si no solicitaste esta suscripción, puedes ignorar este correo.</p>`}
       </div>
     </div>
   `;
@@ -296,7 +299,7 @@ const enviarCorreoConfirmacionSuscripcion = async ({ email, nombreEmpresa }) => 
     html,
   });
 
-  console.log(`Correo de confirmación de suscripción enviado a ${email}`);
+  console.log("Correo de confirmacion de suscripcion enviado");
 };
 
 const enviarCorreoContactoEmpresa = async ({ correoEmpresa, nombreEmpresa, nombreEvento, nombreRemitente, emailRemitente, mensaje }) => {
@@ -329,7 +332,7 @@ const enviarCorreoContactoEmpresa = async ({ correoEmpresa, nombreEmpresa, nombr
     html,
   });
 
-  console.log(`Correo de contacto a empresa ${correoEmpresa} enviado desde ${emailRemitente}`);
+  console.log("Correo de contacto a empresa enviado");
 };
 
 // correo de confirmacion de inscripcion que se envia al usuario
@@ -386,7 +389,7 @@ const enviarCorreoConfirmacionUsuario = async ({
     html,
   });
 
-  console.log(`Correo de confirmacion de inscripcion enviado a ${correoUsuario}`);
+  console.log("Correo de confirmacion de inscripcion enviado");
 };
 
 const enviarCorreoRecordatorioEvento = async ({
@@ -444,7 +447,7 @@ const enviarCorreoRecordatorioEvento = async ({
     html,
   });
 
-  console.log(`Correo de recordatorio enviado a ${correoUsuario}`);
+  console.log("Correo de recordatorio enviado");
 };
 
 const enviarCorreoRespuestaMensaje = async ({ emailDestinatario, nombreDestinatario, nombreEmpresa, asuntoOriginal, respuesta }) => {
@@ -473,13 +476,15 @@ const enviarCorreoRespuestaMensaje = async ({ emailDestinatario, nombreDestinata
     html,
   });
 
-  console.log(`Correo de respuesta enviado a ${emailDestinatario}`);
+  console.log("Correo de respuesta enviado");
 };
 
 // correo personalizado enviado por la empresa a uno de sus suscriptores
-const enviarCorreoPersonalizadoSuscriptor = async ({ email, nombreEmpresa, asunto, mensaje, suscripcionId }) => {
+const enviarCorreoPersonalizadoSuscriptor = async ({ email, nombreEmpresa, asunto, mensaje, tokenBaja }) => {
   const mensajeHtml = escapeHtml(mensaje).replace(/\n/g, "<br>");
-  const urlBaja = `${process.env.FRONTEND_URL || "http://localhost:3000"}/baja/${suscripcionId}`;
+  const urlBaja = tokenBaja
+    ? `${process.env.FRONTEND_URL || "http://localhost:3000"}/baja/${tokenBaja}`
+    : null;
 
   await resend.emails.send({
     from: "Me Apunto <onboarding@resend.dev>",
@@ -541,8 +546,7 @@ const enviarCorreoPersonalizadoSuscriptor = async ({ email, nombreEmpresa, asunt
                     Recibiste este mensaje porque estás suscrito a
                     <strong style="color:#91703d;">${escapeHtml(nombreEmpresa)}</strong>
                     a través de Me Apunto.
-                    Si no quieres recibir más mensajes de esta empresa,
-                    <a href="${urlBaja}" style="color:#91703d;font-weight:600;text-decoration:underline;">date de baja aquí</a>.
+                    ${urlBaja ? `Si no quieres recibir más mensajes de esta empresa, <a href="${urlBaja}" style="color:#91703d;font-weight:600;text-decoration:underline;">date de baja aquí</a>.` : ""}
                   </p>
                 </td>
               </tr>

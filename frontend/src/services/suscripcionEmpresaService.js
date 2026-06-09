@@ -15,8 +15,8 @@ const enviarCorreoSuscriptores = async ({ asunto, mensaje, emails }) => {
   return response.data;
 };
 
-const darDeBaja = async (id) => {
-  const response = await api.patch(`/suscripciones/baja/${id}`);
+const darDeBaja = async (token) => {
+  const response = await api.patch(`/suscripciones/baja/${token}`);
   return response.data;
 };
 

@@ -14,7 +14,7 @@ const obtenerEventos = async (req, res) => {
   try {
     // si se pasa rango de fechas para el calendario, el limite puede ser mas alto
     const tieneRango = req.query.fechaInicio && req.query.fechaFin;
-    const limiteMax = tieneRango ? 500 : 50;
+    const limiteMax = tieneRango ? 150 : 50;
     const pagina = Math.max(1, parseInt(req.query.pagina, 10) || 1);
     const limite = Math.min(limiteMax, Math.max(1, parseInt(req.query.limite, 10) || 8));
     const saltar = (pagina - 1) * limite;
@@ -94,7 +94,7 @@ const obtenerEventos = async (req, res) => {
     }
 
     const eventosDocs = await Evento.find(filtro)
-      .populate("empresa", "nombre correo")
+      .populate("empresa", "nombre")
       .sort({ patrocinado: -1, fechaInicioPatrocinio: 1, fecha: 1 })
       .skip(saltar)
       .limit(limite);
@@ -139,7 +139,7 @@ const obtenerEventos = async (req, res) => {
 const obtenerEventoPorId = async (req, res) => {
   try {
     const evento = await Evento.findById(req.params.id)
-      .populate("empresa", "nombre correo fotoPerfil descripcion");
+      .populate("empresa", "nombre fotoPerfil descripcion");
 
     if (!evento || !evento.activo) {
       return res.status(404).json({ mensaje: "Evento no encontrado" });

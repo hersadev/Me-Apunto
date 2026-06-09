@@ -1,5 +1,9 @@
 const Empresa = require("../models/Empresa");
 const Evento = require("../models/Evento");
+const Inscripcion = require("../models/Inscripcion");
+const Suscripcion = require("../models/Suscripcion");
+const Mensaje = require("../models/Mensaje");
+const Notificacion = require("../models/Notificacion");
 
 function validarCIF(cif) {
   if (typeof cif !== "string" || !cif) return false;
@@ -67,8 +71,8 @@ const registrarEmpresa = async (req, res) => {
       return res.status(400).json({ mensaje: "Ya existe una cuenta con ese CIF" });
     }
 
-    if (contrasena.length < 6) {
-      return res.status(400).json({ mensaje: "La contraseña debe tener al menos 6 caracteres" });
+    if (contrasena.length < 8) {
+      return res.status(400).json({ mensaje: "La contraseña debe tener al menos 8 caracteres" });
     }
 
     const empresa = await Empresa.create({
@@ -89,7 +93,6 @@ const registrarEmpresa = async (req, res) => {
 
     res.status(201).json({
       mensaje: "Empresa registrada correctamente",
-      token,
       empresa: {
         id: empresa._id,
         nombre: empresa.nombre,
@@ -137,7 +140,6 @@ const loginEmpresa = async (req, res) => {
 
     res.json({
       mensaje: "Login correcto",
-      token,
       empresa: {
         id: empresa._id,
         nombre: empresa.nombre,
@@ -250,8 +252,8 @@ const cambiarContrasena = async (req, res) => {
       return res.status(400).json({ mensaje: "La contraseña es obligatoria" });
     }
 
-    if (contrasena.length < 6) {
-      return res.status(400).json({ mensaje: "La contraseña debe tener al menos 6 caracteres" });
+    if (contrasena.length < 8) {
+      return res.status(400).json({ mensaje: "La contraseña debe tener al menos 8 caracteres" });
     }
 
     // hasheamos el token recibido y buscamos su hash en la DB
@@ -516,6 +518,13 @@ const eliminarCuenta = async (req, res) => {
       }
     }
 
+    // eliminamos todos los datos asociados a la empresa (RGPD — derecho al olvido)
+    const eventos = await Evento.find({ empresa: empresaId }).select("_id");
+    const eventoIds = eventos.map((e) => e._id);
+    await Inscripcion.deleteMany({ evento: { $in: eventoIds } });
+    await Suscripcion.deleteMany({ empresa: empresaId });
+    await Mensaje.deleteMany({ empresa: empresaId });
+    await Notificacion.deleteMany({ empresa: empresaId });
     await Evento.deleteMany({ empresa: empresaId });
     await Empresa.findByIdAndDelete(empresaId);
 
